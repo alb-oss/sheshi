@@ -24,6 +24,7 @@ type AuthState = {
 };
 
 let state: AuthState = { session: null, user: null, isReady: false };
+const serverState: AuthState = { session: null, user: null, isReady: false };
 const listeners = new Set<() => void>();
 
 function setState(next: Partial<AuthState>) {
@@ -68,7 +69,7 @@ function getSnapshot(): AuthState {
 }
 
 function getServerSnapshot(): AuthState {
-  return { session: null, user: null, isReady: false };
+  return serverState;
 }
 
 export function useAuth(): AuthState {

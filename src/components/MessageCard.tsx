@@ -159,7 +159,11 @@ export function MessageCard({
               );
               if (onReply) {
                 return (
-                  <button type="button" onClick={() => onReply(message)} className={replyClass}>
+                  <button
+                    type="button"
+                    onClick={() => onReply(message)}
+                    className={cn(replyClass, "rounded-sm px-1 py-0.5 -mx-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary")}
+                  >
                     {inner}
                   </button>
                 );
@@ -169,6 +173,11 @@ export function MessageCard({
                   <Link
                     to="/r/$slug/t/$messageId"
                     params={{ slug: roomSlug, messageId: message.id }}
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        window.sessionStorage.setItem("sheshi:reply-intent", message.id);
+                      }
+                    }}
                     className={replyClass}
                   >
                     {inner}

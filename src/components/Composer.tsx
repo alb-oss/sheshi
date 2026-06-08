@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { SendHorizontal } from "lucide-react";
+import { CornerDownRight, SendHorizontal, X } from "lucide-react";
 import { sq } from "@/i18n/sq";
 import { postMessage } from "@/lib/sheshi";
 import { toast } from "sonner";
@@ -12,6 +12,8 @@ interface Props {
   currentUserId: string | null;
   onPosted?: () => void;
   placeholder?: string;
+  replyContext?: { label: string; excerpt?: string } | null;
+  onClearReplyContext?: () => void;
 }
 
 export interface ComposerHandle {
@@ -20,7 +22,7 @@ export interface ComposerHandle {
 }
 
 export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
-  { roomId, parentId = null, currentUserId, onPosted, placeholder },
+  { roomId, parentId = null, currentUserId, onPosted, placeholder, replyContext, onClearReplyContext },
   ref,
 ) {
   const [body, setBody] = useState("");
@@ -31,6 +33,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     focus: () => textareaRef.current?.focus(),
     prefill: (text: string) => {
       setBody((prev) => {
+        const token = text.trim();
+        if (token && prev.split(/\s+/).includes(token)) return prev;
         const needsSpace = prev && !prev.endsWith(" ") && !prev.endsWith("\n");
         const next = prev ? prev + (needsSpace ? " " : "") + text : text;
         return next;
@@ -74,6 +78,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     try {
       await postMessage({ room_id: roomId, body, parent_id: parentId });
       setBody("");
+      onClearReplyContext?.();
       onPosted?.();
     } catch (err: unknown) {
       const msg =
@@ -100,6 +105,27 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
       className="border-t border-border bg-background px-3 sm:px-4 py-3"
     >
       <div className="bg-card border border-border rounded-sm focus-within:border-primary/60 transition-colors">
+        {replyContext && (
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-primary/5 px-3.5 py-2">
+            <div className="flex min-w-0 items-center gap-2 text-xs">
+              <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+              <span className="shrink-0 font-bold uppercase tracking-widest text-primary">
+                Përgjigje për {replyContext.label}
+              </span>
+              {replyContext.excerpt ? (
+                <span className="truncate text-foreground/45">— {replyContext.excerpt}</span>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={onClearReplyContext}
+              aria-label="Anulo përgjigjen"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-foreground/45 transition-colors hover:bg-background hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
         <textarea
           ref={textareaRef}
           rows={1}
