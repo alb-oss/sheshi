@@ -7,7 +7,9 @@ services:
       POSTGRES_PASSWORD: sheshi
       POSTGRES_DB: sheshi
     ports:
-      - "5432:5432"
+      # Host 55432 -> container 5432 to avoid collision with a host-native
+      # Postgres that may already occupy 5432 on this machine.
+      - "55432:5432"
     volumes:
       - sheshi-db-data:/var/lib/postgresql/data
   mailpit:
