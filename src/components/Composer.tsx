@@ -33,6 +33,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     focus: () => textareaRef.current?.focus(),
     prefill: (text: string) => {
       setBody((prev) => {
+        const token = text.trim();
+        if (token && prev.split(/\s+/).includes(token)) return prev;
         const needsSpace = prev && !prev.endsWith(" ") && !prev.endsWith("\n");
         const next = prev ? prev + (needsSpace ? " " : "") + text : text;
         return next;
