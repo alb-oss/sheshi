@@ -128,7 +128,7 @@ function RoomPage() {
             {messages.length} {sq.chat.messagesCount}
           </span>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
               {sq.chat.loading}
@@ -141,15 +141,17 @@ function RoomPage() {
               <div className="text-sm text-foreground/60">{sq.chat.empty}</div>
             </div>
           ) : (
-            messages.map((m) => (
-              <MessageCard
-                key={m.id}
-                message={m}
-                roomSlug={slug}
-                currentUserId={userId}
-                onChanged={reload}
-              />
-            ))
+            <div className="py-2">
+              {messages.map((m) => (
+                <MessageCard
+                  key={m.id}
+                  message={m}
+                  roomSlug={slug}
+                  currentUserId={userId}
+                  onChanged={reload}
+                />
+              ))}
+            </div>
           )}
         </div>
         {room && <Composer roomId={room.id} currentUserId={userId} onPosted={reload} />}
