@@ -12,7 +12,7 @@ actually been applied. It is the single source of truth for this effort.
 - **Execution method:** Subagent/Workflow orchestration (ultracode), one workflow per phase,
   each with implement → spec-review → quality-review fix loops.
 
-> **Status at a glance:** Design ✅ · Plan ✅ · Phase 0–1 foundation **complete** (spec + quality review passed; review follow-ups being applied) · Phases 2–8 pending. Full changelog in **Part E**.
+> **Status at a glance:** Design ✅ · Plan ✅ · Phase 0–1 foundation **complete** (spec + quality review passed) · review follow-ups + Phases 2–8 **not started** (see `docs/TODO.md`). Full changelog in **Part E**.
 
 ---
 
@@ -332,7 +332,7 @@ green; `/health` Testcontainers smoke test passing (1/1); Postgres via docker-co
 the compose container is mapped to host port **`55432`** (appsettings + design-time factory
 match). On a clean machine without a host Postgres, `5432` also works. Use `55432` locally.
 
-**Review follow-ups (applied next, in a fix commit):**
+**Review follow-ups — NOT applied (left for the maintainer to fix later; see `docs/TODO.md`):**
 - (important) Add missing FKs to match Supabase parity: `Vote.UserId`→user (cascade),
   `Report.MessageId`→message (cascade), `Report.ReporterId`→user (restrict); regenerate the
   initial migration.
