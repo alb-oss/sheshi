@@ -138,26 +138,45 @@ export function MessageCard({
               <span className="tabular-nums">{message.upvotes ?? 0}</span>
             </button>
 
-            {message.parent_id === null && asThreadLink && (
-              <Link
-                to="/r/$slug/t/$messageId"
-                params={{ slug: roomSlug, messageId: message.id }}
-                className={cn(
-                  "inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest transition-colors",
-                  message.reply_count
-                    ? "text-foreground/70 hover:text-primary"
-                    : "text-foreground/40 hover:text-primary",
-                )}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h10a4 4 0 014 4v2m0 0l-3-3m3 3l-3 3" />
-                </svg>
-                <span>{sq.chat.reply}</span>
-                {message.reply_count ? (
-                  <span className="tabular-nums text-foreground/50">({message.reply_count})</span>
-                ) : null}
-              </Link>
-            )}
+            {(() => {
+              const isTopLevel = message.parent_id === null;
+              const replyClass = cn(
+                "inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest transition-colors",
+                message.reply_count
+                  ? "text-foreground/70 hover:text-primary"
+                  : "text-foreground/40 hover:text-primary",
+              );
+              const inner = (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h10a4 4 0 014 4v2m0 0l-3-3m3 3l-3 3" />
+                  </svg>
+                  <span>{sq.chat.reply}</span>
+                  {isTopLevel && message.reply_count ? (
+                    <span className="tabular-nums text-foreground/50">({message.reply_count})</span>
+                  ) : null}
+                </>
+              );
+              if (onReply) {
+                return (
+                  <button type="button" onClick={() => onReply(message)} className={replyClass}>
+                    {inner}
+                  </button>
+                );
+              }
+              if (isTopLevel && asThreadLink) {
+                return (
+                  <Link
+                    to="/r/$slug/t/$messageId"
+                    params={{ slug: roomSlug, messageId: message.id }}
+                    className={replyClass}
+                  >
+                    {inner}
+                  </Link>
+                );
+              }
+              return null;
+            })()}
 
             {currentUserId && !isOwn && (
               <button
