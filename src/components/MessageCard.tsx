@@ -26,6 +26,7 @@ export function MessageCard({
   onChanged,
   asThreadLink = true,
   compact,
+  onReply,
 }: Props) {
   const [voting, setVoting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
