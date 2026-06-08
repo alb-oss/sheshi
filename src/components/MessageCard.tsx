@@ -1,11 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowBigUp, MessageSquare, Flag, Trash2 } from "lucide-react";
+import { Flag, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { sq as sqLocale } from "date-fns/locale";
 import { sq } from "@/i18n/sq";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { toggleVote, softDeleteMessage, type MessageRow } from "@/lib/sheshi";
 import { ReportDialog } from "./ReportDialog";
@@ -20,26 +18,45 @@ interface Props {
   compact?: boolean;
 }
 
-export function MessageCard({ message, roomSlug, currentUserId, onChanged, asThreadLink = true, compact }: Props) {
+export function MessageCard({
+  message,
+  roomSlug,
+  currentUserId,
+  onChanged,
+  asThreadLink = true,
+  compact,
+}: Props) {
   const [voting, setVoting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const isDeleted = !!message.deleted_at;
   const isOwn = currentUserId && currentUserId === message.author_id;
 
-  const name = message.author?.display_name || message.author?.username || "Anonim";
-  const initial = name.slice(0, 1).toUpperCase();
+  const name = message.author?.display_name || message.author?.username || "anonim";
+  const handle = "@" + (message.author?.username || "anonim");
+  const initials = name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
   const time = (() => {
-    try { return formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: sqLocale }); }
-    catch { return ""; }
+    try {
+      return formatDistanceToNow(new Date(message.created_at), { locale: sqLocale });
+    } catch {
+      return "";
+    }
   })();
 
   async function onVote() {
-    if (!currentUserId) { toast.error(sq.chat.signInToPost); return; }
+    if (!currentUserId) {
+      toast.error(sq.chat.signInToPost);
+      return;
+    }
     setVoting(true);
     try {
       await toggleVote(message.id, !!message.voted);
       onChanged?.();
-    } catch (e) {
+    } catch {
       toast.error(sq.errors.generic);
     } finally {
       setVoting(false);
@@ -48,58 +65,112 @@ export function MessageCard({ message, roomSlug, currentUserId, onChanged, asThr
 
   async function onDelete() {
     if (!confirm("Fshij këtë mesazh?")) return;
-    try { await softDeleteMessage(message.id); onChanged?.(); }
-    catch { toast.error(sq.errors.generic); }
+    try {
+      await softDeleteMessage(message.id);
+      onChanged?.();
+    } catch {
+      toast.error(sq.errors.generic);
+    }
   }
 
   return (
-    <article className={cn("group flex gap-3 px-4 py-3 border-b", compact && "py-2")}>
-      <Avatar className="h-9 w-9 shrink-0">
-        {message.author?.avatar_url && <AvatarImage src={message.author.avatar_url} alt={name} />}
-        <AvatarFallback className="bg-accent text-accent-foreground text-sm">{initial}</AvatarFallback>
-      </Avatar>
+    <article className={cn("group flex gap-4 px-6 py-4", compact && "py-3")}>
+      <div
+        className="shrink-0 w-10 h-10 rounded-full bg-card border border-border/50 flex items-center justify-center text-[11px] font-bold text-foreground/70 overflow-hidden"
+        aria-hidden
+      >
+        {message.author?.avatar_url ? (
+          <img
+            src={message.author.avatar_url}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span>{initials || "??"}</span>
+        )}
+      </div>
+
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 text-sm">
-          <span className="font-semibold truncate">{name}</span>
-          <span className="text-muted-foreground text-xs">{time}</span>
+        <div className="flex items-baseline gap-2 mb-1">
+          <span className="font-bold text-sm truncate">{handle}</span>
+          <span className="text-[10px] text-foreground/30 font-medium tabular-nums">{time}</span>
         </div>
-        <div className={cn("mt-1 whitespace-pre-wrap break-words text-[15px] leading-snug", isDeleted && "italic text-muted-foreground")}>
+
+        <div
+          className={cn(
+            "text-[15px] leading-relaxed whitespace-pre-wrap break-words",
+            isDeleted ? "italic text-foreground/40" : "text-foreground/90",
+          )}
+        >
           {isDeleted ? sq.chat.deleted : message.body}
         </div>
+
         {!isDeleted && (
-          <div className="mt-2 flex items-center gap-1 text-muted-foreground">
-            <Button
-              variant={message.voted ? "default" : "ghost"}
-              size="sm"
-              className="h-8 gap-1.5 px-2"
+          <div className="mt-3 flex items-center gap-5">
+            <button
+              type="button"
               onClick={onVote}
               disabled={voting}
               aria-label={sq.chat.upvote}
+              className={cn(
+                "flex items-center gap-1.5 transition-colors text-xs font-bold disabled:opacity-50",
+                message.voted
+                  ? "text-primary"
+                  : "text-foreground/40 hover:text-primary",
+              )}
             >
-              <ArrowBigUp className="h-4 w-4" />
-              <span className="text-xs tabular-nums">{message.upvotes ?? 0}</span>
-            </Button>
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M5 15l7-7 7 7"
+                />
+              </svg>
+              <span className="tabular-nums">{message.upvotes ?? 0}</span>
+            </button>
+
             {message.parent_id === null && asThreadLink && (
-              <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 px-2">
-                <Link to="/r/$slug/t/$messageId" params={{ slug: roomSlug, messageId: message.id }}>
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="text-xs tabular-nums">{message.reply_count ?? 0}</span>
-                </Link>
-              </Button>
+              <Link
+                to="/r/$slug/t/$messageId"
+                params={{ slug: roomSlug, messageId: message.id }}
+                className="text-xs text-foreground/40 font-medium hover:text-foreground hover:underline"
+              >
+                {sq.chat.reply}
+                {message.reply_count ? ` (${message.reply_count})` : ""}
+              </Link>
             )}
-            {currentUserId && (
-              <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setReportOpen(true)} aria-label={sq.chat.report}>
-                <Flag className="h-3.5 w-3.5" />
-              </Button>
+
+            {currentUserId && !isOwn && (
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                aria-label={sq.chat.report}
+                className="text-foreground/30 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <Flag className="w-3.5 h-3.5" />
+              </button>
             )}
             {isOwn && (
-              <Button variant="ghost" size="sm" className="h-8 px-2 text-destructive" onClick={onDelete} aria-label={sq.chat.delete}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              <button
+                type="button"
+                onClick={onDelete}
+                aria-label={sq.chat.delete}
+                className="text-foreground/30 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             )}
           </div>
         )}
       </div>
+
       <ReportDialog open={reportOpen} onOpenChange={setReportOpen} messageId={message.id} />
     </article>
   );
