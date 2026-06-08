@@ -10,6 +10,7 @@ using Sheshi.Api.Auth;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Email;
+using Sheshi.Api.Features.Messages;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,7 @@ builder.Services.AddOpenApi();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<MessageService>();
 
 builder.Services.AddDbContext<AppDbContext>(o =>
     o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));

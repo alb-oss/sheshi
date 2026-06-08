@@ -26,9 +26,13 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
   - Implemented forgot/reset password with an `IEmailSender` boundary and SMTP implementation.
   - Added config-gated OAuth provider discovery and external challenge/callback wiring for Google/Microsoft/Apple.
   - Added integration tests for token flow, profile updates, provider discovery, bad password rejection, and password reset.
+- **Phase 3 core API + authorization backend**:
+  - Added `/api/rooms`, `/api/rooms/{slug}`, room message list, message detail, replies, post, vote/unvote, soft-delete, report, and highlights endpoints.
+  - Added `MessageService` read-model enrichment for author, upvotes, reply counts, and per-user voted state.
+  - Ported key Supabase RLS/trigger rules into API/service checks: banned users cannot post/vote, votes only on top-level messages, one-level replies, and author/mod soft delete.
+  - Added integration tests for rooms, message/reply/vote/report/highlight flow, and authorization rules.
 
 ## ☐ To do — remaining build phases (not started)
-- **Phase 3** — Core API + authorization: rooms, messages (read/post), votes, soft-delete, reports, highlights; RLS→service-layer rules.
 - **Phase 4** — SignalR `ChatHub` + change broadcasts + live presence counts.
 - **Phase 5** — Image upload (`IImageStorage` + local filesystem) wired into post message.
 - **Phase 6** — Moderation: report queue, ban/unban, admin-only role management.

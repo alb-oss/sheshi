@@ -359,8 +359,18 @@ removal of the `WeatherForecast` template sample, and a `server/.gitignore` re-i
 - Added integration tests for auth token flow, profile updates, bad password rejection, provider
   discovery, and password reset.
 
+### ✅ Phase 3 — Core API + authorization (complete)
+- Implemented rooms, message reads, posting, replies, votes, soft-delete, reports, and server-side
+  highlights.
+- Added `MessageService` enrichment so message DTOs match the existing frontend shape: author,
+  upvotes, reply counts, and caller-specific `voted`.
+- Ported critical Supabase RLS/trigger behavior into API checks: banned users cannot post/vote,
+  votes are main-message only, replies stay one level deep, and soft-delete is author or
+  moderator/admin.
+- Added integration tests covering rooms, message/reply/vote/report/highlight flow, and key
+  authorization rules.
+
 ### ☐ Pending
-- Phase 3 — Core API + authorization
 - Phase 4 — SignalR + presence
 - Phase 5 — Image upload
 - Phase 6 — Moderation
