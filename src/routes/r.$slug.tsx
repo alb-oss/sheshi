@@ -29,6 +29,14 @@ function RoomPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastIdRef = useRef<string | null>(null);
+
+  const scrollToBottom = (smooth = true) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -52,7 +60,24 @@ function RoomPage() {
 
   const reload = () => {
     if (!room) return;
-    listMessages(room.id, userId).then(setMessages).catch(() => {}).finally(() => setLoading(false));
+    listMessages(room.id, userId)
+      .then((rows) => {
+        const lastId = rows[rows.length - 1]?.id ?? null;
+        const wasAtBottom = (() => {
+          const el = scrollRef.current;
+          if (!el) return true;
+          return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+        })();
+        const isNew = lastId && lastId !== lastIdRef.current;
+        setMessages(rows);
+        lastIdRef.current = lastId;
+        // Always scroll on first load; otherwise scroll if user was near bottom
+        requestAnimationFrame(() => {
+          if (loading || wasAtBottom || isNew) scrollToBottom(!loading);
+        });
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   // schedule a debounced reload so realtime spam doesn't trigger fetch storm
@@ -103,7 +128,7 @@ function RoomPage() {
             {messages.length} {sq.chat.messagesCount}
           </span>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
               {sq.chat.loading}
@@ -116,15 +141,17 @@ function RoomPage() {
               <div className="text-sm text-foreground/60">{sq.chat.empty}</div>
             </div>
           ) : (
-            messages.map((m) => (
-              <MessageCard
-                key={m.id}
-                message={m}
-                roomSlug={slug}
-                currentUserId={userId}
-                onChanged={reload}
-              />
-            ))
+            <div className="py-2">
+              {messages.map((m) => (
+                <MessageCard
+                  key={m.id}
+                  message={m}
+                  roomSlug={slug}
+                  currentUserId={userId}
+                  onChanged={reload}
+                />
+              ))}
+            </div>
           )}
         </div>
         {room && <Composer roomId={room.id} currentUserId={userId} onPosted={reload} />}

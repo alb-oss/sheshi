@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
@@ -20,6 +20,8 @@ function ThreadPage() {
   const [replies, setReplies] = useState<MessageRow[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastReplyIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -30,7 +32,19 @@ function ThreadPage() {
 
   const reload = () => {
     getMessage(messageId, userId).then(setParent).catch(() => {});
-    listReplies(messageId, userId).then(setReplies).catch(() => {});
+    listReplies(messageId, userId)
+      .then((rows) => {
+        const lastId = rows[rows.length - 1]?.id ?? null;
+        const el = scrollRef.current;
+        const wasAtBottom = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 120 : true;
+        const isNew = lastId && lastId !== lastReplyIdRef.current;
+        setReplies(rows);
+        lastReplyIdRef.current = lastId;
+        requestAnimationFrame(() => {
+          if (el && (wasAtBottom || isNew)) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+        });
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -60,7 +74,7 @@ function ThreadPage() {
           <span className="text-foreground/20" aria-hidden>/</span>
           <span className="font-display font-bold text-sm uppercase tracking-tight">{sq.chat.thread}</span>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {parent && <MessageCard message={parent} roomSlug={slug} currentUserId={userId} asThreadLink={false} onChanged={reload} />}
           <div className="border-y border-border bg-card/40 px-6 py-2 text-[10px] uppercase tracking-widest font-bold text-foreground/40">
             {sq.chat.replies(replies.length)}
