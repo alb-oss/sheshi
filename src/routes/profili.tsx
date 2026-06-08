@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/profili")({
@@ -15,20 +16,24 @@ export const Route = createFileRoute("/profili")({
 
 function ProfilePage() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ id: string; email: string | null } | null>(null);
+  const { user, isReady } = useAuth();
+  const loading = !isReady;
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { setLoading(false); return; }
-      setUser({ id: data.user.id, email: data.user.email ?? null });
-      const { data: p } = await supabase.from("profiles").select("display_name").eq("id", data.user.id).maybeSingle();
-      setDisplayName(p?.display_name ?? "");
-      setLoading(false);
-    });
-  }, []);
+    if (!user) return;
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setDisplayName(data?.display_name ?? "");
+      });
+    return () => { cancelled = true; };
+  }, [user]);
 
   async function save() {
     if (!user) return;
