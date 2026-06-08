@@ -24,6 +24,13 @@ function ThreadPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastReplyIdRef = useRef<string | null>(null);
+  const composerRef = useRef<ComposerHandle | null>(null);
+
+  const handleReply = (m: MessageRow) => {
+    const username = m.author?.username;
+    const mention = username ? `@${username} ` : "";
+    composerRef.current?.prefill(mention);
+  };
 
   useEffect(() => {
     listRooms().then(setRooms);
