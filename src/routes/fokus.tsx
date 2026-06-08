@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { listRooms, type Room } from "@/lib/sheshi";
 
 export const Route = createFileRoute("/fokus")({
@@ -16,14 +16,12 @@ export const Route = createFileRoute("/fokus")({
 });
 
 function FokusPage() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [rooms, setRooms] = useState<Room[]>([]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUserId(s?.user?.id ?? null));
     listRooms().then(setRooms);
-    return () => sub.subscription.unsubscribe();
   }, []);
 
   const roomLookup = useMemo(() => new Map(rooms.map((r) => [r.id, r.slug])), [rooms]);
