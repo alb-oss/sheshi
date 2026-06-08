@@ -44,6 +44,7 @@ export const sq = {
     thread: "Tema",
     back: "Mbrapa",
     composerHint: "Maks 2000 karaktere",
+    messagesCount: "mesazhe",
   },
   fokus: {
     title: "Në Fokus",

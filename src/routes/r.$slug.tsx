@@ -80,16 +80,41 @@ function RoomPage() {
 
   return (
     <AppShell right={<HighlightsPanel currentUserId={userId} roomSlugLookup={roomLookup} />}>
-      <div className="flex flex-col h-[calc(100dvh-3.5rem)] md:h-[calc(100dvh-3.5rem)]">
-        <div className="border-b px-4 py-3">
-          <h1 className="font-bold text-lg">{room?.name ?? "…"}</h1>
-          {room?.description && <p className="text-sm text-muted-foreground">{room.description}</p>}
+      <div className="flex flex-col h-full">
+        <div className="h-12 px-6 flex items-center justify-between border-b border-border shrink-0">
+          <div className="flex items-center gap-4 min-w-0">
+            <h2 className="font-display font-bold text-lg truncate">
+              {room?.name ?? "…"}
+              {room?.description && (
+                <>
+                  <span className="text-sm font-normal text-foreground/40 mx-2">—</span>
+                  <span className="text-sm font-normal text-foreground/70">{room.description}</span>
+                </>
+              )}
+            </h2>
+            <div className="hidden sm:flex items-center gap-2 bg-primary/10 px-2 py-0.5 rounded shrink-0">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" aria-hidden />
+              <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                Live
+              </span>
+            </div>
+          </div>
+          <span className="hidden sm:block text-xs text-foreground/40 font-medium tabular-nums">
+            {messages.length} {sq.chat.messagesCount}
+          </span>
         </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="p-6 text-sm text-muted-foreground">{sq.chat.loading}</div>
+            <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
+              {sq.chat.loading}
+            </div>
           ) : messages.length === 0 ? (
-            <div className="p-6 text-sm text-muted-foreground">{sq.chat.empty}</div>
+            <div className="p-10 text-center">
+              <div className="text-xs uppercase tracking-widest font-bold text-foreground/40 mb-2">
+                Sheshi është bosh
+              </div>
+              <div className="text-sm text-foreground/60">{sq.chat.empty}</div>
+            </div>
           ) : (
             messages.map((m) => (
               <MessageCard
