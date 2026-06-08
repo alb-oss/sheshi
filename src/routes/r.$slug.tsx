@@ -125,7 +125,7 @@ function RoomPage() {
             {messages.length} {sq.chat.messagesCount}
           </span>
         </div>
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
           {loading ? (
             <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
               {sq.chat.loading}
