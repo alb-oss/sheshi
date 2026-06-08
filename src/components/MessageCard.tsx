@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowBigUp, MessageSquare, Flag, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { sq as sqLocale } from "date-fns/locale/sq";
+import { sq as sqLocale } from "date-fns/locale";
 import { sq } from "@/i18n/sq";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
