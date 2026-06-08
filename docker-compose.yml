@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:17
+    container_name: sheshi-db
+    environment:
+      POSTGRES_USER: sheshi
+      POSTGRES_PASSWORD: sheshi
+      POSTGRES_DB: sheshi
+    ports:
+      - "5432:5432"
+    volumes:
+      - sheshi-db-data:/var/lib/postgresql/data
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: sheshi-mail
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # web UI
+volumes:
+  sheshi-db-data:
