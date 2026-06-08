@@ -27,17 +27,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasOne(m => m.Room).WithMany().HasForeignKey(m => m.RoomId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(m => m.Author).WithMany().HasForeignKey(m => m.AuthorId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(m => m.Parent).WithMany().HasForeignKey(m => m.ParentId).OnDelete(DeleteBehavior.Cascade);
-            e.HasIndex(m => new { m.RoomId, m.CreatedAt }).HasFilter("\"ParentId\" IS NULL");
+            e.HasIndex(m => new { m.RoomId, m.CreatedAt }).IsDescending(false, true).HasFilter("\"ParentId\" IS NULL");
             e.HasIndex(m => m.ParentId);
         });
 
         b.Entity<Vote>(e =>
         {
             e.HasKey(v => new { v.MessageId, v.UserId });
-            e.HasOne<Message>().WithMany().HasForeignKey(v => v.MessageId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(v => v.Message).WithMany().HasForeignKey(v => v.MessageId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
-        b.Entity<Report>(e => e.Property(r => r.Note).HasMaxLength(500));
+        b.Entity<Report>(e =>
+        {
+            e.Property(r => r.Note).HasMaxLength(500);
+            e.HasOne(r => r.Message).WithMany().HasForeignKey(r => r.MessageId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.Reporter).WithMany().HasForeignKey(r => r.ReporterId).OnDelete(DeleteBehavior.Restrict);
+        });
 
         b.Entity<RefreshToken>(e => { e.HasIndex(t => t.TokenHash); e.HasIndex(t => t.UserId); });
     }

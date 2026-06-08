@@ -12,15 +12,13 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
   - `/health` endpoint + Testcontainers smoke test (build green, 1/1 test pass).
   - Commits: `6af4071`, `cfc105d`, `447219f`, `1f8138d`, `7964f21`, `07d4ec1`.
   - Note: compose DB mapped to host port **55432** (host already uses 5432).
-
-## ☐ To do — Phase 0–1 review fixes (NOT applied)
-1. **(important)** Add missing FKs to match Supabase parity, regenerate the initial migration:
-   `Vote.UserId` → user (cascade); `Report.MessageId` → message (cascade); `Report.ReporterId` → user (restrict).
-   File: `server/Sheshi.Api/Data/AppDbContext.cs`.
-2. **(important)** Align `.env.example` connection port `5432` → `55432` (match compose/appsettings).
-3. **(minor)** `(RoomId, CreatedAt)` index → `CreatedAt DESC` (matches design + original SQL). `AppDbContext.cs`.
-4. **(minor)** `ApiFactory.DisposeAsync`: dispose base before container; prefer explicit `IAsyncLifetime`. `server/Sheshi.Api.Tests/ApiFactory.cs`.
-5. **(minor)** Wrap startup migrate+seed in try/catch + logging. `server/Sheshi.Api/Program.cs`.
+- **Phase 0–1 review fixes**:
+  - Added `Vote.UserId` → user, `Report.MessageId` → message, and `Report.ReporterId` → user FKs.
+  - Regenerated the initial EF migration and snapshot.
+  - Aligned `.env.example` to port `55432`.
+  - Made `(RoomId, CreatedAt)` use `CreatedAt DESC`.
+  - Adjusted `ApiFactory` async lifetime disposal and wrapped startup migrate/seed with logging.
+  - Added regression tests for the EF parity/config fixes.
 
 ## ☐ To do — remaining build phases (not started)
 - **Phase 2** — Auth: Identity + JWT + refresh, register/login/logout, password reset, OAuth (Google/Apple/Microsoft), `/me`.

@@ -12,7 +12,7 @@ using Sheshi.Api.Data;
 namespace Sheshi.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260608103625_InitialSchema")]
+    [Migration("20260608110408_InitialSchema")]
     partial class InitialSchema
     {
         /// <inheritdoc />
@@ -271,6 +271,7 @@ namespace Sheshi.Api.Migrations
                     b.HasIndex("ParentId");
 
                     b.HasIndex("RoomId", "CreatedAt")
+                        .IsDescending(false, true)
                         .HasFilter("\"ParentId\" IS NULL");
 
                     b.ToTable("Messages");
@@ -334,6 +335,10 @@ namespace Sheshi.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("ReporterId");
+
                     b.ToTable("Reports");
                 });
 
@@ -377,6 +382,8 @@ namespace Sheshi.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("MessageId", "UserId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Votes");
                 });
@@ -458,13 +465,42 @@ namespace Sheshi.Api.Migrations
                     b.Navigation("Room");
                 });
 
-            modelBuilder.Entity("Sheshi.Api.Domain.Vote", b =>
+            modelBuilder.Entity("Sheshi.Api.Domain.Report", b =>
                 {
-                    b.HasOne("Sheshi.Api.Domain.Message", null)
+                    b.HasOne("Sheshi.Api.Domain.Message", "Message")
                         .WithMany()
                         .HasForeignKey("MessageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Sheshi.Api.Domain.ApplicationUser", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+
+                    b.Navigation("Reporter");
+                });
+
+            modelBuilder.Entity("Sheshi.Api.Domain.Vote", b =>
+                {
+                    b.HasOne("Sheshi.Api.Domain.Message", "Message")
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Sheshi.Api.Domain.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

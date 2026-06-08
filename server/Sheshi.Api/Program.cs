@@ -24,12 +24,19 @@ builder.Services
 var app = builder.Build();
 
 // Apply migrations and seed roles/rooms on startup.
-using (var scope = app.Services.CreateScope())
+var startupLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
+    await DbSeeder.SeedAsync(app.Services);
 }
-await DbSeeder.SeedAsync(app.Services);
+catch (Exception ex)
+{
+    startupLogger.LogError(ex, "Database migration or seed failed during startup.");
+    throw;
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

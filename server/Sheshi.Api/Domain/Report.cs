@@ -3,7 +3,9 @@ public class Report
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid MessageId { get; set; }
+    public Message Message { get; set; } = null!;
     public Guid ReporterId { get; set; }
+    public ApplicationUser Reporter { get; set; } = null!;
     public ReportReason Reason { get; set; }
     public string? Note { get; set; }
     public ReportStatus Status { get; set; } = ReportStatus.Open;

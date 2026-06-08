@@ -30,11 +30,11 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         });
     }
 
-    public async Task InitializeAsync() => await _db.StartAsync();
+    async Task IAsyncLifetime.InitializeAsync() => await _db.StartAsync();
 
-    public new async Task DisposeAsync()
+    async Task IAsyncLifetime.DisposeAsync()
     {
-        await _db.DisposeAsync();
         await base.DisposeAsync();
+        await _db.DisposeAsync();
     }
 }

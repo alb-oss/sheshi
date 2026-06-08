@@ -332,14 +332,16 @@ green; `/health` Testcontainers smoke test passing (1/1); Postgres via docker-co
 the compose container is mapped to host port **`55432`** (appsettings + design-time factory
 match). On a clean machine without a host Postgres, `5432` also works. Use `55432` locally.
 
-**Review follow-ups — NOT applied (left for the maintainer to fix later; see `docs/TODO.md`):**
-- (important) Add missing FKs to match Supabase parity: `Vote.UserId`→user (cascade),
-  `Report.MessageId`→message (cascade), `Report.ReporterId`→user (restrict); regenerate the
-  initial migration.
-- (important) Align `.env.example` connection port to `55432`.
-- (minor) `(RoomId, CreatedAt)` index → `CreatedAt DESC` (matches design + original).
-- (minor) `ApiFactory.DisposeAsync` ordering (base before container; explicit `IAsyncLifetime`).
-- (minor) try/catch + logging around startup migrate+seed in `Program.cs`.
+**Review follow-ups — applied after the initial foundation pass:**
+- Added missing FKs to match Supabase parity: `Vote.UserId`→user (cascade),
+  `Report.MessageId`→message (cascade), `Report.ReporterId`→user (restrict); regenerated the
+  initial migration and model snapshot.
+- Aligned `.env.example` connection port to `55432`.
+- Changed `(RoomId, CreatedAt)` index to `CreatedAt DESC`.
+- Adjusted `ApiFactory` disposal to dispose the base factory before the container using explicit
+  `IAsyncLifetime`.
+- Wrapped startup migrate+seed in try/catch with logging.
+- Added regression tests covering the EF relationship/index/config fixes.
 
 Extra intentional, minimal additions made by the implementer (all justified): a
 `DesignTimeDbContextFactory` (so `dotnet ef` works), a minimal `AddIdentityCore`+roles+EF stores
