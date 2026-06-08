@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfiliRouteImport } from './routes/profili'
 import { Route as FokusRouteImport } from './routes/fokus'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as RSlugRouteImport } from './routes/r.$slug'
 import { Route as RSlugTMessageIdRouteImport } from './routes/r.$slug.t.$messageId'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/fokus': typeof FokusRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/fokus': typeof FokusRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/fokus': typeof FokusRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/fokus'
     | '/profili'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/r/$slug'
     | '/r/$slug/t/$messageId'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/fokus'
     | '/profili'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/r/$slug'
     | '/r/$slug/t/$messageId'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/fokus'
     | '/profili'
     | '/reset-password'
+    | '/sitemap.xml'
     | '/r/$slug'
     | '/r/$slug/t/$messageId'
   fileRoutesById: FileRoutesById
@@ -117,11 +129,19 @@ export interface RootRouteChildren {
   FokusRoute: typeof FokusRoute
   ProfiliRoute: typeof ProfiliRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   RSlugRoute: typeof RSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -190,6 +210,7 @@ const rootRouteChildren: RootRouteChildren = {
   FokusRoute: FokusRoute,
   ProfiliRoute: ProfiliRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   RSlugRoute: RSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
