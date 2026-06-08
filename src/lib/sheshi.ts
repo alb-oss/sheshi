@@ -81,13 +81,11 @@ export async function listMessages(roomId: string, userId: string | null): Promi
     .eq("room_id", roomId)
     .is("parent_id", null)
     .order("created_at", { ascending: false })
-    .limit(80)
-    .then((res) => {
-      if (res.data) res.data.reverse();
-      return res;
-    });
+    .limit(80);
   if (error) throw error;
-  return attachMeta(data ?? [], userId);
+  // Newest fetched first for the limit window, but display oldest -> newest (chat order)
+  const ordered = (data ?? []).slice().reverse();
+  return attachMeta(ordered, userId);
 }
 
 export async function getMessage(id: string, userId: string | null): Promise<MessageRow | null> {
