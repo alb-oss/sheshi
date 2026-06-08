@@ -60,7 +60,24 @@ function RoomPage() {
 
   const reload = () => {
     if (!room) return;
-    listMessages(room.id, userId).then(setMessages).catch(() => {}).finally(() => setLoading(false));
+    listMessages(room.id, userId)
+      .then((rows) => {
+        const lastId = rows[rows.length - 1]?.id ?? null;
+        const wasAtBottom = (() => {
+          const el = scrollRef.current;
+          if (!el) return true;
+          return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+        })();
+        const isNew = lastId && lastId !== lastIdRef.current;
+        setMessages(rows);
+        lastIdRef.current = lastId;
+        // Always scroll on first load; otherwise scroll if user was near bottom
+        requestAnimationFrame(() => {
+          if (loading || wasAtBottom || isNew) scrollToBottom(!loading);
+        });
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   // schedule a debounced reload so realtime spam doesn't trigger fetch storm
