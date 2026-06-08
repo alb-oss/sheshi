@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { supabase } from "@/integrations/supabase/client";
+import { apiJson } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
@@ -19,13 +19,26 @@ function ResetPassword() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    const email = params.get("email");
+    if (!token || !email) {
+      toast.error(sq.errors.generic);
+      return;
+    }
+
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else {
+    try {
+      await apiJson<void>("/api/auth/reset-password", {
+        method: "POST",
+        body: { email, token, password },
+      });
       toast.success("Fjalëkalimi u rivendos.");
-      navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
+      navigate({ to: "/auth" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : sq.errors.generic);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -35,9 +48,18 @@ function ResetPassword() {
         <h1 className="text-xl font-semibold">{sq.auth.resetTitle}</h1>
         <div className="space-y-1.5">
           <Label htmlFor="pw">{sq.auth.password}</Label>
-          <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Input
+            id="pw"
+            type="password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
-        <Button type="submit" disabled={busy} className="w-full">Ruaj</Button>
+        <Button type="submit" disabled={busy} className="w-full">
+          Ruaj
+        </Button>
       </form>
     </div>
   );

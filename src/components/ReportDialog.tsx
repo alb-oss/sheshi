@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -43,7 +50,11 @@ export function ReportDialog({ open, onOpenChange, messageId }: Props) {
           <DialogTitle>{sq.report.title}</DialogTitle>
           <DialogDescription>{sq.report.description}</DialogDescription>
         </DialogHeader>
-        <RadioGroup value={reason} onValueChange={(v) => setReason(v as ReportReason)} className="space-y-2">
+        <RadioGroup
+          value={reason}
+          onValueChange={(v) => setReason(v as ReportReason)}
+          className="space-y-2"
+        >
           {reasons.map((r) => (
             <div key={r} className="flex items-center gap-2">
               <RadioGroupItem value={r} id={`reason-${r}`} />
@@ -59,7 +70,9 @@ export function ReportDialog({ open, onOpenChange, messageId }: Props) {
           rows={3}
         />
         <DialogFooter>
-          <Button onClick={onSubmit} disabled={submitting}>{sq.report.submit}</Button>
+          <Button onClick={onSubmit} disabled={submitting}>
+            {sq.report.submit}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

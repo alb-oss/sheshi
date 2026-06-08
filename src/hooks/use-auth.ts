@@ -1,66 +1,71 @@
 import { useEffect, useSyncExternalStore } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { apiJson } from "@/lib/api-client";
+import {
+  clearStoredTokens,
+  getStoredTokens,
+  setStoredTokens,
+  subscribeTokenStore,
+  type StoredTokens,
+} from "@/lib/token-store";
 
-/**
- * Centralized auth store.
- *
- * Best practices applied:
- * - Restore from storage via getSession() once at module load (no race where
- *   queries fire before the persisted session is hydrated).
- * - Single onAuthStateChange subscription for the whole app — components
- *   subscribe via useSyncExternalStore so every consumer sees the same value
- *   at the same time.
- * - Callback is "fire and forget": no awaits inside the listener (prevents
- *   Supabase auth deadlocks).
- * - isReady flips true only after the initial getSession() resolves so
- *   consumers can gate queries with `enabled: isReady`.
- */
+export type ApiUser = {
+  id: string;
+  email: string | null;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  roles: string[];
+  is_banned: boolean;
+};
 
 type AuthState = {
-  session: Session | null;
-  user: User | null;
+  session: StoredTokens | null;
+  user: ApiUser | null;
   isReady: boolean;
 };
 
 let state: AuthState = { session: null, user: null, isReady: false };
 const serverState: AuthState = { session: null, user: null, isReady: false };
 const listeners = new Set<() => void>();
+let initialized = false;
+let loadingUser: Promise<void> | null = null;
 
 function setState(next: Partial<AuthState>) {
   state = { ...state, ...next };
-  for (const l of listeners) l();
+  for (const listener of listeners) listener();
 }
 
-let initialized = false;
+async function loadUserFromTokens() {
+  const tokens = getStoredTokens();
+  if (!tokens) {
+    setState({ session: null, user: null, isReady: true });
+    return;
+  }
+
+  setState({ session: tokens });
+  try {
+    const user = await apiJson<ApiUser>("/api/me");
+    setState({ session: getStoredTokens(), user, isReady: true });
+  } catch {
+    clearStoredTokens();
+    setState({ session: null, user: null, isReady: true });
+  }
+}
+
 function init() {
   if (initialized || typeof window === "undefined") return;
   initialized = true;
-
-  // 1. Restore persisted session synchronously from storage
-  supabase.auth.getSession().then(({ data }) => {
-    setState({
-      session: data.session ?? null,
-      user: data.session?.user ?? null,
-      isReady: true,
-    });
-  });
-
-  // 2. Subscribe to changes — fire and forget, no awaits inside
-  supabase.auth.onAuthStateChange((_event, session) => {
-    setState({
-      session: session ?? null,
-      user: session?.user ?? null,
-      isReady: true,
-    });
+  loadingUser = loadUserFromTokens();
+  subscribeTokenStore(() => {
+    loadingUser = loadUserFromTokens();
   });
 }
 
-function subscribe(cb: () => void) {
+function subscribe(listener: () => void) {
   init();
-  listeners.add(cb);
+  listeners.add(listener);
   return () => {
-    listeners.delete(cb);
+    listeners.delete(listener);
   };
 }
 
@@ -73,15 +78,22 @@ function getServerSnapshot(): AuthState {
 }
 
 export function useAuth(): AuthState {
-  // Kick off initialization on first import in a client environment too
   useEffect(() => {
     init();
   }, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/** Access current auth state outside React (e.g. inside async helpers). */
 export function getAuthSnapshot(): AuthState {
   init();
   return state;
+}
+
+export async function setAuthTokens(tokens: StoredTokens) {
+  setStoredTokens(tokens);
+  await loadingUser;
+}
+
+export function signOutLocal() {
+  clearStoredTokens();
 }

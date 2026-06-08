@@ -1,28 +1,47 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Flame, User, Radio } from "lucide-react";
+import { Home, Flame, User, Radio, Shield } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
 import { listRooms, type Room } from "@/lib/sheshi";
 import { cn } from "@/lib/utils";
-
-// Per-room online counts (fake but stable for the brutalist dispatch look)
-const ROOM_META: Record<string, { count: string; urgent?: boolean }> = {
-  sheshi: { count: "1.2k" },
-  "vjosa-narta": { count: "430" },
-  tirana: { count: "2.8k" },
-  shkodra: { count: "210" },
-  korca: { count: "154" },
-  "protesta-11-qershor": { count: "URGJENT", urgent: true },
-};
+import { apiJson } from "@/lib/api-client";
+import { ensureRealtimeStarted } from "@/lib/realtime";
 
 export function AppShell({ children, right }: { children: ReactNode; right?: ReactNode }) {
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [presence, setPresence] = useState<Record<string, number>>({});
   const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isMod = !!user?.roles?.some((role) => role === "moderator" || role === "admin");
 
   useEffect(() => {
-    listRooms().then(setRooms).catch(() => {});
+    listRooms()
+      .then(setRooms)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    apiJson<Record<string, number>>("/api/rooms/presence")
+      .then(setPresence)
+      .catch(() => {});
+    let disposed = false;
+    const onPresence = (event: { room_id: string; count: number }) => {
+      setPresence((current) => ({ ...current, [event.room_id]: event.count }));
+    };
+    const connectionPromise = ensureRealtimeStarted();
+    connectionPromise
+      .then((connection) => {
+        if (disposed) return;
+        connection.on("presence", onPresence);
+      })
+      .catch(() => {});
+    return () => {
+      disposed = true;
+      connectionPromise
+        .then((connection) => connection.off("presence", onPresence))
+        .catch(() => {});
+    };
   }, []);
 
   const activeSlug = pathname.startsWith("/r/") ? pathname.split("/")[2] : null;
@@ -32,7 +51,10 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
       {/* Top header */}
       <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-6 h-6 bg-primary rounded-sm group-hover:scale-110 transition-transform" aria-hidden />
+          <div
+            className="w-6 h-6 bg-primary rounded-sm group-hover:scale-110 transition-transform"
+            aria-hidden
+          />
           <div className="flex flex-col leading-none">
             <span className="font-display font-bold tracking-tighter text-lg">SHESHI</span>
             <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/50 mt-0.5">
@@ -48,6 +70,14 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
               className="text-xs uppercase tracking-widest font-bold text-foreground/70 hover:text-foreground transition-colors"
             >
               {sq.nav.profile}
+            </Link>
+          ) : null}
+          {isMod ? (
+            <Link
+              to="/moderim"
+              className="text-xs uppercase tracking-widest font-bold text-foreground/70 hover:text-foreground transition-colors"
+            >
+              {sq.nav.admin}
             </Link>
           ) : null}
           <Link
@@ -68,8 +98,8 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
             </h3>
             <nav className="space-y-1">
               {rooms.map((r) => {
-                const meta = ROOM_META[r.slug] ?? { count: "" };
                 const active = activeSlug === r.slug;
+                const count = presence[r.id] ?? 0;
                 return (
                   <Link
                     key={r.id}
@@ -79,27 +109,19 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
                       "flex items-center justify-between group px-2 py-1.5 rounded-sm transition-colors",
                       active
                         ? "bg-card text-primary border-l-2 border-primary font-medium"
-                        : meta.urgent
-                        ? "text-primary font-bold hover:bg-card/50"
                         : "text-foreground/70 hover:bg-card/50 hover:text-foreground",
                     )}
                   >
                     <span className="truncate">{r.name}</span>
                     <span className="flex items-center gap-2 shrink-0">
                       {active && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" aria-hidden />
-                      )}
-                      {meta.count && (
                         <span
-                          className={cn(
-                            "text-[10px] tabular-nums",
-                            meta.urgent
-                              ? "bg-primary/10 text-primary px-1 rounded font-bold"
-                              : "text-foreground/30",
-                          )}
-                        >
-                          {meta.count}
-                        </span>
+                          className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
+                          aria-hidden
+                        />
+                      )}
+                      {count > 0 && (
+                        <span className="text-[10px] tabular-nums text-foreground/30">{count}</span>
                       )}
                     </span>
                   </Link>
@@ -122,7 +144,7 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
 
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-border bg-background">
-        <div className="grid grid-cols-4 h-16">
+        <div className={cn("grid h-16", isMod ? "grid-cols-5" : "grid-cols-4")}>
           <BottomLink
             to="/"
             icon={<Home className="h-5 w-5" />}
@@ -147,6 +169,14 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
             label={sq.nav.profile}
             active={pathname === "/profili"}
           />
+          {isMod ? (
+            <BottomLink
+              to="/moderim"
+              icon={<Shield className="h-5 w-5" />}
+              label={sq.nav.admin}
+              active={pathname === "/moderim"}
+            />
+          ) : null}
         </div>
       </nav>
     </div>

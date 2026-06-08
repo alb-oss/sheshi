@@ -82,11 +82,7 @@ export function MessageCard({
         aria-hidden
       >
         {message.author?.avatar_url ? (
-          <img
-            src={message.author.avatar_url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={message.author.avatar_url} alt="" className="w-full h-full object-cover" />
         ) : (
           <span>{initials || "??"}</span>
         )}
@@ -106,6 +102,14 @@ export function MessageCard({
         >
           {isDeleted ? sq.chat.deleted : message.body}
         </div>
+        {!isDeleted && message.image_url ? (
+          <img
+            src={message.image_url}
+            alt=""
+            className="mt-3 max-h-80 max-w-full rounded-sm border border-border object-contain"
+            loading="lazy"
+          />
+        ) : null}
 
         {!isDeleted && (
           <div className="mt-3 flex items-center gap-5">
@@ -116,9 +120,7 @@ export function MessageCard({
               aria-label={sq.chat.upvote}
               className={cn(
                 "flex items-center gap-1.5 transition-colors text-xs font-bold disabled:opacity-50",
-                message.voted
-                  ? "text-primary"
-                  : "text-foreground/40 hover:text-primary",
+                message.voted ? "text-primary" : "text-foreground/40 hover:text-primary",
               )}
             >
               <svg
@@ -148,8 +150,19 @@ export function MessageCard({
               );
               const inner = (
                 <>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h10a4 4 0 014 4v2m0 0l-3-3m3 3l-3 3" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M3 10h10a4 4 0 014 4v2m0 0l-3-3m3 3l-3 3"
+                    />
                   </svg>
                   <span>{sq.chat.reply}</span>
                   {isTopLevel && message.reply_count ? (
@@ -162,7 +175,10 @@ export function MessageCard({
                   <button
                     type="button"
                     onClick={() => onReply(message)}
-                    className={cn(replyClass, "rounded-sm px-1 py-0.5 -mx-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary")}
+                    className={cn(
+                      replyClass,
+                      "rounded-sm px-1 py-0.5 -mx-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+                    )}
                   >
                     {inner}
                   </button>

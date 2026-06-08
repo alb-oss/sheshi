@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import { apiJson, getApiBaseUrl } from "@/lib/api-client";
+import { setAuthTokens } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -13,58 +13,58 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+type AuthResponse = {
+  access_token: string;
+  refresh_token: string;
+};
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [providers, setProviders] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    apiJson<string[]>("/api/auth/providers")
+      .then(setProviders)
+      .catch(() => setProviders([]));
+  }, []);
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
-        });
-        if (error) throw error;
-        toast.success("Llogaria u krijua. Kontrollo email-in.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
-      }
-    } catch (e: any) {
-      toast.error(e?.message || sq.errors.generic);
+      const endpoint = mode === "signup" ? "/api/auth/register" : "/api/auth/login";
+      const result = await apiJson<AuthResponse>(endpoint, {
+        method: "POST",
+        body: { email, password, display_name: email.split("@")[0] },
+      });
+      await setAuthTokens({ accessToken: result.access_token, refreshToken: result.refresh_token });
+      navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : sq.errors.generic);
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleGoogle() {
-    setBusy(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) { toast.error(result.error.message || sq.errors.generic); return; }
-      if (result.redirected) return;
-      navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
-    } finally {
-      setBusy(false);
-    }
+  function handleProvider(provider: string) {
+    window.location.href = `${getApiBaseUrl()}/api/auth/external/${provider}`;
   }
 
   async function forgot() {
-    if (!email) { toast.error("Shkruani email-in tuaj fillimisht."); return; }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + "/reset-password",
-    });
-    if (error) toast.error(error.message);
-    else toast.success("Link rivendosjeje u dërgua në email.");
+    if (!email) {
+      toast.error("Shkruani email-in tuaj fillimisht.");
+      return;
+    }
+    try {
+      await apiJson<void>("/api/auth/forgot-password", { method: "POST", body: { email } });
+      toast.success("Link rivendosjeje u dërgua në email.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : sq.errors.generic);
+    }
   }
 
   return (
@@ -79,22 +79,45 @@ function AuthPage() {
           <p className="text-sm text-muted-foreground mt-1">{sq.auth.subtitle}</p>
         </div>
 
-        <Button onClick={handleGoogle} disabled={busy} variant="outline" className="w-full h-11">
-          {sq.auth.google}
-        </Button>
+        {providers.includes("google") && (
+          <Button
+            onClick={() => handleProvider("google")}
+            disabled={busy}
+            variant="outline"
+            className="w-full h-11"
+          >
+            {sq.auth.google}
+          </Button>
+        )}
 
-        <div className="flex items-center gap-3 my-5 text-xs text-muted-foreground">
-          <div className="flex-1 h-px bg-border" /> {sq.auth.or} <div className="flex-1 h-px bg-border" />
-        </div>
+        {providers.length > 0 && (
+          <div className="flex items-center gap-3 my-5 text-xs text-muted-foreground">
+            <div className="flex-1 h-px bg-border" /> {sq.auth.or}{" "}
+            <div className="flex-1 h-px bg-border" />
+          </div>
+        )}
 
         <form onSubmit={handleEmail} className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="email">{sq.auth.email}</Label>
-            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pw">{sq.auth.password}</Label>
-            <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input
+              id="pw"
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <Button type="submit" disabled={busy} className="w-full h-11">
             {mode === "signin" ? sq.auth.signIn : sq.auth.signUp}
@@ -102,11 +125,19 @@ function AuthPage() {
         </form>
 
         <div className="mt-4 flex justify-between text-sm">
-          <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            className="text-muted-foreground hover:text-foreground"
+          >
             {mode === "signin" ? sq.auth.newAccount : sq.auth.haveAccount}
           </button>
           {mode === "signin" && (
-            <button type="button" onClick={forgot} className="text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={forgot}
+              className="text-muted-foreground hover:text-foreground"
+            >
               {sq.auth.forgot}
             </button>
           )}

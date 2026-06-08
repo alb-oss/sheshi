@@ -2,11 +2,11 @@
 
 **Date:** 2026-06-08
 **Branch:** `feat/dotnet-backend`
-**Status:** Approved (brainstorm complete) — next step: implementation plan
+**Status:** Implemented on `feat/dotnet-backend`; kept as the original design record.
 
 ## Goal
 
-Replace the Supabase backend (Postgres + Auth + Realtime, accessed directly by the
+Replace the original Supabase backend (Postgres + Auth + Realtime, accessed directly by the
 React app via the `@supabase/supabase-js` SDK) with a self-owned **ASP.NET Core**
 backend, and rewire the existing React/TanStack Start frontend to consume it. Port
 all current features faithfully **and** finish three latent features (image upload,
@@ -147,8 +147,9 @@ resolve / dismiss / delete message), **Users** (search → ban/unban), **Roles**
 - **New `src/lib/api-client.ts`** — fetch wrapper: base URL, bearer header, auto-refresh on 401.
 - **`src/lib/sheshi.ts`** — same exported functions/types; bodies call the API.
 - **`src/hooks/use-auth.ts`** — same store/shape; backed by token store + `/me`.
-- **`src/integrations/supabase/*` + `integrations/lovable/*`** — removed;
-  `@supabase/supabase-js` dropped from deps.
+- **`src/integrations/supabase/*` + runtime Lovable auth/error code** — removed;
+  `@supabase/supabase-js` and `@lovable.dev/cloud-auth-js` dropped from deps. The
+  current build still uses `@lovable.dev/vite-tanstack-config` as a TanStack/Vite preset.
 - Routes (`auth`, `reset-password`, `profili`, room, thread) swap Supabase auth/realtime
   for the API client + SignalR. UI/markup unchanged.
 

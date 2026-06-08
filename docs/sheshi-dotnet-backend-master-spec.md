@@ -12,7 +12,7 @@ actually been applied. It is the single source of truth for this effort.
 - **Execution method:** Subagent/Workflow orchestration (ultracode), one workflow per phase,
   each with implement → spec-review → quality-review fix loops.
 
-> **Status at a glance:** Design ✅ · Plan ✅ · Phase 0–1 foundation **complete** (spec + quality review passed) · review follow-ups + Phases 2–8 **not started** (see `docs/TODO.md`). Full changelog in **Part E**.
+> **Status at a glance:** Design ✅ · Plan ✅ · Backend phases 0–6 ✅ · Frontend rewire phase 7 ✅ · Phase 8 polish/verification in progress. Full changelog in **Part E**.
 
 ---
 
@@ -82,7 +82,7 @@ completes them:
 
 # Part B — The backend being replaced (Supabase) — feature inventory
 
-The React app currently talks to **Supabase directly** via `@supabase/supabase-js`
+The original React app talked to **Supabase directly** via `@supabase/supabase-js`
 (`supabase.from(...)`, realtime channels, auth in `localStorage`). Features:
 
 **Identity & auth:** email/password sign-up (+ email confirmation) & sign-in; OAuth
@@ -226,13 +226,17 @@ grant/revoke moderator). Backed by `/mod/*`.
 - `src/components/AppShell.tsx` — live presence instead of `ROOM_META` fakes.
 - `src/components/Composer.tsx` — image picker; new `src/routes/moderim.tsx`; new
   `src/routes/auth.callback.tsx`.
-- Remove `src/integrations/supabase/*` + `integrations/lovable/*`; drop
-  `@supabase/supabase-js` + `@lovable.dev/*`; delete `supabase/` dir.
+- Remove `src/integrations/supabase/*` + runtime Lovable auth/error integrations; drop
+  `@supabase/supabase-js` + `@lovable.dev/cloud-auth-js`; delete `supabase/` dir. The
+  build-time `@lovable.dev/vite-tanstack-config` preset remains for the current TanStack
+  Start build unless the app is later moved to a hand-written Vite/TanStack config.
 
 ## C.10 Dev & config
 `docker-compose.yml` runs Postgres (+ Mailpit). Config via `appsettings.json` + env
-(connection string, JWT key, OAuth secrets, SMTP, upload path/limits, CORS). `.env.example`
-documents all of it. Dev email → Mailpit (`http://localhost:8025`).
+(connection string, JWT key, OAuth secrets, SMTP, upload path/limits, CORS, optional
+admin bootstrap). `.env.example` documents all of it. Dev email → Mailpit
+(`http://localhost:8025`). Local defaults use API port `5080` and compose Postgres host
+port `55432`.
 
 ## C.11 Testing
 xUnit + `WebApplicationFactory` + Testcontainers Postgres: auth round-trip; post/vote/
@@ -380,13 +384,28 @@ removal of the `WeatherForecast` template sample, and a `server/.gitignore` re-i
 - Added integration tests for SignalR notifications, presence counts, multipart image upload,
   moderation role enforcement, report resolution, bans, and role grants.
 
+### ✅ Phase 7 — Frontend rewire (complete)
+- Added `src/lib/api-client.ts`, `src/lib/token-store.ts`, and `src/lib/realtime.ts`.
+- Replaced `use-auth`, `sheshi.ts`, auth/reset/profile routes, OAuth callback handling, room/thread
+  realtime, highlights, and presence with .NET API + SignalR calls.
+- Added Composer image upload support, message image rendering, live sidebar presence, and `/moderim`
+  moderation UI.
+- Removed Supabase frontend integrations, Supabase migrations, Lovable runtime auth/error code, and
+  stale Supabase startup wiring. The build-time `@lovable.dev/vite-tanstack-config` preset remains.
+
+### ✅ Phase 8 — Integration/docs polish (in progress)
+- Added optional `SeedAdmin__Email`/`SeedAdmin__Password` startup bootstrap to create/promote a first
+  admin account.
+- Aligned backend launch settings to `http://localhost:5080`, matching `.env.example`,
+  `Storage__PublicBaseUrl`, and frontend `VITE_API_BASE_URL`.
+- Added `server/README.md` with local run, admin seed, and test instructions.
+
 ### ☐ Pending
-- Phase 7 — Frontend rewire (note: requires `bun` — not yet installed; `npm` fallback available)
-- Phase 8 — Integration, docs, polish
+- Final verification pass: `cd server && dotnet test`, repo-root `npm run build`, stale-reference scan,
+  and optional manual local smoke.
 
 ### Known follow-ups / risks
-- `bun` is not installed locally; needed for Phase 7 frontend build (or use `npm` via the
-  committed `package-lock.json`).
+- Frontend verification uses `npm` via the committed `package-lock.json`; `bun` is not installed locally.
 - OAuth (esp. Apple) + SMTP secrets must be provided by the maintainer in `.env`.
 - No data migration from Supabase (fresh DB by decision).
 
@@ -395,6 +414,8 @@ removal of the `WeatherForecast` template sample, and a `server/.gitignore` re-i
 # Part F — References
 - Design: `docs/plans/2026-06-08-dotnet-backend-design.md`
 - Implementation plan (full code/commands): `docs/plans/2026-06-08-dotnet-backend-implementation.md`
-- Original Supabase schema: `supabase/migrations/*.sql`
+- Original Supabase schema: deleted from the working tree after the .NET port; see git history for
+  the prior `supabase/migrations/*.sql` files.
+- Backend runbook: `server/README.md`
 - Frontend entry points rewired: `src/lib/sheshi.ts`, `src/hooks/use-auth.ts`, `src/routes/*`,
   `src/components/{AppShell,Composer,MessageCard,HighlightsPanel,ReportDialog}.tsx`

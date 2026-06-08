@@ -5,9 +5,9 @@ import { MessageCard } from "@/components/MessageCard";
 import { Composer } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getRoomBySlug, listMessages, listRooms, type MessageRow, type Room } from "@/lib/sheshi";
+import { ensureRealtimeStarted } from "@/lib/realtime";
 
 export const Route = createFileRoute("/r/$slug")({
   head: ({ params }) => ({
@@ -15,7 +15,10 @@ export const Route = createFileRoute("/r/$slug")({
       { title: `#${params.slug} — Sheshi` },
       { name: "description", content: `Diskutim qytetar drejtpërdrejt në dhomën #${params.slug}.` },
       { property: "og:title", content: `#${params.slug} — Sheshi` },
-      { property: "og:description", content: `Diskutim qytetar drejtpërdrejt në dhomën #${params.slug}.` },
+      {
+        property: "og:description",
+        content: `Diskutim qytetar drejtpërdrejt në dhomën #${params.slug}.`,
+      },
     ],
   }),
   component: RoomRoute,
@@ -47,7 +50,9 @@ function RoomPage() {
   };
 
   useEffect(() => {
-    listRooms().then(setRooms).catch(() => {});
+    listRooms()
+      .then(setRooms)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -55,15 +60,20 @@ function RoomPage() {
     setLoading(true);
     getRoomBySlug(slug).then((r) => {
       if (cancelled) return;
-      if (!r) { navigate({ to: "/r/$slug", params: { slug: "sheshi" } }); return; }
+      if (!r) {
+        navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
+        return;
+      }
       setRoom(r);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [slug, navigate]);
 
   const reload = () => {
     if (!room) return;
-    listMessages(room.id, userId)
+    listMessages(room.id)
       .then((rows) => {
         const lastId = rows[rows.length - 1]?.id ?? null;
         const wasAtBottom = (() => {
@@ -91,14 +101,26 @@ function RoomPage() {
 
   useEffect(() => {
     if (!room) return;
+    let disposed = false;
+    let handler: (() => void) | null = null;
     reload();
-    const channel = supabase
-      .channel(`room:${room.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `room_id=eq.${room.id}` }, scheduleReload)
-      .on("postgres_changes", { event: "*", schema: "public", table: "votes" }, scheduleReload)
-      .subscribe();
+    const connectionPromise = ensureRealtimeStarted();
+    connectionPromise
+      .then((connection) => {
+        if (disposed) return;
+        handler = scheduleReload;
+        connection.on("changed", handler);
+        void connection.invoke("JoinRoom", room.id);
+      })
+      .catch(() => {});
     return () => {
-      supabase.removeChannel(channel);
+      disposed = true;
+      connectionPromise
+        .then((connection) => {
+          if (handler) connection.off("changed", handler);
+          void connection.invoke("LeaveRoom", room.id);
+        })
+        .catch(() => {});
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

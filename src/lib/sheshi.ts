@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { api, ApiError, apiForm, apiJson } from "@/lib/api-client";
 
 export interface Room {
   id: string;
@@ -30,130 +30,79 @@ export interface MessageRow {
 }
 
 export async function listRooms(): Promise<Room[]> {
-  const { data, error } = await supabase
-    .from("rooms")
-    .select("id, slug, name, description")
-    .order("name");
-  if (error) throw error;
-  return data ?? [];
+  return apiJson<Room[]>("/api/rooms");
 }
 
 export async function getRoomBySlug(slug: string): Promise<Room | null> {
-  const { data, error } = await supabase
-    .from("rooms")
-    .select("id, slug, name, description")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+  try {
+    return await apiJson<Room>(`/api/rooms/${encodeURIComponent(slug)}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
 }
 
-async function attachMeta(rows: MessageRow[], userId: string | null): Promise<MessageRow[]> {
-  if (rows.length === 0) return rows;
-  const ids = rows.map((r) => r.id);
-  const authorIds = Array.from(new Set(rows.map((r) => r.author_id)));
-
-  const [{ data: stats }, { data: profiles }, { data: myVotes }] = await Promise.all([
-    supabase.from("message_stats").select("message_id, upvotes, reply_count").in("message_id", ids),
-    supabase.from("profiles").select("id, username, display_name, avatar_url").in("id", authorIds),
-    userId
-      ? supabase.from("votes").select("message_id").eq("user_id", userId).in("message_id", ids)
-      : Promise.resolve({ data: [] as { message_id: string }[] }),
-  ]);
-
-  const statMap = new Map((stats ?? []).map((s) => [s.message_id, s]));
-  const profMap = new Map((profiles ?? []).map((p) => [p.id, p]));
-  const voteSet = new Set((myVotes ?? []).map((v) => v.message_id));
-
-  return rows.map((r) => ({
-    ...r,
-    upvotes: statMap.get(r.id)?.upvotes ?? 0,
-    reply_count: statMap.get(r.id)?.reply_count ?? 0,
-    author: profMap.get(r.author_id) ?? null,
-    voted: voteSet.has(r.id),
-  }));
+export async function listMessages(roomId: string): Promise<MessageRow[]> {
+  return apiJson<MessageRow[]>(`/api/rooms/${roomId}/messages`);
 }
 
-export async function listMessages(roomId: string, userId: string | null): Promise<MessageRow[]> {
-  const { data, error } = await supabase
-    .from("messages")
-    .select("id, room_id, author_id, parent_id, body, image_url, deleted_at, created_at")
-    .eq("room_id", roomId)
-    .is("parent_id", null)
-    .order("created_at", { ascending: false })
-    .limit(80);
-  if (error) throw error;
-  // Newest fetched first for the limit window, but display oldest -> newest (chat order)
-  const ordered = (data ?? []).slice().reverse();
-  return attachMeta(ordered, userId);
+export async function getMessage(id: string): Promise<MessageRow | null> {
+  try {
+    return await apiJson<MessageRow>(`/api/messages/${id}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
 }
 
-export async function getMessage(id: string, userId: string | null): Promise<MessageRow | null> {
-  const { data, error } = await supabase
-    .from("messages")
-    .select("id, room_id, author_id, parent_id, body, image_url, deleted_at, created_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  const [enriched] = await attachMeta([data], userId);
-  return enriched;
-}
-
-export async function listReplies(parentId: string, userId: string | null): Promise<MessageRow[]> {
-  const { data, error } = await supabase
-    .from("messages")
-    .select("id, room_id, author_id, parent_id, body, image_url, deleted_at, created_at")
-    .eq("parent_id", parentId)
-    .order("created_at", { ascending: true })
-    .limit(200);
-  if (error) throw error;
-  return attachMeta(data ?? [], userId);
+export async function listReplies(parentId: string): Promise<MessageRow[]> {
+  return apiJson<MessageRow[]>(`/api/messages/${parentId}/replies`);
 }
 
 export async function postMessage(input: {
   room_id: string;
   body: string;
   parent_id?: string | null;
+  image?: File | null;
 }) {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) throw new Error("UNAUTH");
   const body = input.body.trim();
   if (!body) throw new Error("EMPTY");
   if (body.length > 2000) throw new Error("TOO_LONG");
-  const { error } = await supabase.from("messages").insert({
-    room_id: input.room_id,
-    author_id: userData.user.id,
-    parent_id: input.parent_id ?? null,
-    body,
-  });
-  if (error) throw error;
+
+  try {
+    if (input.image) {
+      const form = new FormData();
+      form.set("room_id", input.room_id);
+      if (input.parent_id) form.set("parent_id", input.parent_id);
+      form.set("body", body);
+      form.set("image", input.image);
+      await apiForm<MessageRow>("/api/messages", form);
+    } else {
+      await apiJson<MessageRow>("/api/messages", {
+        method: "POST",
+        body: { room_id: input.room_id, parent_id: input.parent_id ?? null, body },
+      });
+    }
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) throw new Error("UNAUTH");
+    if (error instanceof ApiError && error.message === "TOO_LONG") throw new Error("TOO_LONG");
+    if (error instanceof ApiError && error.message === "EMPTY") throw new Error("EMPTY");
+    throw error;
+  }
 }
 
 export async function toggleVote(messageId: string, currentlyVoted: boolean) {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) throw new Error("UNAUTH");
-  if (currentlyVoted) {
-    const { error } = await supabase
-      .from("votes")
-      .delete()
-      .eq("message_id", messageId)
-      .eq("user_id", userData.user.id);
-    if (error) throw error;
-  } else {
-    const { error } = await supabase
-      .from("votes")
-      .insert({ message_id: messageId, user_id: userData.user.id });
-    if (error && !String(error.message).includes("duplicate")) throw error;
+  try {
+    if (currentlyVoted) await api(`/api/messages/${messageId}/vote`, { method: "DELETE" });
+    else await api(`/api/messages/${messageId}/vote`, { method: "PUT" });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) throw new Error("UNAUTH");
+    throw error;
   }
 }
 
 export async function softDeleteMessage(id: string) {
-  const { error } = await supabase
-    .from("messages")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw error;
+  await api(`/api/messages/${id}`, { method: "DELETE" });
 }
 
 export type ReportReason = "spam" | "hate" | "doxxing" | "violence" | "other";
@@ -162,39 +111,20 @@ export async function submitReport(input: {
   reason: ReportReason;
   note?: string;
 }) {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) throw new Error("UNAUTH");
-  const { error } = await supabase.from("reports").insert({
-    message_id: input.message_id,
-    reporter_id: userData.user.id,
-    reason: input.reason,
-    note: input.note || null,
-  });
-  if (error) throw error;
+  try {
+    await api(`/api/messages/${input.message_id}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: input.reason, note: input.note || null }),
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) throw new Error("UNAUTH");
+    throw error;
+  }
 }
 
-// Highlights ranking: (upvotes + replies*2) / ageHours^1.3
 export type HighlightMode = "hot" | "top" | "replied";
 
-export async function listHighlights(mode: HighlightMode, userId: string | null): Promise<MessageRow[]> {
-  const sinceDay = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-  let q = supabase
-    .from("messages")
-    .select("id, room_id, author_id, parent_id, body, image_url, deleted_at, created_at")
-    .is("parent_id", null)
-    .is("deleted_at", null);
-  if (mode !== "hot") q = q.gte("created_at", sinceDay);
-  const { data, error } = await q.order("created_at", { ascending: false }).limit(200);
-  if (error) throw error;
-  const enriched = await attachMeta(data ?? [], userId);
-  const now = Date.now();
-  const score = (m: MessageRow) => {
-    const ageH = Math.max((now - new Date(m.created_at).getTime()) / 3600000, 0.5);
-    return ((m.upvotes ?? 0) + (m.reply_count ?? 0) * 2) / Math.pow(ageH, 1.3);
-  };
-  const sorted = [...enriched];
-  if (mode === "hot") sorted.sort((a, b) => score(b) - score(a));
-  else if (mode === "top") sorted.sort((a, b) => (b.upvotes ?? 0) - (a.upvotes ?? 0));
-  else sorted.sort((a, b) => (b.reply_count ?? 0) - (a.reply_count ?? 0));
-  return sorted.slice(0, 10);
+export async function listHighlights(mode: HighlightMode): Promise<MessageRow[]> {
+  return apiJson<MessageRow[]>(`/api/highlights?mode=${encodeURIComponent(mode)}`);
 }

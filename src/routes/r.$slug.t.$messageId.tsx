@@ -6,9 +6,9 @@ import { MessageCard } from "@/components/MessageCard";
 import { Composer, type ComposerHandle } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getMessage, listReplies, listRooms, type MessageRow, type Room } from "@/lib/sheshi";
+import { ensureRealtimeStarted } from "@/lib/realtime";
 
 export const Route = createFileRoute("/r/$slug/t/$messageId")({
   head: () => ({ meta: [{ title: "Tema — Sheshi" }] }),
@@ -53,8 +53,10 @@ function ThreadPage() {
   }, []);
 
   const reload = () => {
-    getMessage(messageId, userId).then(setParent).catch(() => {});
-    listReplies(messageId, userId)
+    getMessage(messageId)
+      .then(setParent)
+      .catch(() => {});
+    listReplies(messageId)
       .then((rows) => {
         const lastId = rows[rows.length - 1]?.id ?? null;
         const el = scrollRef.current;
@@ -63,20 +65,35 @@ function ThreadPage() {
         setReplies(rows);
         lastReplyIdRef.current = lastId;
         requestAnimationFrame(() => {
-          if (el && (wasAtBottom || isNew)) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+          if (el && (wasAtBottom || isNew))
+            el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
         });
       })
       .catch(() => {});
   };
 
   useEffect(() => {
+    let disposed = false;
+    let handler: (() => void) | null = null;
     reload();
-    const ch = supabase
-      .channel(`thread:${messageId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `parent_id=eq.${messageId}` }, reload)
-      .on("postgres_changes", { event: "*", schema: "public", table: "votes", filter: `message_id=eq.${messageId}` }, reload)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const connectionPromise = ensureRealtimeStarted();
+    connectionPromise
+      .then((connection) => {
+        if (disposed) return;
+        handler = reload;
+        connection.on("changed", handler);
+        void connection.invoke("JoinThread", messageId);
+      })
+      .catch(() => {});
+    return () => {
+      disposed = true;
+      connectionPromise
+        .then((connection) => {
+          if (handler) connection.off("changed", handler);
+          void connection.invoke("LeaveThread", messageId);
+        })
+        .catch(() => {});
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messageId, userId]);
 
@@ -93,16 +110,38 @@ function ThreadPage() {
           >
             <ChevronLeft className="h-3.5 w-3.5" /> #{slug}
           </Link>
-          <span className="text-foreground/20" aria-hidden>/</span>
-          <span className="font-display font-bold text-sm uppercase tracking-tight">{sq.chat.thread}</span>
+          <span className="text-foreground/20" aria-hidden>
+            /
+          </span>
+          <span className="font-display font-bold text-sm uppercase tracking-tight">
+            {sq.chat.thread}
+          </span>
         </div>
         <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
-          {parent && <MessageCard message={parent} roomSlug={slug} currentUserId={userId} asThreadLink={false} onChanged={reload} onReply={handleReply} />}
+          {parent && (
+            <MessageCard
+              message={parent}
+              roomSlug={slug}
+              currentUserId={userId}
+              asThreadLink={false}
+              onChanged={reload}
+              onReply={handleReply}
+            />
+          )}
           <div className="border-y border-border bg-card/40 px-6 py-2 text-[10px] uppercase tracking-widest font-bold text-foreground/40">
             {sq.chat.replies(replies.length)}
           </div>
           {replies.map((r) => (
-            <MessageCard key={r.id} message={r} roomSlug={slug} currentUserId={userId} asThreadLink={false} onChanged={reload} onReply={handleReply} compact />
+            <MessageCard
+              key={r.id}
+              message={r}
+              roomSlug={slug}
+              currentUserId={userId}
+              asThreadLink={false}
+              onChanged={reload}
+              onReply={handleReply}
+              compact
+            />
           ))}
         </div>
         {parent && (

@@ -36,9 +36,20 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
   - Added local image storage behind `IImageStorage`, static `/uploads` serving, validation for jpeg/png/webp, size limits, and multipart message image posts.
   - Added `/api/mod/*` report queue, resolve/dismiss, ban/unban, user search, and admin-only moderator role management.
   - Added integration tests for SignalR change events, presence counts, image upload, moderation role enforcement, report resolution, bans, and role grants.
+- **Phase 7 frontend rewire**:
+  - Added `api-client`, `token-store`, and SignalR client plumbing.
+  - Replaced frontend auth/profile/reset/OAuth callback routes with .NET API calls.
+  - Replaced `src/lib/sheshi.ts` data access with REST calls to the .NET API.
+  - Replaced room/thread realtime subscriptions with SignalR group joins.
+  - Added live presence in the app shell, Composer image upload, image rendering, and `/moderim`.
+  - Removed Supabase SDK/runtime integration, Supabase migrations, Lovable auth/error runtime code, and stale Supabase startup wiring.
+- **Phase 8 polish in progress**:
+  - Added config-only `SeedAdmin__Email`/`SeedAdmin__Password` startup bootstrap for a first admin account.
+  - Aligned backend launch profile to `http://localhost:5080`, matching `.env.example` and `VITE_API_BASE_URL`.
 
-## ☐ To do — remaining build phases (not started)
-- **Phase 7** — Frontend rewire off Supabase: `api-client`, `token-store`, `sheshi.ts`, `use-auth`, auth/reset/profile routes, SignalR, presence, Composer image picker, `/moderim` dashboard; remove Supabase/Lovable. (Needs `bun` — not installed; `npm` fallback available.)
-- **Phase 8** — Integration test pass, `server/README.md` + admin seed, finish the branch.
+## ☐ To do
+- Run final verification: `cd server && dotnet test`, repo-root `npm run build`, stale-reference scan.
+- Add/update `server/README.md`.
+- Optional manual local smoke: `docker compose up -d`, `dotnet run --project server/Sheshi.Api`, `npm run dev`.
 
 Per-task detail: `docs/plans/2026-06-08-dotnet-backend-implementation.md`.

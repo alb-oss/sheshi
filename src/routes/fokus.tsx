@@ -9,7 +9,10 @@ export const Route = createFileRoute("/fokus")({
   head: () => ({
     meta: [
       { title: "Në Fokus — Sheshi" },
-      { name: "description", content: "Mesazhet më të mbështetura dhe më të diskutuara nga komuniteti." },
+      {
+        name: "description",
+        content: "Mesazhet më të mbështetura dhe më të diskutuara nga komuniteti.",
+      },
     ],
   }),
   component: FokusPage,

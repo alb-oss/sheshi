@@ -1,10 +1,13 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { CornerDownRight, SendHorizontal, X } from "lucide-react";
+import { CornerDownRight, ImagePlus, SendHorizontal, X } from "lucide-react";
 import { sq } from "@/i18n/sq";
 import { postMessage } from "@/lib/sheshi";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 interface Props {
   roomId: string;
@@ -22,12 +25,23 @@ export interface ComposerHandle {
 }
 
 export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
-  { roomId, parentId = null, currentUserId, onPosted, placeholder, replyContext, onClearReplyContext },
+  {
+    roomId,
+    parentId = null,
+    currentUserId,
+    onPosted,
+    placeholder,
+    replyContext,
+    onClearReplyContext,
+  },
   ref,
 ) {
   const [body, setBody] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   useImperativeHandle(ref, () => ({
     focus: () => textareaRef.current?.focus(),
@@ -58,6 +72,40 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     el.style.height = next + "px";
   }, [body]);
 
+  useEffect(() => {
+    if (!image) {
+      setImagePreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(image);
+    setImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image]);
+
+  function clearImage() {
+    setImage(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  }
+
+  function selectImage(file: File | null) {
+    if (!file) {
+      clearImage();
+      return;
+    }
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      toast.error("Lejohen vetëm PNG, JPG ose WebP.");
+      clearImage();
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error("Imazhi duhet të jetë nën 5 MB.");
+      clearImage();
+      return;
+    }
+    setImage(file);
+  }
+
   if (!currentUserId) {
     return (
       <div className="border-t border-border bg-background px-4 py-4 flex items-center justify-between gap-3">
@@ -76,8 +124,9 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     if (!body.trim() || posting) return;
     setPosting(true);
     try {
-      await postMessage({ room_id: roomId, body, parent_id: parentId });
+      await postMessage({ room_id: roomId, body, parent_id: parentId, image });
       setBody("");
+      clearImage();
       onClearReplyContext?.();
       onPosted?.();
     } catch (err: unknown) {
@@ -100,10 +149,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   const canSend = !!body.trim() && !posting;
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="border-t border-border bg-background px-3 sm:px-4 py-3"
-    >
+    <form onSubmit={onSubmit} className="border-t border-border bg-background px-3 sm:px-4 py-3">
       <div className="bg-card border border-border rounded-sm focus-within:border-primary/60 transition-colors">
         {replyContext && (
           <div className="flex items-center justify-between gap-3 border-b border-border bg-primary/5 px-3.5 py-2">
@@ -121,6 +167,35 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
               onClick={onClearReplyContext}
               aria-label="Anulo përgjigjen"
               className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-foreground/45 transition-colors hover:bg-background hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+        {image && (
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-background/60 px-3.5 py-2">
+            <div className="flex min-w-0 items-center gap-3">
+              {imagePreviewUrl ? (
+                <img
+                  src={imagePreviewUrl}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-sm border border-border object-cover"
+                />
+              ) : null}
+              <div className="min-w-0">
+                <div className="truncate text-xs font-bold uppercase tracking-widest text-foreground/60">
+                  {image.name}
+                </div>
+                <div className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-foreground/35">
+                  {(image.size / 1024 / 1024).toFixed(1)} MB
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearImage}
+              aria-label="Hiq imazhin"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-foreground/45 transition-colors hover:bg-card hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -146,6 +221,21 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             Enter për të postuar · Shift+Enter rresht i ri
           </span>
           <div className="flex items-center gap-3">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(event) => selectImage(event.target.files?.[0] ?? null)}
+            />
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              aria-label="Shto imazh"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-background hover:text-primary"
+            >
+              <ImagePlus className="h-4 w-4" />
+            </button>
             <span
               className={cn(
                 "text-[10px] tabular-nums font-bold",

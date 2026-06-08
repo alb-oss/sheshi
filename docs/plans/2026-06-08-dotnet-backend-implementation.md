@@ -532,7 +532,7 @@ Extend Task 3.3 handler: if `image` present, `SaveAsync` → set `Message.ImageU
 
 ## Phase 7 — Frontend rewire
 
-> UI/markup stays; only data/auth/realtime sources change. Add `VITE_API_BASE_URL`. Add deps: `bun add @microsoft/signalr`. Remove `@supabase/supabase-js` and `@lovable.dev/*` at the end (Task 7.8).
+> UI/markup stays; only data/auth/realtime sources change. Add `VITE_API_BASE_URL`. Add deps: `npm install --legacy-peer-deps @microsoft/signalr` (or equivalent). Remove `@supabase/supabase-js` and runtime Lovable auth/error integrations at the end (Task 7.8).
 
 ### Task 7.1: API client + token store
 
@@ -593,7 +593,7 @@ Commit `feat(web): image upload + moderation dashboard`.
 
 ### Task 7.8: Remove Supabase
 
-Delete `src/integrations/supabase/*`, `src/integrations/lovable/*`, `src/lib/api/example.functions.ts` (if unused), the `attachSupabaseAuth` wiring in `src/start.ts`. `bun remove @supabase/supabase-js @lovable.dev/cloud-auth-js`. Delete `supabase/` dir and Supabase `.env` keys. Update `sitemap` BASE_URL if needed. Run `bun run build` → expect success (no Supabase imports remain: `grep -r supabase src` empty).
+Delete `src/integrations/supabase/*`, runtime Lovable auth/error files, `src/lib/api/example.functions.ts` (if unused), and the `attachSupabaseAuth` wiring in `src/start.ts`. `npm uninstall --legacy-peer-deps @supabase/supabase-js @lovable.dev/cloud-auth-js`. Delete `supabase/` dir and Supabase `.env` keys. Keep `@lovable.dev/vite-tanstack-config` until the app has an explicit replacement Vite/TanStack config. Update `sitemap` BASE_URL if needed. Run `npm run build` → expect success (no Supabase imports remain in `src`).
 
 Commit `chore(web): remove Supabase/Lovable integration`.
 
@@ -603,17 +603,17 @@ Commit `chore(web): remove Supabase/Lovable integration`.
 
 ### Task 8.1: End-to-end manual run
 
-`docker compose up -d`; `dotnet run` (API on :5080); `bun run dev` (web on :3000). Use the **run** skill to verify: register → post → upvote → reply → highlights update → report → (as seeded admin) moderate → image upload renders → presence count changes across two tabs.
+`docker compose up -d`; `dotnet run --project server/Sheshi.Api` (API on :5080); `npm run dev` (web on :3000). Verify: register → post → upvote → reply → highlights update → report → (as seeded admin) moderate → image upload renders → presence count changes across two tabs.
 
 ### Task 8.2: Seed an admin + README
 
-Add a `dotnet run -- seed-admin <email>` startup arg (or env `Seed__AdminEmail`) that grants `admin` to a user. Write `server/README.md`: prerequisites, `docker compose up`, migrations, `dotnet run`, OAuth/SMTP config, running tests. Update root README to point frontend at the API.
+Add config-only `SeedAdmin__Email`/`SeedAdmin__Password` startup bootstrap that creates/promotes an admin user. Write `server/README.md`: prerequisites, `docker compose up`, migrations, `dotnet run`, OAuth/SMTP config, running tests.
 
 Commit `docs: backend README + admin seeding`.
 
 ### Task 8.3: Full test pass
 
-`cd server && dotnet test` → all green. `bun run build` → success. Fix any gaps. Commit `test: full backend suite green`.
+`cd server && dotnet test` → all green. `npm run build` → success. Fix any gaps. Commit `test: full backend suite green`.
 
 ### Task 8.4: Finish the branch
 

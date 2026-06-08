@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfiliRouteImport } from './routes/profili'
+import { Route as ModerimRouteImport } from './routes/moderim'
 import { Route as FokusRouteImport } from './routes/fokus'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RSlugRouteImport } from './routes/r.$slug'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as RSlugTMessageIdRouteImport } from './routes/r.$slug.t.$messageId'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -31,6 +33,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const ProfiliRoute = ProfiliRouteImport.update({
   id: '/profili',
   path: '/profili',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModerimRoute = ModerimRouteImport.update({
+  id: '/moderim',
+  path: '/moderim',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FokusRoute = FokusRouteImport.update({
@@ -53,6 +60,11 @@ const RSlugRoute = RSlugRouteImport.update({
   path: '/r/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const RSlugTMessageIdRoute = RSlugTMessageIdRouteImport.update({
   id: '/t/$messageId',
   path: '/t/$messageId',
@@ -61,32 +73,38 @@ const RSlugTMessageIdRoute = RSlugTMessageIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/fokus': typeof FokusRoute
+  '/moderim': typeof ModerimRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/fokus': typeof FokusRoute
+  '/moderim': typeof ModerimRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/fokus': typeof FokusRoute
+  '/moderim': typeof ModerimRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/r/$slug': typeof RSlugRouteWithChildren
   '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
 }
@@ -96,9 +114,11 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/fokus'
+    | '/moderim'
     | '/profili'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/auth/callback'
     | '/r/$slug'
     | '/r/$slug/t/$messageId'
   fileRoutesByTo: FileRoutesByTo
@@ -106,9 +126,11 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/fokus'
+    | '/moderim'
     | '/profili'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/auth/callback'
     | '/r/$slug'
     | '/r/$slug/t/$messageId'
   id:
@@ -116,17 +138,20 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/fokus'
+    | '/moderim'
     | '/profili'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/auth/callback'
     | '/r/$slug'
     | '/r/$slug/t/$messageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   FokusRoute: typeof FokusRoute
+  ModerimRoute: typeof ModerimRoute
   ProfiliRoute: typeof ProfiliRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -154,6 +179,13 @@ declare module '@tanstack/react-router' {
       path: '/profili'
       fullPath: '/profili'
       preLoaderRoute: typeof ProfiliRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/moderim': {
+      id: '/moderim'
+      path: '/moderim'
+      fullPath: '/moderim'
+      preLoaderRoute: typeof ModerimRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fokus': {
@@ -184,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/r/$slug/t/$messageId': {
       id: '/r/$slug/t/$messageId'
       path: '/t/$messageId'
@@ -193,6 +232,16 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface RSlugRouteChildren {
   RSlugTMessageIdRoute: typeof RSlugTMessageIdRoute
@@ -206,8 +255,9 @@ const RSlugRouteWithChildren = RSlugRoute._addFileChildren(RSlugRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   FokusRoute: FokusRoute,
+  ModerimRoute: ModerimRoute,
   ProfiliRoute: ProfiliRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -216,3 +266,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

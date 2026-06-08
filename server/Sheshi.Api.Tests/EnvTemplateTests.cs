@@ -11,5 +11,9 @@ public class EnvTemplateTests
         var envTemplate = File.ReadAllText(Path.Combine(repoRoot, ".env.example"));
 
         envTemplate.Should().Contain("ConnectionStrings__Default=Host=localhost;Port=55432;");
+        envTemplate.Should().Contain("VITE_API_BASE_URL=http://localhost:5080");
+        envTemplate.Should().Contain("Storage__PublicBaseUrl=http://localhost:5080/uploads");
+        envTemplate.Should().Contain("SeedAdmin__Email=");
+        envTemplate.Should().NotContain("SUPABASE");
     }
 }

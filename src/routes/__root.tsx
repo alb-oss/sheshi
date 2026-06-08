@@ -10,9 +10,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { subscribeTokenStore } from "@/lib/token-store";
 
 function NotFoundComponent() {
   return (
@@ -39,9 +38,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -52,12 +48,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
             Provo sërish
           </button>
-          <a href="/" className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground">
+          <a
+            href="/"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground"
+          >
             Sheshi
           </a>
         </div>
@@ -72,16 +74,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Sheshi — Zëri qytetar i Shqipërisë" },
-      { name: "description", content: "Sheshi është chat-i qytetar live për shqiptarët — diskuto, mbështet dhe vër në fokus mesazhet që kanë rëndësi." },
+      {
+        name: "description",
+        content:
+          "Sheshi është chat-i qytetar live për shqiptarët — diskuto, mbështet dhe vër në fokus mesazhet që kanë rëndësi.",
+      },
       { name: "author", content: "Sheshi" },
       { property: "og:title", content: "Sheshi — Zëri qytetar i Shqipërisë" },
-      { property: "og:description", content: "Sheshi është chat-i qytetar live për shqiptarët — diskuto, mbështet dhe vër në fokus mesazhet që kanë rëndësi." },
+      {
+        property: "og:description",
+        content:
+          "Sheshi është chat-i qytetar live për shqiptarët — diskuto, mbështet dhe vër në fokus mesazhet që kanë rëndësi.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Sheshi — Zëri qytetar i Shqipërisë" },
-      { name: "twitter:description", content: "Sheshi është chat-i qytetar live për shqiptarët — diskuto, mbështet dhe vër në fokus mesazhet që kanë rëndësi." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b51d3739-4bc7-4ec5-a1b2-2a2e553f90d6/id-preview-1388a3d2--64d7c862-21f9-48e6-8ec7-cff8fef914b3.lovable.app-1780884575638.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b51d3739-4bc7-4ec5-a1b2-2a2e553f90d6/id-preview-1388a3d2--64d7c862-21f9-48e6-8ec7-cff8fef914b3.lovable.app-1780884575638.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Sheshi është chat-i qytetar live për shqiptarët — diskuto, mbështet dhe vër në fokus mesazhet që kanë rëndësi.",
+      },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
@@ -110,11 +122,9 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+    return subscribeTokenStore(() => {
       router.invalidate();
     });
-    return () => sub.subscription.unsubscribe();
   }, [router]);
 
   return (

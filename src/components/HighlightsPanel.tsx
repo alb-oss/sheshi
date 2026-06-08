@@ -21,7 +21,7 @@ export function HighlightsPanel({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listHighlights(mode, currentUserId)
+    listHighlights(mode)
       .then((r) => {
         if (!cancelled) setItems(r);
       })
@@ -132,9 +132,7 @@ export function HighlightsPanel({
                       <span
                         className={cn(
                           "font-display font-bold leading-none tabular-nums shrink-0 w-6 text-center pt-0.5",
-                          topThree
-                            ? "text-primary text-xl"
-                            : "text-foreground/30 text-sm",
+                          topThree ? "text-primary text-xl" : "text-foreground/30 text-sm",
                         )}
                         aria-hidden
                       >
