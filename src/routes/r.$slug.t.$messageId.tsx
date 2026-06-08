@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
-import { Composer } from "@/components/Composer";
+import { Composer, type ComposerHandle } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,13 @@ function ThreadPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastReplyIdRef = useRef<string | null>(null);
+  const composerRef = useRef<ComposerHandle | null>(null);
+
+  const handleReply = (m: MessageRow) => {
+    const username = m.author?.username;
+    const mention = username ? `@${username} ` : "";
+    composerRef.current?.prefill(mention);
+  };
 
   useEffect(() => {
     listRooms().then(setRooms);
@@ -74,16 +81,17 @@ function ThreadPage() {
           <span className="font-display font-bold text-sm uppercase tracking-tight">{sq.chat.thread}</span>
         </div>
         <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
-          {parent && <MessageCard message={parent} roomSlug={slug} currentUserId={userId} asThreadLink={false} onChanged={reload} />}
+          {parent && <MessageCard message={parent} roomSlug={slug} currentUserId={userId} asThreadLink={false} onChanged={reload} onReply={handleReply} />}
           <div className="border-y border-border bg-card/40 px-6 py-2 text-[10px] uppercase tracking-widest font-bold text-foreground/40">
             {sq.chat.replies(replies.length)}
           </div>
           {replies.map((r) => (
-            <MessageCard key={r.id} message={r} roomSlug={slug} currentUserId={userId} asThreadLink={false} onChanged={reload} compact />
+            <MessageCard key={r.id} message={r} roomSlug={slug} currentUserId={userId} asThreadLink={false} onChanged={reload} onReply={handleReply} compact />
           ))}
         </div>
         {parent && (
           <Composer
+            ref={composerRef}
             roomId={parent.room_id}
             parentId={parent.id}
             currentUserId={userId}
