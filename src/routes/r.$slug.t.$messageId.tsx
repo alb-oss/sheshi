@@ -25,12 +25,28 @@ function ThreadPage() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastReplyIdRef = useRef<string | null>(null);
   const composerRef = useRef<ComposerHandle | null>(null);
+  const composerWrapRef = useRef<HTMLDivElement | null>(null);
+  const [replyTarget, setReplyTarget] = useState<{ label: string; excerpt?: string } | null>(null);
 
   const handleReply = (m: MessageRow) => {
     const username = m.author?.username;
-    const mention = username ? `@${username} ` : "";
-    composerRef.current?.prefill(mention);
+    const label = username ? `@${username}` : "@anonim";
+    setReplyTarget({ label, excerpt: m.body.slice(0, 96) });
+    composerRef.current?.prefill(`${label} `);
+    requestAnimationFrame(() => {
+      composerWrapRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+      composerRef.current?.focus();
+    });
   };
+
+  useEffect(() => {
+    if (!parent || typeof window === "undefined") return;
+    const intent = window.sessionStorage.getItem("sheshi:reply-intent");
+    if (intent !== parent.id) return;
+    window.sessionStorage.removeItem("sheshi:reply-intent");
+    handleReply(parent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parent?.id]);
 
   useEffect(() => {
     listRooms().then(setRooms);
@@ -90,14 +106,18 @@ function ThreadPage() {
           ))}
         </div>
         {parent && (
-          <Composer
-            ref={composerRef}
-            roomId={parent.room_id}
-            parentId={parent.id}
-            currentUserId={userId}
-            onPosted={reload}
-            placeholder={sq.chat.reply + "…"}
-          />
+          <div ref={composerWrapRef}>
+            <Composer
+              ref={composerRef}
+              roomId={parent.room_id}
+              parentId={parent.id}
+              currentUserId={userId}
+              onPosted={reload}
+              placeholder={sq.chat.reply + "…"}
+              replyContext={replyTarget}
+              onClearReplyContext={() => setReplyTarget(null)}
+            />
+          </div>
         )}
       </div>
     </AppShell>
