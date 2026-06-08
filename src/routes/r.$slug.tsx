@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
@@ -18,8 +18,14 @@ export const Route = createFileRoute("/r/$slug")({
       { property: "og:description", content: `Diskutim qytetar drejtpërdrejt në dhomën #${params.slug}.` },
     ],
   }),
-  component: RoomPage,
+  component: RoomRoute,
 });
+
+function RoomRoute() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname.includes("/t/")) return <Outlet />;
+  return <RoomPage />;
+}
 
 function RoomPage() {
   const { slug } = Route.useParams();
