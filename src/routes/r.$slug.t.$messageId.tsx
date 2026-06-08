@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
-import { Composer } from "@/components/Composer";
+import { Composer, type ComposerHandle } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
 import { supabase } from "@/integrations/supabase/client";
