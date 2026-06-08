@@ -23,9 +23,13 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseEnvironment("Development");
         builder.ConfigureAppConfiguration((_, config) =>
         {
+            var uploadPath = Path.Combine(Path.GetTempPath(), $"sheshi-test-uploads-{Guid.NewGuid():N}");
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:Default"] = _db.GetConnectionString(),
+                ["Storage:UploadPath"] = uploadPath,
+                ["Storage:PublicBaseUrl"] = "http://localhost:5080/uploads",
+                ["Storage:MaxBytes"] = "5242880",
             });
         });
     }

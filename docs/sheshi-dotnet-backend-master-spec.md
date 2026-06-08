@@ -370,10 +370,17 @@ removal of the `WeatherForecast` template sample, and a `server/.gitignore` re-i
 - Added integration tests covering rooms, message/reply/vote/report/highlight flow, and key
   authorization rules.
 
+### ✅ Phase 4–6 — Realtime, image upload, moderation backend (complete)
+- Implemented SignalR `ChatHub`, room/thread groups, `changed` broadcasts, live presence tracking,
+  and `/api/rooms/presence`.
+- Implemented `IImageStorage` with local filesystem storage, `/uploads` static serving, jpeg/png/webp
+  validation, size limits, and multipart image posts.
+- Implemented moderation endpoints for report queue, resolve/dismiss, ban/unban, user search, and
+  admin-only moderator role management.
+- Added integration tests for SignalR notifications, presence counts, multipart image upload,
+  moderation role enforcement, report resolution, bans, and role grants.
+
 ### ☐ Pending
-- Phase 4 — SignalR + presence
-- Phase 5 — Image upload
-- Phase 6 — Moderation
 - Phase 7 — Frontend rewire (note: requires `bun` — not yet installed; `npm` fallback available)
 - Phase 8 — Integration, docs, polish
 

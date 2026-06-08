@@ -31,11 +31,13 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
   - Added `MessageService` read-model enrichment for author, upvotes, reply counts, and per-user voted state.
   - Ported key Supabase RLS/trigger rules into API/service checks: banned users cannot post/vote, votes only on top-level messages, one-level replies, and author/mod soft delete.
   - Added integration tests for rooms, message/reply/vote/report/highlight flow, and authorization rules.
+- **Phase 4–6 realtime, image upload, moderation backend**:
+  - Added SignalR `ChatHub`, room/thread groups, change notifications, presence tracker, and `/api/rooms/presence`.
+  - Added local image storage behind `IImageStorage`, static `/uploads` serving, validation for jpeg/png/webp, size limits, and multipart message image posts.
+  - Added `/api/mod/*` report queue, resolve/dismiss, ban/unban, user search, and admin-only moderator role management.
+  - Added integration tests for SignalR change events, presence counts, image upload, moderation role enforcement, report resolution, bans, and role grants.
 
 ## ☐ To do — remaining build phases (not started)
-- **Phase 4** — SignalR `ChatHub` + change broadcasts + live presence counts.
-- **Phase 5** — Image upload (`IImageStorage` + local filesystem) wired into post message.
-- **Phase 6** — Moderation: report queue, ban/unban, admin-only role management.
 - **Phase 7** — Frontend rewire off Supabase: `api-client`, `token-store`, `sheshi.ts`, `use-auth`, auth/reset/profile routes, SignalR, presence, Composer image picker, `/moderim` dashboard; remove Supabase/Lovable. (Needs `bun` — not installed; `npm` fallback available.)
 - **Phase 8** — Integration test pass, `server/README.md` + admin seed, finish the branch.
 

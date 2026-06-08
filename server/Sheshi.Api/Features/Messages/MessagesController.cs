@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -5,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Sheshi.Api.Auth;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
+using Sheshi.Api.Realtime;
+using Sheshi.Api.Storage;
 
 namespace Sheshi.Api.Features.Messages;
 
@@ -13,8 +16,15 @@ namespace Sheshi.Api.Features.Messages;
 public class MessagesController(
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
-    MessageService messageService) : ControllerBase
+    MessageService messageService,
+    IImageStorage imageStorage,
+    RealtimeNotifier realtime) : ControllerBase
 {
+    private static readonly JsonSerializerOptions RequestJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+    };
+
     [HttpGet("rooms/{roomId:guid}/messages")]
     public async Task<ActionResult<IReadOnlyList<MessageDto>>> ListRoomMessages(Guid roomId, CancellationToken ct)
     {
@@ -54,8 +64,12 @@ public class MessagesController(
 
     [Authorize]
     [HttpPost("messages")]
-    public async Task<ActionResult<MessageDto>> PostMessage(PostMessageRequest request, CancellationToken ct)
+    public async Task<ActionResult<MessageDto>> PostMessage(CancellationToken ct)
     {
+        var parsed = await ReadPostMessageAsync(ct);
+        if (parsed.Error is not null) return parsed.Error;
+        var request = parsed.Request!;
+
         var user = await GetCurrentUserAsync();
         if (user is null) return Unauthorized();
         if (user.IsBanned) return Forbid();
@@ -74,15 +88,31 @@ public class MessagesController(
             if (parent.RoomId != request.RoomId) return BadRequest(new { error = "PARENT_ROOM_MISMATCH" });
         }
 
+        string? imageUrl = null;
+        if (parsed.Image is not null && parsed.Image.Length > 0)
+        {
+            try
+            {
+                await using var stream = parsed.Image.OpenReadStream();
+                imageUrl = await imageStorage.SaveAsync(stream, parsed.Image.ContentType, ct);
+            }
+            catch (ImageStorageException ex)
+            {
+                return BadRequest(new { error = ex.Code });
+            }
+        }
+
         var message = new Message
         {
             RoomId = request.RoomId,
             AuthorId = user.Id,
             ParentId = request.ParentId,
-            Body = body
+            Body = body,
+            ImageUrl = imageUrl
         };
         db.Messages.Add(message);
         await db.SaveChangesAsync(ct);
+        await realtime.MessageChangedAsync(message.RoomId, message.ParentId, ct);
 
         var dto = await messageService.EnrichAsync([message], user.Id, ct);
         return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, dto.Single());
@@ -107,6 +137,7 @@ public class MessagesController(
             await db.SaveChangesAsync(ct);
         }
 
+        await realtime.MessageChangedAsync(message.RoomId, id, ct);
         return NoContent();
     }
 
@@ -117,11 +148,13 @@ public class MessagesController(
         var user = await GetCurrentUserAsync();
         if (user is null) return Unauthorized();
 
-        var vote = await db.Votes.SingleOrDefaultAsync(v => v.MessageId == id && v.UserId == user.Id, ct);
+        var vote = await db.Votes.Include(v => v.Message).SingleOrDefaultAsync(v => v.MessageId == id && v.UserId == user.Id, ct);
         if (vote is not null)
         {
+            var roomId = vote.Message.RoomId;
             db.Votes.Remove(vote);
             await db.SaveChangesAsync(ct);
+            await realtime.MessageChangedAsync(roomId, id, ct);
         }
 
         return NoContent();
@@ -143,6 +176,7 @@ public class MessagesController(
 
         message.DeletedAt ??= DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
+        await realtime.MessageChangedAsync(message.RoomId, message.ParentId ?? message.Id, ct);
         return NoContent();
     }
 
@@ -171,5 +205,32 @@ public class MessagesController(
     {
         var id = User.GetUserId();
         return id is null ? null : await userManager.FindByIdAsync(id.Value.ToString());
+    }
+
+    private async Task<(PostMessageRequest? Request, IFormFile? Image, ActionResult<MessageDto>? Error)> ReadPostMessageAsync(CancellationToken ct)
+    {
+        if (Request.HasFormContentType)
+        {
+            var form = await Request.ReadFormAsync(ct);
+            if (!Guid.TryParse(form["room_id"], out var roomId))
+                return (null, null, BadRequest(new { error = "INVALID_ROOM_ID" }));
+
+            Guid? parentId = null;
+            var parentRaw = form["parent_id"].ToString();
+            if (!string.IsNullOrWhiteSpace(parentRaw))
+            {
+                if (!Guid.TryParse(parentRaw, out var parsedParentId))
+                    return (null, null, BadRequest(new { error = "INVALID_PARENT_ID" }));
+                parentId = parsedParentId;
+            }
+
+            var body = form["body"].ToString();
+            return (new PostMessageRequest(roomId, parentId, body), form.Files.GetFile("image"), null);
+        }
+
+        var request = await Request.ReadFromJsonAsync<PostMessageRequest>(RequestJsonOptions, cancellationToken: ct);
+        return request is null
+            ? (null, null, BadRequest(new { error = "INVALID_MESSAGE_REQUEST" }))
+            : (request, null, null);
     }
 }

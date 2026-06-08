@@ -5,12 +5,15 @@ using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Sheshi.Api.Auth;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Email;
 using Sheshi.Api.Features.Messages;
+using Sheshi.Api.Realtime;
+using Sheshi.Api.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,9 +29,14 @@ builder.Services.AddControllers()
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<MessageService>();
+builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
+builder.Services.AddSingleton<PresenceTracker>();
+builder.Services.AddScoped<RealtimeNotifier>();
+builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<AppDbContext>(o =>
     o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
@@ -64,6 +72,16 @@ var auth = builder.Services
             IssuerSigningKey = signingKey,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken) && context.HttpContext.Request.Path.StartsWithSegments("/hub"))
+                    context.Token = accessToken;
+                return Task.CompletedTask;
+            }
         };
     })
     .AddCookie(AuthSchemes.External, options =>
@@ -133,12 +151,22 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+var storage = app.Services.GetRequiredService<IConfiguration>().GetSection("Storage").Get<StorageOptions>() ?? new StorageOptions();
+var uploadPath = Path.GetFullPath(storage.UploadPath);
+Directory.CreateDirectory(uploadPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadPath),
+    RequestPath = "/uploads"
+});
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hub");
 
 app.MapGet("/health", () => "ok");
 
