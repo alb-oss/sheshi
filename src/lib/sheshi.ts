@@ -81,7 +81,11 @@ export async function listMessages(roomId: string, userId: string | null): Promi
     .eq("room_id", roomId)
     .is("parent_id", null)
     .order("created_at", { ascending: false })
-    .limit(80);
+    .limit(80)
+    .then((res) => {
+      if (res.data) res.data.reverse();
+      return res;
+    });
   if (error) throw error;
   return attachMeta(data ?? [], userId);
 }
