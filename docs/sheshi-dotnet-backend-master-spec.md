@@ -349,8 +349,17 @@ in `Program.cs` (seeder needs `RoleManager`; full Identity/JWT wiring comes in P
 removal of the `WeatherForecast` template sample, and a `server/.gitignore` re-including
 `Sheshi.sln` (root `.gitignore` has a global `*.sln` rule).
 
+### ✅ Phase 2 — Auth backend (complete)
+- Implemented snake_case JSON contracts, Identity-backed register/login/refresh/logout,
+  JWT bearer auth, rotating hashed refresh tokens, and `/api/me` GET/PATCH.
+- Implemented forgot/reset password through an `IEmailSender` boundary with SMTP as the default
+  sender.
+- Added config-gated OAuth provider discovery and external challenge/callback wiring for
+  Google/Microsoft/Apple. Real provider round-trips still require maintainer credentials.
+- Added integration tests for auth token flow, profile updates, bad password rejection, provider
+  discovery, and password reset.
+
 ### ☐ Pending
-- Phase 2 — Auth (Identity, JWT, refresh, OAuth, `/me`)
 - Phase 3 — Core API + authorization
 - Phase 4 — SignalR + presence
 - Phase 5 — Image upload

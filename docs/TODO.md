@@ -19,9 +19,15 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
   - Made `(RoomId, CreatedAt)` use `CreatedAt DESC`.
   - Adjusted `ApiFactory` async lifetime disposal and wrapped startup migrate/seed with logging.
   - Added regression tests for the EF parity/config fixes.
+- **Phase 2 auth backend**:
+  - Added snake_case JSON API auth contracts.
+  - Implemented Identity-backed register/login/refresh/logout.
+  - Implemented JWT bearer auth, rotating hashed refresh tokens, and `/api/me` GET/PATCH.
+  - Implemented forgot/reset password with an `IEmailSender` boundary and SMTP implementation.
+  - Added config-gated OAuth provider discovery and external challenge/callback wiring for Google/Microsoft/Apple.
+  - Added integration tests for token flow, profile updates, provider discovery, bad password rejection, and password reset.
 
 ## ☐ To do — remaining build phases (not started)
-- **Phase 2** — Auth: Identity + JWT + refresh, register/login/logout, password reset, OAuth (Google/Apple/Microsoft), `/me`.
 - **Phase 3** — Core API + authorization: rooms, messages (read/post), votes, soft-delete, reports, highlights; RLS→service-layer rules.
 - **Phase 4** — SignalR `ChatHub` + change broadcasts + live presence counts.
 - **Phase 5** — Image upload (`IImageStorage` + local filesystem) wired into post message.
