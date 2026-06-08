@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { SendHorizontal } from "lucide-react";
 import { sq } from "@/i18n/sq";
 import { postMessage } from "@/lib/sheshi";
@@ -14,16 +14,36 @@ interface Props {
   placeholder?: string;
 }
 
-export function Composer({
-  roomId,
-  parentId = null,
-  currentUserId,
-  onPosted,
-  placeholder,
-}: Props) {
+export interface ComposerHandle {
+  focus: () => void;
+  prefill: (text: string) => void;
+}
+
+export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
+  { roomId, parentId = null, currentUserId, onPosted, placeholder },
+  ref,
+) {
   const [body, setBody] = useState("");
   const [posting, setPosting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => textareaRef.current?.focus(),
+    prefill: (text: string) => {
+      setBody((prev) => {
+        const needsSpace = prev && !prev.endsWith(" ") && !prev.endsWith("\n");
+        const next = prev ? prev + (needsSpace ? " " : "") + text : text;
+        return next;
+      });
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.focus();
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      });
+    },
+  }));
 
   // Autosize
   useEffect(() => {
@@ -125,4 +145,4 @@ export function Composer({
       </div>
     </form>
   );
-}
+});
