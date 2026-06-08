@@ -73,7 +73,7 @@ function ThreadPage() {
           <span className="text-foreground/20" aria-hidden>/</span>
           <span className="font-display font-bold text-sm uppercase tracking-tight">{sq.chat.thread}</span>
         </div>
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
           {parent && <MessageCard message={parent} roomSlug={slug} currentUserId={userId} asThreadLink={false} onChanged={reload} />}
           <div className="border-y border-border bg-card/40 px-6 py-2 text-[10px] uppercase tracking-widest font-bold text-foreground/40">
             {sq.chat.replies(replies.length)}

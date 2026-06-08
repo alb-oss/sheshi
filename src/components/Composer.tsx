@@ -87,7 +87,7 @@ export function Composer({
           onChange={(e) => setBody(e.target.value)}
           placeholder={placeholder || sq.chat.placeholder}
           maxLength={2000}
-          className="block w-full bg-transparent border-none outline-none text-[15px] leading-relaxed py-3 px-3.5 resize-none text-foreground placeholder:text-foreground/40 min-h-[48px] max-h-[200px]"
+          className="block w-full bg-transparent border-none outline-none text-[15px] leading-relaxed py-3 px-3.5 resize-none text-foreground placeholder:text-foreground/40 min-h-[48px] max-h-[200px] overflow-y-auto no-scrollbar"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
