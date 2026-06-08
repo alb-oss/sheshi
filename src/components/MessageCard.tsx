@@ -16,6 +16,7 @@ interface Props {
   onChanged?: () => void;
   asThreadLink?: boolean;
   compact?: boolean;
+  onReply?: (message: MessageRow) => void;
 }
 
 export function MessageCard({
