@@ -6,6 +6,7 @@ import { Composer } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { getRoomBySlug, listMessages, listRooms, type MessageRow, type Room } from "@/lib/sheshi";
 
 export const Route = createFileRoute("/r/$slug")({
