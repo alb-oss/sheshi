@@ -6,6 +6,7 @@ import { Composer } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { getRoomBySlug, listMessages, listRooms, type MessageRow, type Room } from "@/lib/sheshi";
 
 export const Route = createFileRoute("/r/$slug")({
@@ -26,7 +27,8 @@ function RoomPage() {
   const [room, setRoom] = useState<Room | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [messages, setMessages] = useState<MessageRow[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [loading, setLoading] = useState(true);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -39,12 +41,7 @@ function RoomPage() {
   };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUserId(session?.user?.id ?? null);
-    });
     listRooms().then(setRooms).catch(() => {});
-    return () => sub.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {

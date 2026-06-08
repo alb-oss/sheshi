@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Flame, User, Radio } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { sq } from "@/i18n/sq";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { listRooms, type Room } from "@/lib/sheshi";
 import { cn } from "@/lib/utils";
 
@@ -18,18 +18,11 @@ const ROOM_META: Record<string, { count: string; urgent?: boolean }> = {
 
 export function AppShell({ children, right }: { children: ReactNode; right?: ReactNode }) {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [user, setUser] = useState<{ id: string; email: string | null } | null>(null);
+  const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     listRooms().then(setRooms).catch(() => {});
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ? { id: data.user.id, email: data.user.email ?? null } : null);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ? { id: session.user.id, email: session.user.email ?? null } : null);
-    });
-    return () => sub.subscription.unsubscribe();
   }, []);
 
   const activeSlug = pathname.startsWith("/r/") ? pathname.split("/")[2] : null;
