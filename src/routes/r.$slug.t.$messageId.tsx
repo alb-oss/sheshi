@@ -20,6 +20,8 @@ function ThreadPage() {
   const [replies, setReplies] = useState<MessageRow[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastReplyIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -30,7 +32,19 @@ function ThreadPage() {
 
   const reload = () => {
     getMessage(messageId, userId).then(setParent).catch(() => {});
-    listReplies(messageId, userId).then(setReplies).catch(() => {});
+    listReplies(messageId, userId)
+      .then((rows) => {
+        const lastId = rows[rows.length - 1]?.id ?? null;
+        const el = scrollRef.current;
+        const wasAtBottom = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 120 : true;
+        const isNew = lastId && lastId !== lastReplyIdRef.current;
+        setReplies(rows);
+        lastReplyIdRef.current = lastId;
+        requestAnimationFrame(() => {
+          if (el && (wasAtBottom || isNew)) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+        });
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
