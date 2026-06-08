@@ -37,6 +37,17 @@ builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddScoped<RealtimeNotifier>();
 builder.Services.AddSignalR();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins(GetAllowedOrigins(builder.Configuration))
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 builder.Services.AddDbContext<AppDbContext>(o =>
     o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
@@ -162,6 +173,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseHttpsRedirection();
 
+app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -171,5 +183,25 @@ app.MapHub<ChatHub>("/hub");
 app.MapGet("/health", () => "ok");
 
 app.Run();
+
+static string[] GetAllowedOrigins(IConfiguration configuration)
+{
+    var configured = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+    if (configured is { Length: > 0 }) return configured.Where(o => !string.IsNullOrWhiteSpace(o)).ToArray();
+
+    var raw = configuration["Cors:AllowedOrigins"];
+    if (!string.IsNullOrWhiteSpace(raw))
+        return raw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+    return
+    [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080"
+    ];
+}
 
 public partial class Program;

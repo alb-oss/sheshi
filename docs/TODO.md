@@ -50,6 +50,6 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
 ## ☐ To do
 - Run final verification: `cd server && dotnet test`, repo-root `npm run build`, stale-reference scan.
 - Add/update `server/README.md`.
-- Optional manual local smoke: `docker compose up -d`, `dotnet run --project server/Sheshi.Api`, `npm run dev`.
+- Optional manual local smoke: `docker compose up -d`, `dotnet run --project server/Sheshi.Api`, `npm run dev -- --host localhost --port 3001`.
 
 Per-task detail: `docs/plans/2026-06-08-dotnet-backend-implementation.md`.

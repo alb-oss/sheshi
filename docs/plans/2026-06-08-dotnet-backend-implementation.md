@@ -66,14 +66,14 @@ Jwt__Audience=sheshi-web
 Jwt__SigningKey=CHANGE_ME_min_32_byte_random_secret_value_here
 Jwt__AccessTokenMinutes=15
 Jwt__RefreshTokenDays=30
-Cors__AllowedOrigins=http://localhost:3000
+Cors__AllowedOrigins=http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001,http://localhost:8080,http://127.0.0.1:8080
 Storage__UploadPath=./uploads
 Storage__PublicBaseUrl=http://localhost:5080/uploads
 Storage__MaxBytes=5242880
 Smtp__Host=localhost
 Smtp__Port=1025
 Smtp__FromEmail=no-reply@sheshi.local
-Frontend__BaseUrl=http://localhost:3000
+Frontend__BaseUrl=http://localhost:3001
 # OAuth (leave blank to disable a provider)
 Authentication__Google__ClientId=
 Authentication__Google__ClientSecret=
@@ -603,7 +603,7 @@ Commit `chore(web): remove Supabase/Lovable integration`.
 
 ### Task 8.1: End-to-end manual run
 
-`docker compose up -d`; `dotnet run --project server/Sheshi.Api` (API on :5080); `npm run dev` (web on :3000). Verify: register → post → upvote → reply → highlights update → report → (as seeded admin) moderate → image upload renders → presence count changes across two tabs.
+`docker compose up -d`; `dotnet run --project server/Sheshi.Api` (API on :5080); `npm run dev -- --host localhost --port 3001` (web on :3001). Verify: register → post → upvote → reply → highlights update → report → (as seeded admin) moderate → image upload renders → presence count changes across two tabs.
 
 ### Task 8.2: Seed an admin + README
 

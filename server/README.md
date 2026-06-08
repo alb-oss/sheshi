@@ -30,7 +30,7 @@ important local defaults are:
 ```bash
 ConnectionStrings__Default=Host=localhost;Port=55432;Database=sheshi;Username=sheshi;Password=sheshi
 Jwt__SigningKey=CHANGE_ME_min_32_byte_random_secret_value_here
-Frontend__BaseUrl=http://localhost:3000
+Frontend__BaseUrl=http://localhost:3001
 VITE_API_BASE_URL=http://localhost:5080
 ```
 
@@ -65,7 +65,7 @@ roles plus the default rooms.
 Run the frontend separately:
 
 ```bash
-npm run dev
+npm run dev -- --host localhost --port 3001
 ```
 
 ## Test

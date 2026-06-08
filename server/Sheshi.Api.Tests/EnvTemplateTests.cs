@@ -13,6 +13,9 @@ public class EnvTemplateTests
         envTemplate.Should().Contain("ConnectionStrings__Default=Host=localhost;Port=55432;");
         envTemplate.Should().Contain("VITE_API_BASE_URL=http://localhost:5080");
         envTemplate.Should().Contain("Storage__PublicBaseUrl=http://localhost:5080/uploads");
+        envTemplate.Should().Contain("Cors__AllowedOrigins=");
+        envTemplate.Should().Contain("http://localhost:3001");
+        envTemplate.Should().Contain("Frontend__BaseUrl=http://localhost:3001");
         envTemplate.Should().Contain("SeedAdmin__Email=");
         envTemplate.Should().NotContain("SUPABASE");
     }
