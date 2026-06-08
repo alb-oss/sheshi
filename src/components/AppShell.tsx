@@ -61,7 +61,7 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar */}
-        <aside className="hidden md:flex w-64 border-r border-border flex-col shrink-0 overflow-y-auto">
+        <aside className="hidden md:flex w-64 border-r border-border flex-col shrink-0 overflow-y-auto no-scrollbar">
           <div className="p-4">
             <h3 className="text-[10px] font-bold text-foreground/40 uppercase tracking-[0.2em] mb-4">
               {sq.rooms.title}
