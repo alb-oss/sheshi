@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:17
+    container_name: sheshi-db
+    environment:
+      POSTGRES_USER: sheshi
+      POSTGRES_PASSWORD: sheshi
+      POSTGRES_DB: sheshi
+    ports:
+      # Host 55432 -> container 5432 to avoid collision with a host-native
+      # Postgres that may already occupy 5432 on this machine.
+      - "55432:5432"
+    volumes:
+      - sheshi-db-data:/var/lib/postgresql/data
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: sheshi-mail
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # web UI
+  # API + nginx proxy are opt-in: `docker compose --profile app up -d --build`.
+  # Plain `docker compose up -d` still starts only db + mailpit for local dev.
+  api:
+    profiles: ["app"]
+    build: ./server
+    container_name: sheshi-api
+    depends_on:
+      - db
+      - mailpit
+    environment:
+      ConnectionStrings__Default: Host=db;Port=5432;Database=sheshi;Username=sheshi;Password=sheshi
+      Jwt__Issuer: ${Jwt__Issuer:-https://sheshi.local}
+      Jwt__Audience: ${Jwt__Audience:-sheshi-web}
+      # Must be set (>=32 bytes, not the dev key) or startup fails by design.
+      Jwt__SigningKey: ${Jwt__SigningKey:?set Jwt__SigningKey in your environment or .env}
+      Database__AutoMigrate: "true"
+      Storage__UploadPath: /app/uploads
+      Storage__PublicBaseUrl: ${Storage__PublicBaseUrl:-http://localhost:5080/uploads}
+      Cors__AllowedOrigins: ${Cors__AllowedOrigins:-http://localhost:3001,http://127.0.0.1:3001}
+      Frontend__BaseUrl: ${Frontend__BaseUrl:-http://localhost:3001}
+      Smtp__Host: mailpit
+      Smtp__Port: "1025"
+    ports:
+      - "5080:5080"
+    volumes:
+      - sheshi-uploads:/app/uploads
+  proxy:
+    profiles: ["app"]
+    image: nginx:1.27-alpine
+    container_name: sheshi-proxy
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/nginx/sheshi.conf:/etc/nginx/conf.d/default.conf:ro
+volumes:
+  sheshi-db-data:
+  sheshi-uploads:

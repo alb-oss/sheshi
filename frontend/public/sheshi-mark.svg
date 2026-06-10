@@ -1,0 +1,26 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Sheshi mark</title>
+  <desc id="desc">A red civic discussion mark with a speech bubble and hashtag plaza symbol.</desc>
+  <defs>
+    <linearGradient id="mark-bg" x1="18" y1="12" x2="108" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff5961"/>
+      <stop offset="0.56" stop-color="#ef4d55"/>
+      <stop offset="1" stop-color="#bd2e35"/>
+    </linearGradient>
+    <linearGradient id="mark-shine" x1="22" y1="14" x2="96" y2="96" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="10" y="13" width="108" height="107" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#350508" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect x="14" y="12" width="100" height="100" rx="24" fill="url(#mark-bg)" filter="url(#soft-shadow)"/>
+  <path d="M14 84C34 94 74 95 114 77V88C114 101.255 103.255 112 90 112H38C24.7452 112 14 101.255 14 88V84Z" fill="#9f252d" opacity="0.34"/>
+  <rect x="14" y="12" width="100" height="100" rx="24" fill="url(#mark-shine)"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M34 36C34 29.373 39.373 24 46 24H88C94.627 24 100 29.373 100 36V68C100 74.627 94.627 80 88 80H64.9L45.8 96.25C44.495 97.36 42.5 96.432 42.5 94.719V80H46C39.373 80 34 74.627 34 68V36Z" fill="#fff8f7"/>
+  <rect x="54" y="38" width="6" height="30" rx="3" transform="rotate(8 54 38)" fill="#ef4d55"/>
+  <rect x="75" y="38" width="6" height="30" rx="3" transform="rotate(8 75 38)" fill="#ef4d55"/>
+  <rect x="49" y="47" width="38" height="6" rx="3" fill="#ef4d55"/>
+  <rect x="46" y="61" width="38" height="6" rx="3" fill="#ef4d55"/>
+</svg>

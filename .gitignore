@@ -1,0 +1,19 @@
+# Node / frontend
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# .NET
+bin/
+obj/
+*.user
+
+# Runtime artifacts
+server/Sheshi.Api/uploads/
+.env
+.env.local
+
+# Tooling / OS
+.DS_Store
+.superpowers/
+.vite/
