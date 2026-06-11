@@ -2,6 +2,11 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Sheshi.Api.Realtime;
 
+// Intentionally not [Authorize]: this hub only carries room/thread presence and
+// "changed" pings — the same public-read surface as the anonymous REST feeds.
+// The JWT-from-query wiring still identifies authenticated callers when present,
+// but anonymous visitors must be able to see live presence. No writes or
+// sensitive data flow through here.
 public class ChatHub(PresenceTracker presenceTracker) : Hub
 {
     public async Task JoinRoom(Guid roomId)

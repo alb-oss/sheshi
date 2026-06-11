@@ -1,4 +1,4 @@
-namespace Sheshi.Api.Domain;
+namespace Sheshi.Api.Common;
 
 public static class Text
 {

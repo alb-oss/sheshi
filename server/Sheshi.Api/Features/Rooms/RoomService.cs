@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using Sheshi.Api.Common;
 using Microsoft.EntityFrameworkCore;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
@@ -87,14 +87,7 @@ public class RoomService(AppDbContext db)
         return name[..Math.Min(name.Length, 60)];
     }
 
-    private static string? NormalizeSlug(string? slug)
-    {
-        slug = slug?.Trim().ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(slug)) return null;
-        slug = Regex.Replace(slug, "^#+", "");
-        slug = Regex.Replace(slug, "[^a-z0-9]+", "-").Trim('-');
-        return string.IsNullOrWhiteSpace(slug) ? null : slug[..Math.Min(slug.Length, 60)];
-    }
+    private static string? NormalizeSlug(string? slug) => Slug.Normalize(slug);
 }
 
 public sealed record CreateRoomResult(Room? Entity, RoomDto? Dto, string? Error)

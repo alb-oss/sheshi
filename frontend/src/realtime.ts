@@ -1,7 +1,7 @@
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from "@microsoft/signalr";
 import { apiBase } from "./api";
 
-export type RealtimePresenceUpdate = { roomId?: string; room_id?: string; count: number };
+export type RealtimePresenceUpdate = { room_id: string; count: number };
 
 type RealtimeCallbacks = {
   token?: string | null;

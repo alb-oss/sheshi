@@ -23,7 +23,7 @@ import { AdminModeBar, FocusPanel, MobileDigest, RoomRail, TopBar } from "./comp
 import { CreateRoomDialog, Dialog, EmptyState, ShareDialog } from "./components/overlays";
 import type { ShareTarget } from "./components/overlays";
 import { AuthCallback, AuthPage } from "./views/Auth";
-import { Home, RoomView, ThreadView } from "./views/feeds";
+import { Home, RoomView, ThreadView } from "./views/Feeds";
 import { ModerationView } from "./views/Moderation";
 import { Profile } from "./views/Profile";
 
@@ -289,10 +289,9 @@ export default function App() {
     if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
   }, []);
 
-  const onPresence = useCallback((update: { roomId?: string; room_id?: string; count: number }) => {
-    const roomId = update.roomId || update.room_id;
-    if (!roomId) return;
-    setPresence((current) => ({ ...current, [roomId]: update.count }));
+  const onPresence = useCallback((update: { room_id: string; count: number }) => {
+    if (!update.room_id) return;
+    setPresence((current) => ({ ...current, [update.room_id]: update.count }));
   }, []);
 
   useRealtimeRefresh({

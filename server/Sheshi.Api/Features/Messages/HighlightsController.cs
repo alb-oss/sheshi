@@ -6,7 +6,7 @@ namespace Sheshi.Api.Features.Messages;
 
 [ApiController]
 [Route("api/highlights")]
-public class HighlightsController(HighlightsService highlights, MessageService messageService) : ControllerBase
+public class HighlightsController(HighlightsService highlights, MessageEnricher enricher) : ControllerBase
 {
     private const int ResultLimit = 10;
 
@@ -38,7 +38,7 @@ public class HighlightsController(HighlightsService highlights, MessageService m
         // Rank on the cached stats, then enrich only the winners: the per-user
         // "voted" flag and author data stay fresh while the heavy scan is shared.
         var top = ranked.Take(ResultLimit).ToList();
-        var enriched = await messageService.EnrichAsync(top, User.GetUserId(), ct);
+        var enriched = await enricher.EnrichAsync(top, User.GetUserId(), ct);
         var byId = enriched.ToDictionary(m => m.Id);
         return Ok(top.Select(m => byId[m.Id]).ToList());
     }

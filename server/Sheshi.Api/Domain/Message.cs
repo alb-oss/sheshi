@@ -14,4 +14,8 @@ public class Message
     public string? ImageUrl { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    // Thread root: legacy top-level rows stored Guid.Empty before RootMessageId
+    // existed, so a root with no parent resolves to its own id.
+    public Guid EffectiveRootId => RootMessageId == Guid.Empty && ParentId is null ? Id : RootMessageId;
 }

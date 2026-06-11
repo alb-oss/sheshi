@@ -67,7 +67,10 @@ public class HighlightsService(AppDbContext db, IMemoryCache cache)
 
     /// <summary>
     /// The one scoring formula: weighted discussion + votes + a recency decay,
-    /// used by both the public highlights feed and the admin analytics.
+    /// used by both the public highlights feed and the admin analytics. The
+    /// frontend keeps a deliberately simplified mirror in appSupport.ts
+    /// (hotScore) for client-side re-sorting without a round-trip; keep the two
+    /// weights roughly in sync.
     /// </summary>
     public static double Score(
         int upvotes,
@@ -120,7 +123,7 @@ public class HighlightsService(AppDbContext db, IMemoryCache cache)
         var candidateIds = seeds
             .Select(m => m.Id)
             .Concat(seeds.Where(m => m.ParentId is not null).Select(m => m.ParentId!.Value))
-            .Concat(seeds.Select(EffectiveRootId).Where(id => id != Guid.Empty))
+            .Concat(seeds.Select(m => m.EffectiveRootId).Where(id => id != Guid.Empty))
             .Distinct()
             .ToArray();
 
@@ -138,7 +141,7 @@ public class HighlightsService(AppDbContext db, IMemoryCache cache)
 
         var candidateIds = candidates.Select(m => m.Id).ToHashSet();
         var rootIds = candidates
-            .Select(EffectiveRootId)
+            .Select(m => m.EffectiveRootId)
             .Where(id => id != Guid.Empty)
             .Distinct()
             .ToArray();
@@ -192,9 +195,4 @@ public class HighlightsService(AppDbContext db, IMemoryCache cache)
 
         return stats;
     }
-
-    private static Guid EffectiveRootId(Message message) =>
-        message.RootMessageId == Guid.Empty && message.ParentId is null
-            ? message.Id
-            : message.RootMessageId;
 }
