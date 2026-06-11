@@ -19,18 +19,13 @@ import {
 import type { AuthState, LoadState } from "./appSupport";
 import { canAdmin, canModerate } from "./roles";
 import type { AuthResponse, Message, Room, Thread } from "./types";
-import { AdminModeBar, Dialog, EmptyState, FocusPanel, MobileDigest, RoomRail, ShareDialog, TopBar } from "./ui";
-import type { ShareTarget } from "./ui";
-import {
-  AuthCallback,
-  AuthPage,
-  CreateRoomDialog,
-  Home,
-  ModerationView,
-  Profile,
-  RoomView,
-  ThreadView
-} from "./views";
+import { AdminModeBar, FocusPanel, MobileDigest, RoomRail, TopBar } from "./components/chrome";
+import { CreateRoomDialog, Dialog, EmptyState, ShareDialog } from "./components/overlays";
+import type { ShareTarget } from "./components/overlays";
+import { AuthCallback, AuthPage } from "./views/Auth";
+import { Home, RoomView, ThreadView } from "./views/feeds";
+import { ModerationView } from "./views/Moderation";
+import { Profile } from "./views/Profile";
 
 async function loadHighlightGroups(token?: string | null) {
   return api.highlights({ mode: "focus", token });
@@ -38,7 +33,10 @@ async function loadHighlightGroups(token?: string | null) {
 
 async function loadOptionalPresence() {
   // Presence is side data; failed counts should not block rooms or feed rendering.
-  return api.presence().catch(() => ({}));
+  return api.presence().catch((error) => {
+    console.debug("presence unavailable", error);
+    return {};
+  });
 }
 
 export default function App() {
@@ -166,7 +164,10 @@ export default function App() {
   useEffect(() => {
     api.authProviders()
       .then(setAuthProviders)
-      .catch(() => setAuthProviders([]));
+      .catch((error) => {
+        console.debug("auth providers unavailable", error);
+        setAuthProviders([]);
+      });
   }, []);
 
   const startExternalLogin = useCallback((provider: string) => {
@@ -269,9 +270,11 @@ export default function App() {
   }, [route, refreshTick, loadThread]);
 
   useEffect(() => {
+    // SignalR is the primary refresh signal; this slow poll only covers missed
+    // events (dropped connections, backgrounded tabs).
     const interval = window.setInterval(() => {
       if (!document.hidden) setRefreshTick((tick) => tick + 1);
-    }, 15000);
+    }, 60000);
     return () => window.clearInterval(interval);
   }, []);
 

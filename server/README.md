@@ -22,6 +22,13 @@ This starts:
 - Mailpit SMTP on `localhost:1025`
 - Mailpit UI on `http://localhost:8025`
 
+To also run the API and nginx proxy in containers (single-instance by design —
+presence, SignalR groups and uploads are process-local):
+
+```bash
+docker compose --profile app up -d --build
+```
+
 ## Configuration
 
 Copy the root `.env.example` to your local environment manager or shell exports. The
@@ -62,7 +69,7 @@ bootstrap behavior is intentional.
 From the repository root:
 
 ```bash
-dotnet run --project alb_sheshi/server/Sheshi.Api
+dotnet run --project server/Sheshi.Api
 ```
 
 The API listens on `http://localhost:5080`. In `Development`, startup applies EF
@@ -79,7 +86,7 @@ npm run dev
 ## Test
 
 ```bash
-cd alb_sheshi/server
+cd server
 dotnet test
 ```
 

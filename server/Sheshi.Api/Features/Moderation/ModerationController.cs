@@ -15,7 +15,8 @@ namespace Sheshi.Api.Features.Moderation;
 [Route("api/mod")]
 public class ModerationController(
     AppDbContext db,
-    UserManager<ApplicationUser> userManager) : ControllerBase
+    UserManager<ApplicationUser> userManager,
+    HighlightsService highlights) : ControllerBase
 {
     [HttpGet("analytics")]
     public async Task<ActionResult<ModAnalyticsDto>> Analytics(CancellationToken ct = default)
@@ -24,153 +25,150 @@ public class ModerationController(
         var since24 = now.AddHours(-24);
         var since7 = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero).AddDays(-6);
 
-        var rooms = await db.Rooms.AsNoTracking().ToListAsync(ct);
-        var messages = await db.Messages.AsNoTracking().Where(m => m.DeletedAt == null).ToListAsync(ct);
-        var votes = await db.Votes.AsNoTracking().ToListAsync(ct);
-        var reports = await db.Reports.AsNoTracking()
-            .Select(r => new { r.Id, r.Status, r.CreatedAt, r.MessageId, RoomId = r.Message.RoomId })
-            .ToListAsync(ct);
-        var users = await db.Users.AsNoTracking().ToListAsync(ct);
-
-        var adminRoleId = await db.Roles.AsNoTracking()
-            .Where(r => r.NormalizedName == Roles.Admin.ToUpperInvariant())
-            .Select(r => r.Id)
-            .SingleOrDefaultAsync(ct);
-        var modRoleId = await db.Roles.AsNoTracking()
-            .Where(r => r.NormalizedName == Roles.Moderator.ToUpperInvariant())
-            .Select(r => r.Id)
-            .SingleOrDefaultAsync(ct);
-        var adminCount = adminRoleId == Guid.Empty
-            ? 0
-            : await db.UserRoles.AsNoTracking().CountAsync(r => r.RoleId == adminRoleId, ct);
-        var moderatorCount = modRoleId == Guid.Empty
-            ? 0
-            : await db.UserRoles.AsNoTracking().CountAsync(r => r.RoleId == modRoleId, ct);
+        var live = db.Messages.AsNoTracking().Where(m => m.DeletedAt == null);
 
         var totals = new ModAnalyticsTotalsDto(
-            rooms.Count,
-            users.Count,
-            messages.Count(m => m.ParentId is null),
-            messages.Count(m => m.ParentId is not null),
-            messages.Count,
-            votes.Count,
-            reports.Count);
+            await db.Rooms.CountAsync(ct),
+            await db.Users.CountAsync(ct),
+            await live.CountAsync(m => m.ParentId == null, ct),
+            await live.CountAsync(m => m.ParentId != null, ct),
+            await live.CountAsync(ct),
+            await db.Votes.CountAsync(ct),
+            await db.Reports.CountAsync(ct));
 
         var last24 = new ModAnalyticsWindowDto(
-            users.Count(u => u.CreatedAt >= since24),
-            messages.Count(m => m.ParentId is null && m.CreatedAt >= since24),
-            messages.Count(m => m.ParentId is not null && m.CreatedAt >= since24),
-            messages.Count(m => m.CreatedAt >= since24),
-            votes.Count(v => v.CreatedAt >= since24),
-            reports.Count(r => r.CreatedAt >= since24));
+            await db.Users.CountAsync(u => u.CreatedAt >= since24, ct),
+            await live.CountAsync(m => m.ParentId == null && m.CreatedAt >= since24, ct),
+            await live.CountAsync(m => m.ParentId != null && m.CreatedAt >= since24, ct),
+            await live.CountAsync(m => m.CreatedAt >= since24, ct),
+            await db.Votes.CountAsync(v => v.CreatedAt >= since24, ct),
+            await db.Reports.CountAsync(r => r.CreatedAt >= since24, ct));
 
         var reportStats = new ModReportAnalyticsDto(
-            reports.Count(r => r.Status == ReportStatus.Open),
-            reports.Count(r => r.Status == ReportStatus.Resolved),
-            reports.Count(r => r.Status == ReportStatus.Dismissed));
+            await db.Reports.CountAsync(r => r.Status == ReportStatus.Open, ct),
+            await db.Reports.CountAsync(r => r.Status == ReportStatus.Resolved, ct),
+            await db.Reports.CountAsync(r => r.Status == ReportStatus.Dismissed, ct));
 
-        var trend = Enumerable.Range(0, 7)
+        var userStats = new ModUserAnalyticsDto(
+            await db.Users.CountAsync(u => u.BannedAt != null, ct),
+            await CountRoleMembersAsync(Roles.Moderator, ct),
+            await CountRoleMembersAsync(Roles.Admin, ct));
+
+        return Ok(new ModAnalyticsDto(
+            totals,
+            last24,
+            reportStats,
+            userStats,
+            await LoadTrendAsync(since7, ct),
+            await LoadTopRoomsAsync(ct),
+            await LoadTopPostsAsync(now, ct)));
+    }
+
+    private Task<int> CountRoleMembersAsync(string role, CancellationToken ct)
+    {
+        var normalized = role.ToUpperInvariant();
+        return db.UserRoles.AsNoTracking()
+            .Join(db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.NormalizedName)
+            .CountAsync(name => name == normalized, ct);
+    }
+
+    private async Task<IReadOnlyList<ModTrendPointDto>> LoadTrendAsync(DateTimeOffset since7, CancellationToken ct)
+    {
+        // Only timestamps in the 7-day window cross the wire, not whole tables.
+        var userDays = await db.Users.AsNoTracking()
+            .Where(u => u.CreatedAt >= since7).Select(u => u.CreatedAt).ToListAsync(ct);
+        var messageDays = await db.Messages.AsNoTracking()
+            .Where(m => m.DeletedAt == null && m.CreatedAt >= since7).Select(m => m.CreatedAt).ToListAsync(ct);
+        var voteDays = await db.Votes.AsNoTracking()
+            .Where(v => v.CreatedAt >= since7).Select(v => v.CreatedAt).ToListAsync(ct);
+        var reportDays = await db.Reports.AsNoTracking()
+            .Where(r => r.CreatedAt >= since7).Select(r => r.CreatedAt).ToListAsync(ct);
+
+        return Enumerable.Range(0, 7)
             .Select(offset => since7.AddDays(offset))
             .Select(day =>
             {
                 var next = day.AddDays(1);
                 return new ModTrendPointDto(
                     day.ToString("MM-dd"),
-                    users.Count(u => u.CreatedAt >= day && u.CreatedAt < next),
-                    messages.Count(m => m.CreatedAt >= day && m.CreatedAt < next),
-                    votes.Count(v => v.CreatedAt >= day && v.CreatedAt < next),
-                    reports.Count(r => r.CreatedAt >= day && r.CreatedAt < next));
+                    userDays.Count(t => t >= day && t < next),
+                    messageDays.Count(t => t >= day && t < next),
+                    voteDays.Count(t => t >= day && t < next),
+                    reportDays.Count(t => t >= day && t < next));
             })
             .ToList();
+    }
 
-        var votesByMessage = votes.GroupBy(v => v.MessageId).ToDictionary(g => g.Key, g => g.Count());
-        var repliesByMessage = messages
-            .Where(m => m.ParentId is not null)
-            .GroupBy(m => m.ParentId!.Value)
-            .ToDictionary(g => g.Key, g => g.Count());
-        var messagesById = messages.ToDictionary(m => m.Id);
-        var descendantsByMessage = messages.ToDictionary(m => m.Id, _ => 0);
-        var branchVotesByMessage = messages.ToDictionary(m => m.Id, _ => 0);
-        var activityByMessage = messages.ToDictionary(m => m.Id, m => m.CreatedAt);
-        foreach (var message in messages)
-        {
-            var parentId = message.ParentId;
-            var seen = new HashSet<Guid>();
-            var messageVotes = votesByMessage.GetValueOrDefault(message.Id);
-            while (parentId is Guid id && seen.Add(id) && messagesById.TryGetValue(id, out var parent))
-            {
-                descendantsByMessage[id] += 1;
-                branchVotesByMessage[id] += messageVotes;
-                if (message.CreatedAt > activityByMessage[id]) activityByMessage[id] = message.CreatedAt;
-                parentId = parent.ParentId;
-            }
-        }
-        var votesByRoom = votes
-            .Join(messages, v => v.MessageId, m => m.Id, (_, m) => m.RoomId)
-            .GroupBy(id => id)
-            .ToDictionary(g => g.Key, g => g.Count());
-        var reportsByRoom = reports
-            .GroupBy(r => r.RoomId)
-            .ToDictionary(g => g.Key, g => g.Count());
-        var latestByRoom = messages
-            .GroupBy(m => m.RoomId)
-            .ToDictionary(g => g.Key, g => (DateTimeOffset?)g.Max(m => m.CreatedAt));
+    private async Task<IReadOnlyList<ModRoomAnalyticsDto>> LoadTopRoomsAsync(CancellationToken ct)
+    {
+        var rooms = await db.Rooms.AsNoTracking().ToListAsync(ct);
+        var live = db.Messages.AsNoTracking().Where(m => m.DeletedAt == null);
 
-        var topRooms = rooms
+        var threads = await live.Where(m => m.ParentId == null)
+            .GroupBy(m => m.RoomId).Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+        var replies = await live.Where(m => m.ParentId != null)
+            .GroupBy(m => m.RoomId).Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+        var votes = await db.Votes.AsNoTracking().Where(v => v.Message.DeletedAt == null)
+            .GroupBy(v => v.Message.RoomId).Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+        var reports = await db.Reports.AsNoTracking()
+            .GroupBy(r => r.Message.RoomId).Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+        var latest = await live
+            .GroupBy(m => m.RoomId).Select(g => new { g.Key, LatestAt = g.Max(m => m.CreatedAt) })
+            .ToDictionaryAsync(x => x.Key, x => (DateTimeOffset?)x.LatestAt, ct);
+
+        return rooms
             .Select(room => new ModRoomAnalyticsDto(
                 room.Id,
                 room.Name,
                 room.Slug,
-                messages.Count(m => m.RoomId == room.Id && m.ParentId is null),
-                messages.Count(m => m.RoomId == room.Id && m.ParentId is not null),
-                votesByRoom.GetValueOrDefault(room.Id),
-                reportsByRoom.GetValueOrDefault(room.Id),
-                latestByRoom.GetValueOrDefault(room.Id)))
+                threads.GetValueOrDefault(room.Id),
+                replies.GetValueOrDefault(room.Id),
+                votes.GetValueOrDefault(room.Id),
+                reports.GetValueOrDefault(room.Id),
+                latest.GetValueOrDefault(room.Id)))
             .OrderByDescending(r => r.Threads + r.Replies + r.Votes + r.Reports)
             .ThenByDescending(r => r.LatestActivityAt)
             .Take(8)
             .ToList();
+    }
 
-        var authorIds = messages.Select(m => m.AuthorId).Distinct().ToArray();
+    private async Task<IReadOnlyList<ModPostAnalyticsDto>> LoadTopPostsAsync(DateTimeOffset now, CancellationToken ct)
+    {
+        // Reuses the cached highlights snapshot instead of re-walking every thread.
+        var snapshot = await highlights.GetSnapshotAsync(ct);
+        var top = snapshot.Candidates
+            .OrderByDescending(m => HighlightsService.Score(snapshot.Stats[m.Id], now))
+            .ThenByDescending(m => snapshot.Stats[m.Id].ActivityAt)
+            .Take(10)
+            .ToList();
+        if (top.Count == 0) return [];
+
+        var authorIds = top.Select(m => m.AuthorId).Distinct().ToArray();
         var authorNames = await db.Users.AsNoTracking()
             .Where(u => authorIds.Contains(u.Id))
-            .ToDictionaryAsync(
-                u => u.Id,
-                u => $"@{u.UserName ?? u.DisplayName ?? "anon"}",
-                ct);
-        var roomNames = rooms.ToDictionary(r => r.Id, r => r.Name);
+            .ToDictionaryAsync(u => u.Id, u => $"@{u.UserName ?? u.DisplayName ?? "anon"}", ct);
+        var roomIds = top.Select(m => m.RoomId).Distinct().ToArray();
+        var roomNames = await db.Rooms.AsNoTracking()
+            .Where(r => roomIds.Contains(r.Id))
+            .ToDictionaryAsync(r => r.Id, r => r.Name, ct);
 
-        var topPosts = messages
-            .OrderByDescending(m => HighlightsController.AnalyticsScore(
-                votesByMessage.GetValueOrDefault(m.Id),
-                branchVotesByMessage.GetValueOrDefault(m.Id),
-                repliesByMessage.GetValueOrDefault(m.Id),
-                descendantsByMessage.GetValueOrDefault(m.Id),
-                m.ParentId is not null,
-                m.CreatedAt,
-                activityByMessage.GetValueOrDefault(m.Id, m.CreatedAt),
-                now))
-            .ThenByDescending(m => activityByMessage.GetValueOrDefault(m.Id, m.CreatedAt))
-            .Take(10)
-            .Select(m => new ModPostAnalyticsDto(
+        return top.Select(m =>
+        {
+            var stat = snapshot.Stats[m.Id];
+            return new ModPostAnalyticsDto(
                 m.Id,
                 m.Body.Length > 110 ? $"{m.Body[..110]}..." : m.Body,
                 roomNames.GetValueOrDefault(m.RoomId, "#unknown"),
                 authorNames.GetValueOrDefault(m.AuthorId, "@anon"),
                 m.Depth,
-                votesByMessage.GetValueOrDefault(m.Id),
-                repliesByMessage.GetValueOrDefault(m.Id),
-                m.CreatedAt))
-            .ToList();
-
-        return Ok(new ModAnalyticsDto(
-            totals,
-            last24,
-            reportStats,
-            new ModUserAnalyticsDto(users.Count(u => u.IsBanned), moderatorCount, adminCount),
-            trend,
-            topRooms,
-            topPosts));
+                stat.Upvotes,
+                stat.DirectReplies,
+                m.CreatedAt);
+        }).ToList();
     }
 
     [HttpGet("reports")]

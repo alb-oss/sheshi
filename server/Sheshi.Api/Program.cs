@@ -40,6 +40,7 @@ builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Sto
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<MessageService>();
+builder.Services.AddScoped<HighlightsService>();
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
 builder.Services.AddSingleton<PresenceTracker>();

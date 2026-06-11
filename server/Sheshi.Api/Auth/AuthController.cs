@@ -33,9 +33,7 @@ public class AuthController(
             Id = Guid.NewGuid(),
             Email = email,
             UserName = CreateUsername(email),
-            DisplayName = string.IsNullOrWhiteSpace(request.DisplayName)
-                ? email.Split('@')[0]
-                : request.DisplayName.Trim()[..Math.Min(request.DisplayName.Trim().Length, 60)]
+            DisplayName = Text.Clip(request.DisplayName, 60) ?? email.Split('@')[0]
         };
 
         var result = await userManager.CreateAsync(user, request.Password);

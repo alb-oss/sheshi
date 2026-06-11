@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Sheshi.Api.Domain;
 
 namespace Sheshi.Api.Features.Messages;
@@ -21,6 +23,14 @@ public record MessageDto(
     bool Voted);
 
 public record PostMessageRequest(Guid RoomId, Guid? ParentId, string Body);
+
+public class PostMessageForm
+{
+    [FromForm(Name = "room_id")] public Guid RoomId { get; set; }
+    [FromForm(Name = "parent_id")] public Guid? ParentId { get; set; }
+    [FromForm(Name = "body")] public string? Body { get; set; }
+    [FromForm(Name = "image")] public IFormFile? Image { get; set; }
+}
 
 public record ReportMessageRequest(ReportReason Reason, string? Note);
 
