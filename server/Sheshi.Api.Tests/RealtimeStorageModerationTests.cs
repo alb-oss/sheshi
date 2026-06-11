@@ -181,6 +181,23 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         analytics.ModerationHealth.ReportsPerThousandMessages.Should().BeGreaterThan(0);
         analytics.TopAuthors.Should().NotBeEmpty();
 
+        // History endpoint: a finalized day is read from the rollup table; today is live.
+        await WithServicesAsync(async sp =>
+        {
+            var db = sp.GetRequiredService<Sheshi.Api.Data.AppDbContext>();
+            var yesterday = DateTime.UtcNow.Date.AddDays(-1);
+            var row = await db.DailyStats.FindAsync(yesterday)
+                ?? db.DailyStats.Add(new Sheshi.Api.Domain.DailyStat { Date = yesterday }).Entity;
+            row.Messages = 5;
+            row.NewUsers = 2;
+            await db.SaveChangesAsync();
+        });
+        var history = await client.GetFromJsonAsync<ModTrendPoint[]>("/api/mod/analytics/history?days=3");
+        history.Should().NotBeNull();
+        history!.Should().HaveCount(3);
+        history[1].Messages.Should().Be(5);                       // yesterday, from the rollup
+        history[^1].Messages.Should().BeGreaterThanOrEqualTo(1);  // today, computed live
+
         var usersResponse = await client.GetAsync("/api/mod/users?query=mod");
         usersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var modUsers = await usersResponse.Content.ReadFromJsonAsync<ModUserDto[]>();
@@ -225,6 +242,10 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         [property: JsonPropertyName("avg_resolution_hours")] double? AvgResolutionHours,
         [property: JsonPropertyName("reports_per_thousand_messages")] double ReportsPerThousandMessages,
         [property: JsonPropertyName("deletion_rate_pct")] double DeletionRatePct);
+
+    private sealed record ModTrendPoint(
+        [property: JsonPropertyName("date")] string Date,
+        [property: JsonPropertyName("messages")] int Messages);
 
     private sealed record ModAuthor(
         [property: JsonPropertyName("id")] Guid Id,

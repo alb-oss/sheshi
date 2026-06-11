@@ -18,6 +18,10 @@ public class ModerationController(
     public async Task<ActionResult<ModAnalyticsDto>> Analytics(CancellationToken ct = default) =>
         Ok(await moderation.BuildAnalyticsAsync(ct));
 
+    [HttpGet("analytics/history")]
+    public async Task<ActionResult<IReadOnlyList<ModTrendPointDto>>> History([FromQuery] int days = 30, CancellationToken ct = default) =>
+        Ok(await moderation.LoadHistoryAsync(days, ct));
+
     [HttpGet("reports")]
     public async Task<ActionResult<IReadOnlyList<ModReportDto>>> Reports([FromQuery] string status = "open", CancellationToken ct = default)
     {

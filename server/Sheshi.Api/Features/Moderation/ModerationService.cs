@@ -33,6 +33,40 @@ public class ModerationService(
         return analytics;
     }
 
+    /// <summary>
+    /// Long-history daily series: finalized days are point reads from the
+    /// rollup table, today is computed live. Cheap regardless of window length.
+    /// </summary>
+    public async Task<IReadOnlyList<ModTrendPointDto>> LoadHistoryAsync(int days, CancellationToken ct = default)
+    {
+        days = Math.Clamp(days, 1, 90);
+        var today = DateTime.UtcNow.Date;
+        var start = today.AddDays(-(days - 1));
+
+        var rolled = await db.DailyStats.AsNoTracking()
+            .Where(d => d.Date >= start && d.Date < today)
+            .ToDictionaryAsync(d => d.Date, ct);
+
+        var todayStart = new DateTimeOffset(today, TimeSpan.Zero);
+        var todayUsers = await db.Users.CountAsync(u => u.CreatedAt >= todayStart, ct);
+        var todayMessages = await db.Messages.CountAsync(m => m.DeletedAt == null && m.CreatedAt >= todayStart, ct);
+        var todayVotes = await db.Votes.CountAsync(v => v.CreatedAt >= todayStart, ct);
+        var todayReports = await db.Reports.CountAsync(r => r.CreatedAt >= todayStart, ct);
+
+        var series = new List<ModTrendPointDto>();
+        for (var day = start; day <= today; day = day.AddDays(1))
+        {
+            var label = day.ToString("MM-dd");
+            if (day == today)
+                series.Add(new ModTrendPointDto(label, todayUsers, todayMessages, todayVotes, todayReports));
+            else if (rolled.TryGetValue(day, out var s))
+                series.Add(new ModTrendPointDto(label, s.NewUsers, s.Messages, s.Votes, s.Reports));
+            else
+                series.Add(new ModTrendPointDto(label, 0, 0, 0, 0)); // day not yet rolled up
+        }
+        return series;
+    }
+
     private async Task<ModAnalyticsDto> ComputeAnalyticsAsync(CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;

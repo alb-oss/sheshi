@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<DailyStat> DailyStats => Set<DailyStat>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -55,5 +56,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         });
 
         b.Entity<RefreshToken>(e => { e.HasIndex(t => t.TokenHash); e.HasIndex(t => t.UserId); });
+
+        b.Entity<DailyStat>(e => e.HasKey(d => d.Date));
     }
 }

@@ -64,6 +64,7 @@ builder.Services.AddDataProtection()
     .SetApplicationName("Sheshi");
 builder.Services.AddProblemDetails();
 builder.Services.AddHostedService<RefreshTokenCleanupService>();
+builder.Services.AddHostedService<DailyStatsRollupService>();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
  builder.Services.Configure<HighlightsOptions>(builder.Configuration.GetSection("Highlights"));
