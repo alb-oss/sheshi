@@ -7,8 +7,10 @@ using System.Threading.RateLimiting;
 using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
@@ -25,7 +27,26 @@ using Sheshi.Api.Storage;
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 
+// Structured JSON logs outside Development so a log pipeline can parse them
+// (with the trace id via scopes); the readable console stays for local work.
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Logging.ClearProviders();
+    builder.Logging.AddJsonConsole(o => o.IncludeScopes = true);
+}
+
 // Add services to the container.
+
+// Per-request log line (method, path, status, duration).
+builder.Services.AddHttpLogging(o =>
+    o.LoggingFields = HttpLoggingFields.RequestMethod
+        | HttpLoggingFields.RequestPath
+        | HttpLoggingFields.ResponseStatusCode
+        | HttpLoggingFields.Duration);
+
+// Liveness is dependency-free; readiness verifies the database is reachable.
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("database", tags: ["ready"]);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o =>
@@ -276,7 +297,10 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
-if (app.Configuration.GetValue<bool>("LoadBalancer:UseForwardedHeaders"))
+// Behind a TLS-terminating reverse proxy, trust its forwarded scheme/IP so the
+// real client IP reaches rate limiting and the request scheme reads as https.
+var behindProxy = app.Configuration.GetValue<bool>("LoadBalancer:UseForwardedHeaders");
+if (behindProxy)
     app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
@@ -287,6 +311,8 @@ if (!app.Environment.IsDevelopment())
         await context.Response.WriteAsJsonAsync(new { error = "INTERNAL_ERROR" });
     }));
 }
+
+app.UseHttpLogging();
 
 app.Use(async (context, next) =>
 {
@@ -301,17 +327,24 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseHttpsRedirection();
+// HTTPS redirect only when directly exposed; behind a TLS-terminating proxy the
+// proxy owns the redirect, and doing it here would cause a redirect loop.
+if (!behindProxy)
+    app.UseHttpsRedirection();
+
 app.UseRouting();
 app.UseCors("Frontend");
-app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+// After authentication so the rate limiter can partition by user id, not just IP.
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHub<ChatHub>("/hub").RequireRateLimiting("realtime");
 
-app.MapGet("/health", () => "ok");
+// Liveness: process is up (no dependencies). Readiness: database reachable.
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
 
 app.Run();
 
