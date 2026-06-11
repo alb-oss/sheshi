@@ -1,0 +1,1803 @@
+{
+  "version": 8,
+  "created": "2026-06-11T01:26:16+00:00",
+  "updated": "2026-06-11T01:40:33+00:00",
+  "queue_order": [],
+  "deferred": [],
+  "skipped": {
+    "orphaned::server/Sheshi.Api/Features/Moderation/ModerationController.cs": {
+      "issue_id": "orphaned::server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+      "kind": "permanent",
+      "reason": null,
+      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "attestation": "I have actually reviewed this finding: it is an ASP.NET controller instantiated by the framework via routing/DI (no C# importers by design, it IS an entry point) and is exercised by HTTP integration tests. The orphaned/test-coverage detectors model JS/TS import graphs and cannot recognize C# entry points or HTTP-level coverage. I am not gaming the score; this is a documented detector false positive.",
+      "created_at": "2026-06-11T01:40:32+00:00",
+      "review_after": null,
+      "skipped_at_scan": 6
+    },
+    "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs::untested_module": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs::untested_module",
+      "kind": "permanent",
+      "reason": null,
+      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "attestation": "I have actually reviewed this finding: it is an ASP.NET controller instantiated by the framework via routing/DI (no C# importers by design, it IS an entry point) and is exercised by HTTP integration tests. The orphaned/test-coverage detectors model JS/TS import graphs and cannot recognize C# entry points or HTTP-level coverage. I am not gaming the score; this is a documented detector false positive.",
+      "created_at": "2026-06-11T01:40:32+00:00",
+      "review_after": null,
+      "skipped_at_scan": 6
+    },
+    "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs::untested_module": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs::untested_module",
+      "kind": "permanent",
+      "reason": null,
+      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "attestation": "I have actually reviewed this finding: it is an ASP.NET controller instantiated by the framework via routing/DI (no C# importers by design, it IS an entry point) and is exercised by HTTP integration tests. The orphaned/test-coverage detectors model JS/TS import graphs and cannot recognize C# entry points or HTTP-level coverage. I am not gaming the score; this is a documented detector false positive.",
+      "created_at": "2026-06-11T01:40:32+00:00",
+      "review_after": null,
+      "skipped_at_scan": 6
+    },
+    "orphaned::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs": {
+      "issue_id": "orphaned::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
+      "kind": "permanent",
+      "reason": null,
+      "note": "DTO record: no behavior to unit-test",
+      "attestation": "I have actually reviewed this finding: it is a pure DTO record with no behavior, referenced by its feature controller and serialized in every integration test, so there is nothing to unit-test. I am not gaming the score; this is a documented detector false positive.",
+      "created_at": "2026-06-11T01:40:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 6
+    },
+    "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs::untested_module": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs::untested_module",
+      "kind": "permanent",
+      "reason": null,
+      "note": "DTO record: no behavior to unit-test",
+      "attestation": "I have actually reviewed this finding: it is a pure DTO record with no behavior, referenced by its feature controller and serialized in every integration test, so there is nothing to unit-test. I am not gaming the score; this is a documented detector false positive.",
+      "created_at": "2026-06-11T01:40:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 6
+    },
+    "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs::untested_module": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs::untested_module",
+      "kind": "permanent",
+      "reason": null,
+      "note": "DTO record: no behavior to unit-test",
+      "attestation": "I have actually reviewed this finding: it is a pure DTO record with no behavior, referenced by its feature controller and serialized in every integration test, so there is nothing to unit-test. I am not gaming the score; this is a documented detector false positive.",
+      "created_at": "2026-06-11T01:40:33+00:00",
+      "review_after": null,
+      "skipped_at_scan": 6
+    }
+  },
+  "active_cluster": null,
+  "overrides": {
+    "test_coverage::server/Sheshi.Api.Tests/CoreApiTests.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/CoreApiTests.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api.Tests/AuthFlowTests.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Auth/AuthController.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Auth/AuthController.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsService.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsService.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/MessagesController.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Messages/MessagesController.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Auth/TokenService.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Auth/TokenService.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Data/DbSeeder.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Data/DbSeeder.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Rooms/RoomService.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Rooms/RoomService.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Storage/LocalFileImageStorage.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Storage/LocalFileImageStorage.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Realtime/PresenceTracker.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Realtime/PresenceTracker.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api.Tests/ModelParityTests.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/ModelParityTests.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Auth/RefreshTokenCleanupService.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Auth/RefreshTokenCleanupService.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Data/AppDbContext.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Data/AppDbContext.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsController.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsController.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api.Tests/ApiFactory.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/ApiFactory.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api.Tests/SeedAdminTests.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/SeedAdminTests.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Email/SmtpEmailSender.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Email/SmtpEmailSender.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/MessageDtos.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Messages/MessageDtos.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Auth/MeController.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Auth/MeController.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Realtime/ChatHub.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Realtime/ChatHub.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Auth/AuthDtos.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Auth/AuthDtos.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Realtime/RealtimeNotifier.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Realtime/RealtimeNotifier.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api.Tests/EnvTemplateTests.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/EnvTemplateTests.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Data/DesignTimeDbContextFactory.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Data/DesignTimeDbContextFactory.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Auth/ClaimsPrincipalExtensions.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Auth/ClaimsPrincipalExtensions.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api.Tests/CorsTests.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/CorsTests.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Realtime/PresenceController.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Realtime/PresenceController.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api.Tests/SmokeTests.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api.Tests/SmokeTests.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Auth/JwtOptions.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Auth/JwtOptions.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/MessageService.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Features/Messages/MessageService.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Domain/Message.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Domain/Message.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Domain/Report.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Domain/Report.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Domain/Enums.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Domain/Enums.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Domain/Text.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Domain/Text.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Domain/RefreshToken.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Domain/RefreshToken.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "test_coverage::server/Sheshi.Api/Domain/ApplicationUser.cs": {
+      "issue_id": "test_coverage::server/Sheshi.Api/Domain/ApplicationUser.cs",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::26": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::26",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::55": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::55",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::88": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::88",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::115": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::115",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::123": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::123",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::131": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::131",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::137": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::137",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::172": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::172",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::213": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::213",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::240": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::240",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::254": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::254",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::261": {
+      "issue_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::261",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::323": {
+      "issue_id": "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::323",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::354": {
+      "issue_id": "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::354",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::368": {
+      "issue_id": "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::368",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::175": {
+      "issue_id": "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::175",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::189": {
+      "issue_id": "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::189",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:28:08+00:00"
+    },
+    "stale_exclude::frontend/node_modules::frontend/node_modules": {
+      "issue_id": "stale_exclude::frontend/node_modules::frontend/node_modules",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/stale_exclude",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "stale_exclude::frontend/dist::frontend/dist": {
+      "issue_id": "stale_exclude::frontend/dist::frontend/dist",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/stale_exclude",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "stale_exclude::server/Sheshi.Api/bin::server/Sheshi.Api/bin": {
+      "issue_id": "stale_exclude::server/Sheshi.Api/bin::server/Sheshi.Api/bin",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:31:48+00:00"
+    },
+    "stale_exclude::server/Sheshi.Api/obj::server/Sheshi.Api/obj": {
+      "issue_id": "stale_exclude::server/Sheshi.Api/obj::server/Sheshi.Api/obj",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:31:48+00:00"
+    },
+    "stale_exclude::server/Sheshi.Api.Tests/bin::server/Sheshi.Api.Tests/bin": {
+      "issue_id": "stale_exclude::server/Sheshi.Api.Tests/bin::server/Sheshi.Api.Tests/bin",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:31:48+00:00"
+    },
+    "stale_exclude::server/Sheshi.Api.Tests/obj::server/Sheshi.Api.Tests/obj": {
+      "issue_id": "stale_exclude::server/Sheshi.Api.Tests/obj::server/Sheshi.Api.Tests/obj",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:31:48+00:00"
+    },
+    "stale_exclude::server/Sheshi.Api/Migrations::server/Sheshi.Api/Migrations": {
+      "issue_id": "stale_exclude::server/Sheshi.Api/Migrations::server/Sheshi.Api/Migrations",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:36:19+00:00"
+    },
+    "stale_exclude::server/Sheshi.Api/keys::server/Sheshi.Api/keys": {
+      "issue_id": "stale_exclude::server/Sheshi.Api/keys::server/Sheshi.Api/keys",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:36:19+00:00"
+    },
+    "stale_exclude::server/Sheshi.Api/uploads::server/Sheshi.Api/uploads": {
+      "issue_id": "stale_exclude::server/Sheshi.Api/uploads::server/Sheshi.Api/uploads",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": null,
+      "updated_at": "2026-06-11T01:36:19+00:00"
+    },
+    "stale_exclude::.superpowers::.superpowers": {
+      "issue_id": "stale_exclude::.superpowers::.superpowers",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/stale_exclude",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "stale_exclude::.claude::.claude": {
+      "issue_id": "stale_exclude::.claude::.claude",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/stale_exclude",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::abstraction_fitness": {
+      "issue_id": "subjective::abstraction_fitness",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::ai_generated_debt": {
+      "issue_id": "subjective::ai_generated_debt",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::api_surface_coherence": {
+      "issue_id": "subjective::api_surface_coherence",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::authorization_consistency": {
+      "issue_id": "subjective::authorization_consistency",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::contract_coherence": {
+      "issue_id": "subjective::contract_coherence",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::convention_outlier": {
+      "issue_id": "subjective::convention_outlier",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::cross_module_architecture": {
+      "issue_id": "subjective::cross_module_architecture",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::dependency_health": {
+      "issue_id": "subjective::dependency_health",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::design_coherence": {
+      "issue_id": "subjective::design_coherence",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::error_consistency": {
+      "issue_id": "subjective::error_consistency",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::high_level_elegance": {
+      "issue_id": "subjective::high_level_elegance",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::incomplete_migration": {
+      "issue_id": "subjective::incomplete_migration",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::initialization_coupling": {
+      "issue_id": "subjective::initialization_coupling",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::logic_clarity": {
+      "issue_id": "subjective::logic_clarity",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::low_level_elegance": {
+      "issue_id": "subjective::low_level_elegance",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::mid_level_elegance": {
+      "issue_id": "subjective::mid_level_elegance",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::naming_quality": {
+      "issue_id": "subjective::naming_quality",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::package_organization": {
+      "issue_id": "subjective::package_organization",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::test_strategy": {
+      "issue_id": "subjective::test_strategy",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    },
+    "subjective::type_safety": {
+      "issue_id": "subjective::type_safety",
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "cluster": "auto/initial-review",
+      "updated_at": "2026-06-11T01:26:16+00:00"
+    }
+  },
+  "clusters": {
+    "auto/test_coverage-untested_module": {
+      "name": "auto/test_coverage-untested_module",
+      "description": "Fix 34 test coverage issues",
+      "issue_ids": [],
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "updated_at": "2026-06-11T01:26:16+00:00",
+      "auto": true,
+      "cluster_key": "detector::test_coverage::untested_module",
+      "action": "review test coverage gaps",
+      "execution_status": "done",
+      "user_modified": false,
+      "action_type": "refactor",
+      "execution_policy": "planned_only"
+    },
+    "auto/test_coverage-untested_critical": {
+      "name": "auto/test_coverage-untested_critical",
+      "description": "Fix 7 test coverage issues",
+      "issue_ids": [],
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "updated_at": "2026-06-11T01:26:16+00:00",
+      "auto": true,
+      "cluster_key": "detector::test_coverage::untested_critical",
+      "action": "review test coverage gaps",
+      "execution_status": "done",
+      "user_modified": false,
+      "action_type": "refactor",
+      "execution_policy": "planned_only"
+    },
+    "auto/security-hardcoded_secret_name": {
+      "name": "auto/security-hardcoded_secret_name",
+      "description": "Fix 17 security issues",
+      "issue_ids": [],
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "updated_at": "2026-06-11T01:26:16+00:00",
+      "auto": true,
+      "cluster_key": "detector::security::hardcoded_secret_name",
+      "action": "review and fix security issues",
+      "execution_status": "done",
+      "user_modified": false,
+      "action_type": "manual_fix",
+      "execution_policy": "planned_only"
+    },
+    "auto/stale_exclude": {
+      "name": "auto/stale_exclude",
+      "description": "Fix 11 stale exclude issues",
+      "issue_ids": [
+        "stale_exclude::frontend/node_modules::frontend/node_modules",
+        "stale_exclude::frontend/dist::frontend/dist",
+        "stale_exclude::.superpowers::.superpowers",
+        "stale_exclude::.claude::.claude"
+      ],
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "updated_at": "2026-06-11T01:26:16+00:00",
+      "auto": true,
+      "cluster_key": "detector::stale_exclude",
+      "action": "remove stale exclusion or verify it's still needed",
+      "execution_status": "review",
+      "user_modified": false,
+      "action_type": "manual_fix",
+      "execution_policy": "planned_only"
+    },
+    "auto/initial-review": {
+      "name": "auto/initial-review",
+      "description": "Initial review of 20 unscored subjective dimensions",
+      "issue_ids": [
+        "subjective::abstraction_fitness",
+        "subjective::ai_generated_debt",
+        "subjective::api_surface_coherence",
+        "subjective::authorization_consistency",
+        "subjective::contract_coherence",
+        "subjective::convention_outlier",
+        "subjective::cross_module_architecture",
+        "subjective::dependency_health",
+        "subjective::design_coherence",
+        "subjective::error_consistency",
+        "subjective::high_level_elegance",
+        "subjective::incomplete_migration",
+        "subjective::initialization_coupling",
+        "subjective::logic_clarity",
+        "subjective::low_level_elegance",
+        "subjective::mid_level_elegance",
+        "subjective::naming_quality",
+        "subjective::package_organization",
+        "subjective::test_strategy",
+        "subjective::type_safety"
+      ],
+      "created_at": "2026-06-11T01:26:16+00:00",
+      "updated_at": "2026-06-11T01:26:16+00:00",
+      "auto": true,
+      "cluster_key": "subjective::unscored",
+      "action": "desloppify review --prepare --dimensions abstraction_fitness,ai_generated_debt,api_surface_coherence,authorization_consistency,contract_coherence,convention_outlier,cross_module_architecture,dependency_health,design_coherence,error_consistency,high_level_elegance,incomplete_migration,initialization_coupling,logic_clarity,low_level_elegance,mid_level_elegance,naming_quality,package_organization,test_strategy,type_safety",
+      "execution_status": "review",
+      "user_modified": false,
+      "action_type": "manual_fix",
+      "execution_policy": "planned_only"
+    }
+  },
+  "superseded": {
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::115": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::115",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::123": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::123",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::131": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::131",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::137": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::137",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::172": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::172",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::213": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::213",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::240": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::240",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::254": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::254",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::26": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::26",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::261": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::261",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::55": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::55",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::88": {
+      "original_id": "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::88",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::323": {
+      "original_id": "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::323",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/CoreApiTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::354": {
+      "original_id": "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::354",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/CoreApiTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::368": {
+      "original_id": "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::368",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/CoreApiTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::175": {
+      "original_id": "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::175",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::189": {
+      "original_id": "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::189",
+      "original_detector": "security",
+      "original_file": "server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs",
+      "original_summary": "Hardcoded secret in variable 'password'",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/ApiFactory.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/ApiFactory.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/ApiFactory.cs",
+      "original_summary": "Untested module (44 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/AuthFlowTests.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/AuthFlowTests.cs",
+      "original_summary": "Untested module (297 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/CoreApiTests.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/CoreApiTests.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/CoreApiTests.cs",
+      "original_summary": "Untested module (471 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/CorsTests.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/CorsTests.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/CorsTests.cs",
+      "original_summary": "Untested module (21 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/EnvTemplateTests.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/EnvTemplateTests.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/EnvTemplateTests.cs",
+      "original_summary": "Untested module (23 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/ModelParityTests.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/ModelParityTests.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/ModelParityTests.cs",
+      "original_summary": "Untested module (70 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs",
+      "original_summary": "Untested module (275 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/SeedAdminTests.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/SeedAdminTests.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/SeedAdminTests.cs",
+      "original_summary": "Untested module (42 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api.Tests/SmokeTests.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api.Tests/SmokeTests.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api.Tests/SmokeTests.cs",
+      "original_summary": "Untested module (18 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Auth/AuthController.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Auth/AuthController.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Auth/AuthController.cs",
+      "original_summary": "Untested module (274 LOC, 3 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Auth/AuthController.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Auth/AuthDtos.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Auth/AuthDtos.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Auth/AuthDtos.cs",
+      "original_summary": "Untested module (33 LOC, 3 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Auth/AuthDtos.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Auth/ClaimsPrincipalExtensions.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Auth/ClaimsPrincipalExtensions.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Auth/ClaimsPrincipalExtensions.cs",
+      "original_summary": "Untested module (22 LOC, 3 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Auth/ClaimsPrincipalExtensions.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Auth/JwtOptions.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Auth/JwtOptions.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Auth/JwtOptions.cs",
+      "original_summary": "Untested module (10 LOC, 3 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Auth/JwtOptions.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Auth/MeController.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Auth/MeController.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Auth/MeController.cs",
+      "original_summary": "Untested module (38 LOC, 3 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Auth/MeController.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Auth/RefreshTokenCleanupService.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Auth/RefreshTokenCleanupService.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Auth/RefreshTokenCleanupService.cs",
+      "original_summary": "Untested module (53 LOC, 3 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Auth/RefreshTokenCleanupService.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Auth/TokenService.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Auth/TokenService.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Auth/TokenService.cs",
+      "original_summary": "Untested module (127 LOC, 3 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Auth/TokenService.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Data/AppDbContext.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Data/AppDbContext.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Data/AppDbContext.cs",
+      "original_summary": "Untested module (51 LOC, 9 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Data/DbSeeder.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Data/DbSeeder.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Data/DbSeeder.cs",
+      "original_summary": "Untested module (121 LOC, 9 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Data/DesignTimeDbContextFactory.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Data/DesignTimeDbContextFactory.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Data/DesignTimeDbContextFactory.cs",
+      "original_summary": "Untested module (23 LOC, 9 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Domain/ApplicationUser.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Domain/ApplicationUser.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Domain/ApplicationUser.cs",
+      "original_summary": "Untested module (10 LOC, 18 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Domain/Enums.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Domain/Enums.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Domain/Enums.cs",
+      "original_summary": "Untested module (13 LOC, 18 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Domain/Message.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Domain/Message.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Domain/Message.cs",
+      "original_summary": "Untested module (17 LOC, 18 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Domain/RefreshToken.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Domain/RefreshToken.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Domain/RefreshToken.cs",
+      "original_summary": "Untested module (11 LOC, 18 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Domain/Report.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Domain/Report.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Domain/Report.cs",
+      "original_summary": "Untested module (13 LOC, 18 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Domain/Text.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Domain/Text.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Domain/Text.cs",
+      "original_summary": "Untested module (12 LOC, 18 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Email/SmtpEmailSender.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Email/SmtpEmailSender.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Email/SmtpEmailSender.cs",
+      "original_summary": "Untested module (42 LOC, 3 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsController.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsController.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Messages/HighlightsController.cs",
+      "original_summary": "Untested module (45 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsController.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsService.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsService.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Messages/HighlightsService.cs",
+      "original_summary": "Untested module (200 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsService.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/MessageDtos.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Messages/MessageDtos.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Messages/MessageDtos.cs",
+      "original_summary": "Untested module (41 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Messages/MessageDtos.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/MessageService.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Messages/MessageService.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Messages/MessageService.cs",
+      "original_summary": "Untested module (421 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Messages/MessageService.cs::untested_critical"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Messages/MessagesController.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Messages/MessagesController.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+      "original_summary": "Untested module (146 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Messages/MessagesController.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+      "original_summary": "Untested module (301 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
+      "original_summary": "Untested module (78 LOC, 0 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Rooms/RoomDtos.cs",
+      "original_summary": "Untested module (11 LOC, 1 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Rooms/RoomService.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Rooms/RoomService.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Rooms/RoomService.cs",
+      "original_summary": "Untested module (104 LOC, 1 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Rooms/RoomService.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+      "original_summary": "Untested module (40 LOC, 1 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Realtime/ChatHub.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Realtime/ChatHub.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Realtime/ChatHub.cs",
+      "original_summary": "Untested module (35 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Realtime/ChatHub.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Realtime/PresenceController.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Realtime/PresenceController.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Realtime/PresenceController.cs",
+      "original_summary": "Untested module (19 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Realtime/PresenceController.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Realtime/PresenceTracker.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Realtime/PresenceTracker.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Realtime/PresenceTracker.cs",
+      "original_summary": "Untested module (77 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Realtime/PresenceTracker.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Realtime/RealtimeNotifier.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Realtime/RealtimeNotifier.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Realtime/RealtimeNotifier.cs",
+      "original_summary": "Untested module (27 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Realtime/RealtimeNotifier.cs::untested_module"
+      ]
+    },
+    "test_coverage::server/Sheshi.Api/Storage/LocalFileImageStorage.cs": {
+      "original_id": "test_coverage::server/Sheshi.Api/Storage/LocalFileImageStorage.cs",
+      "original_detector": "test_coverage",
+      "original_file": "server/Sheshi.Api/Storage/LocalFileImageStorage.cs",
+      "original_summary": "Untested module (84 LOC, 2 importers) \u2014 no test files found",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:28:08+00:00",
+      "remapped_to": null,
+      "candidates": [
+        "test_coverage::server/Sheshi.Api/Storage/LocalFileImageStorage.cs::untested_module"
+      ]
+    },
+    "stale_exclude::server/Sheshi.Api.Tests/bin::server/Sheshi.Api.Tests/bin": {
+      "original_id": "stale_exclude::server/Sheshi.Api.Tests/bin::server/Sheshi.Api.Tests/bin",
+      "original_detector": "stale_exclude",
+      "original_file": "server/Sheshi.Api.Tests/bin",
+      "original_summary": "Excluded directory 'server/Sheshi.Api.Tests/bin' has 0 references from scanned code \u2014 may be stale",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:31:48+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "stale_exclude::server/Sheshi.Api.Tests/obj::server/Sheshi.Api.Tests/obj": {
+      "original_id": "stale_exclude::server/Sheshi.Api.Tests/obj::server/Sheshi.Api.Tests/obj",
+      "original_detector": "stale_exclude",
+      "original_file": "server/Sheshi.Api.Tests/obj",
+      "original_summary": "Excluded directory 'server/Sheshi.Api.Tests/obj' has 0 references from scanned code \u2014 may be stale",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:31:48+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "stale_exclude::server/Sheshi.Api/bin::server/Sheshi.Api/bin": {
+      "original_id": "stale_exclude::server/Sheshi.Api/bin::server/Sheshi.Api/bin",
+      "original_detector": "stale_exclude",
+      "original_file": "server/Sheshi.Api/bin",
+      "original_summary": "Excluded directory 'server/Sheshi.Api/bin' has 0 references from scanned code \u2014 may be stale",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:31:48+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "stale_exclude::server/Sheshi.Api/obj::server/Sheshi.Api/obj": {
+      "original_id": "stale_exclude::server/Sheshi.Api/obj::server/Sheshi.Api/obj",
+      "original_detector": "stale_exclude",
+      "original_file": "server/Sheshi.Api/obj",
+      "original_summary": "Excluded directory 'server/Sheshi.Api/obj' has 0 references from scanned code \u2014 may be stale",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:31:48+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "stale_exclude::server/Sheshi.Api/Migrations::server/Sheshi.Api/Migrations": {
+      "original_id": "stale_exclude::server/Sheshi.Api/Migrations::server/Sheshi.Api/Migrations",
+      "original_detector": "stale_exclude",
+      "original_file": "server/Sheshi.Api/Migrations",
+      "original_summary": "Excluded directory 'server/Sheshi.Api/Migrations' has 0 references from scanned code \u2014 may be stale",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:36:19+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "stale_exclude::server/Sheshi.Api/keys::server/Sheshi.Api/keys": {
+      "original_id": "stale_exclude::server/Sheshi.Api/keys::server/Sheshi.Api/keys",
+      "original_detector": "stale_exclude",
+      "original_file": "server/Sheshi.Api/keys",
+      "original_summary": "Excluded directory 'server/Sheshi.Api/keys' has 0 references from scanned code \u2014 may be stale",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:36:19+00:00",
+      "remapped_to": null,
+      "candidates": []
+    },
+    "stale_exclude::server/Sheshi.Api/uploads::server/Sheshi.Api/uploads": {
+      "original_id": "stale_exclude::server/Sheshi.Api/uploads::server/Sheshi.Api/uploads",
+      "original_detector": "stale_exclude",
+      "original_file": "server/Sheshi.Api/uploads",
+      "original_summary": "Excluded directory 'server/Sheshi.Api/uploads' has 0 references from scanned code \u2014 may be stale",
+      "status": "superseded",
+      "superseded_at": "2026-06-11T01:36:19+00:00",
+      "remapped_to": null,
+      "candidates": []
+    }
+  },
+  "promoted_ids": [],
+  "plan_start_scores": {
+    "strict": 16.7,
+    "overall": 16.7,
+    "objective": 66.8,
+    "verified": 66.8
+  },
+  "refresh_state": {
+    "_subjective_migration_pruned": true,
+    "lifecycle_phase": "plan"
+  },
+  "execution_log": [
+    {
+      "timestamp": "2026-06-11T01:26:16+00:00",
+      "action": "sync_subjective",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:26:16+00:00",
+      "action": "auto_cluster",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:26:16+00:00",
+      "action": "sync_lifecycle_phase",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "phase": "review_initial"
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:26:16+00:00",
+      "action": "seed_start_scores",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-06-11T01:27:03+00:00",
+      "action": "sync_subjective",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:28:08+00:00",
+      "action": "cluster_done",
+      "issue_ids": [],
+      "cluster_name": "auto/test_coverage-untested_module",
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "reason": "cluster members no longer actionable in state"
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:28:08+00:00",
+      "action": "cluster_done",
+      "issue_ids": [],
+      "cluster_name": "auto/test_coverage-untested_critical",
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "reason": "cluster members no longer actionable in state"
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:28:08+00:00",
+      "action": "cluster_done",
+      "issue_ids": [],
+      "cluster_name": "auto/security-hardcoded_secret_name",
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "reason": "cluster members no longer actionable in state"
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:28:08+00:00",
+      "action": "reconcile",
+      "issue_ids": [
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::115",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::123",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::131",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::137",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::172",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::213",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::240",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::254",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::26",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::261",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::55",
+        "security::server/Sheshi.Api.Tests/AuthFlowTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/AuthFlowTests.cs::88",
+        "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::323",
+        "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::354",
+        "security::server/Sheshi.Api.Tests/CoreApiTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/CoreApiTests.cs::368",
+        "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::175",
+        "security::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::security::hardcoded_secret_name::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs::189",
+        "test_coverage::server/Sheshi.Api.Tests/ApiFactory.cs",
+        "test_coverage::server/Sheshi.Api.Tests/AuthFlowTests.cs",
+        "test_coverage::server/Sheshi.Api.Tests/CoreApiTests.cs",
+        "test_coverage::server/Sheshi.Api.Tests/CorsTests.cs",
+        "test_coverage::server/Sheshi.Api.Tests/EnvTemplateTests.cs",
+        "test_coverage::server/Sheshi.Api.Tests/ModelParityTests.cs",
+        "test_coverage::server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs",
+        "test_coverage::server/Sheshi.Api.Tests/SeedAdminTests.cs",
+        "test_coverage::server/Sheshi.Api.Tests/SmokeTests.cs",
+        "test_coverage::server/Sheshi.Api/Auth/AuthController.cs",
+        "test_coverage::server/Sheshi.Api/Auth/AuthDtos.cs",
+        "test_coverage::server/Sheshi.Api/Auth/ClaimsPrincipalExtensions.cs",
+        "test_coverage::server/Sheshi.Api/Auth/JwtOptions.cs",
+        "test_coverage::server/Sheshi.Api/Auth/MeController.cs",
+        "test_coverage::server/Sheshi.Api/Auth/RefreshTokenCleanupService.cs",
+        "test_coverage::server/Sheshi.Api/Auth/TokenService.cs",
+        "test_coverage::server/Sheshi.Api/Data/AppDbContext.cs",
+        "test_coverage::server/Sheshi.Api/Data/DbSeeder.cs",
+        "test_coverage::server/Sheshi.Api/Data/DesignTimeDbContextFactory.cs",
+        "test_coverage::server/Sheshi.Api/Domain/ApplicationUser.cs",
+        "test_coverage::server/Sheshi.Api/Domain/Enums.cs",
+        "test_coverage::server/Sheshi.Api/Domain/Message.cs",
+        "test_coverage::server/Sheshi.Api/Domain/RefreshToken.cs",
+        "test_coverage::server/Sheshi.Api/Domain/Report.cs",
+        "test_coverage::server/Sheshi.Api/Domain/Text.cs",
+        "test_coverage::server/Sheshi.Api/Email/SmtpEmailSender.cs",
+        "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsController.cs",
+        "test_coverage::server/Sheshi.Api/Features/Messages/HighlightsService.cs",
+        "test_coverage::server/Sheshi.Api/Features/Messages/MessageDtos.cs",
+        "test_coverage::server/Sheshi.Api/Features/Messages/MessageService.cs",
+        "test_coverage::server/Sheshi.Api/Features/Messages/MessagesController.cs",
+        "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+        "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
+        "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs",
+        "test_coverage::server/Sheshi.Api/Features/Rooms/RoomService.cs",
+        "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "test_coverage::server/Sheshi.Api/Realtime/ChatHub.cs",
+        "test_coverage::server/Sheshi.Api/Realtime/PresenceController.cs",
+        "test_coverage::server/Sheshi.Api/Realtime/PresenceTracker.cs",
+        "test_coverage::server/Sheshi.Api/Realtime/RealtimeNotifier.cs",
+        "test_coverage::server/Sheshi.Api/Storage/LocalFileImageStorage.cs"
+      ],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "superseded_count": 58,
+        "pruned_count": 0,
+        "resurfaced_count": 0,
+        "clusters_completed_count": 3
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:31:48+00:00",
+      "action": "reconcile",
+      "issue_ids": [
+        "stale_exclude::server/Sheshi.Api.Tests/bin::server/Sheshi.Api.Tests/bin",
+        "stale_exclude::server/Sheshi.Api.Tests/obj::server/Sheshi.Api.Tests/obj",
+        "stale_exclude::server/Sheshi.Api/bin::server/Sheshi.Api/bin",
+        "stale_exclude::server/Sheshi.Api/obj::server/Sheshi.Api/obj"
+      ],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "superseded_count": 4,
+        "pruned_count": 0,
+        "resurfaced_count": 0,
+        "clusters_completed_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:34:29+00:00",
+      "action": "done",
+      "issue_ids": [
+        "structural::server/Sheshi.Api/Features/Messages/MessageService.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted EnrichAsync batch projection into MessageEnricher (separate responsibility), reducing MessageService size/complexity; wired via DI, all 33 tests pass",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-06-11T01:34:30+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "structural::server/Sheshi.Api/Features/Messages/MessageService.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Extracted EnrichAsync batch projection into MessageEnricher (separate responsibility), reducing MessageService size/complexity; wired via DI, all 33 tests pass",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Extracted EnrichAsync batch projection into MessageEnricher (separate responsibility), reducing MessageService size/complexity; wired via DI, all 33 tests pass and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:36:19+00:00",
+      "action": "reconcile",
+      "issue_ids": [
+        "stale_exclude::server/Sheshi.Api/Migrations::server/Sheshi.Api/Migrations",
+        "stale_exclude::server/Sheshi.Api/keys::server/Sheshi.Api/keys",
+        "stale_exclude::server/Sheshi.Api/uploads::server/Sheshi.Api/uploads"
+      ],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "superseded_count": 3,
+        "pruned_count": 0,
+        "resurfaced_count": 0,
+        "clusters_completed_count": 0
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:39:59+00:00",
+      "action": "done",
+      "issue_ids": [
+        "structural::server/Sheshi.Api/Migrations/20260608110408_InitialSchema.Designer.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-06-11T01:39:59+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "structural::server/Sheshi.Api/Migrations/20260608110408_InitialSchema.Designer.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually EF Core generated file; zoned generated and excluded from scanning and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:39:59+00:00",
+      "action": "done",
+      "issue_ids": [
+        "structural::server/Sheshi.Api/Migrations/20260608125359_ThreadMetadata.Designer.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-06-11T01:40:00+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "structural::server/Sheshi.Api/Migrations/20260608125359_ThreadMetadata.Designer.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually EF Core generated file; zoned generated and excluded from scanning and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:40:00+00:00",
+      "action": "done",
+      "issue_ids": [
+        "structural::server/Sheshi.Api/Migrations/AppDbContextModelSnapshot.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-06-11T01:40:00+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "structural::server/Sheshi.Api/Migrations/AppDbContextModelSnapshot.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually EF Core generated file; zoned generated and excluded from scanning and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:40:32+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "orphaned::server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:40:32+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationController.cs::untested_module"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:40:32+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "test_coverage::server/Sheshi.Api/Features/Rooms/RoomsController.cs::untested_module"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:40:33+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "orphaned::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "DTO record: no behavior to unit-test",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:40:33+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationDtos.cs::untested_module"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "DTO record: no behavior to unit-test",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    },
+    {
+      "timestamp": "2026-06-11T01:40:33+00:00",
+      "action": "skip",
+      "issue_ids": [
+        "test_coverage::server/Sheshi.Api/Features/Rooms/RoomDtos.cs::untested_module"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "DTO record: no behavior to unit-test",
+      "detail": {
+        "kind": "permanent",
+        "reason": null
+      }
+    }
+  ],
+  "epic_triage_meta": {},
+  "commit_log": [],
+  "uncommitted_issues": [
+    "structural::server/Sheshi.Api/Features/Messages/MessageService.cs",
+    "structural::server/Sheshi.Api/Migrations/20260608110408_InitialSchema.Designer.cs",
+    "structural::server/Sheshi.Api/Migrations/20260608125359_ThreadMetadata.Designer.cs",
+    "structural::server/Sheshi.Api/Migrations/AppDbContextModelSnapshot.cs"
+  ],
+  "commit_tracking_branch": null,
+  "scan_count_at_plan_start": 1
+}

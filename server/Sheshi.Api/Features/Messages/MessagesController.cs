@@ -11,7 +11,8 @@ namespace Sheshi.Api.Features.Messages;
 [Route("api")]
 public class MessagesController(
     UserManager<ApplicationUser> userManager,
-    MessageService messageService) : ControllerBase
+    MessageService messageService,
+    MessageReader messageReader) : ControllerBase
 {
     [HttpGet("rooms/{roomId:guid}/messages")]
     [EnableRateLimiting("reads")]
@@ -21,14 +22,14 @@ public class MessagesController(
         [FromQuery] string? cursor = null,
         CancellationToken ct = default)
     {
-        return Ok(await messageService.ListRoomMessagesAsync(roomId, User.GetUserId(), limit, cursor, ct));
+        return Ok(await messageReader.ListRoomMessagesAsync(roomId, User.GetUserId(), limit, cursor, ct));
     }
 
     [HttpGet("messages/{id:guid}")]
     [EnableRateLimiting("reads")]
     public async Task<ActionResult<MessageDto>> GetMessage(Guid id, CancellationToken ct)
     {
-        var message = await messageService.GetMessageAsync(id, User.GetUserId(), ct);
+        var message = await messageReader.GetMessageAsync(id, User.GetUserId(), ct);
         return message is null ? NotFound() : Ok(message);
     }
 
@@ -40,14 +41,14 @@ public class MessagesController(
         [FromQuery] string? cursor = null,
         CancellationToken ct = default)
     {
-        return Ok(await messageService.ListRepliesAsync(id, User.GetUserId(), limit, cursor, ct));
+        return Ok(await messageReader.ListRepliesAsync(id, User.GetUserId(), limit, cursor, ct));
     }
 
     [HttpGet("threads/{id:guid}")]
     [EnableRateLimiting("reads")]
     public async Task<ActionResult<ThreadDto>> GetThread(Guid id, CancellationToken ct)
     {
-        var thread = await messageService.GetThreadAsync(id, User.GetUserId(), ct);
+        var thread = await messageReader.GetThreadAsync(id, User.GetUserId(), ct);
         return thread is null ? NotFound() : Ok(thread);
     }
 
