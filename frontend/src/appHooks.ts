@@ -7,6 +7,7 @@ import {
 } from "./appSupport";
 import type { PresenceUpdate, Route, Theme } from "./appSupport";
 import { subscribeToRooms, subscribeToThread } from "./realtime";
+import type { RealtimeMessageChange } from "./realtime";
 import type { Room } from "./types";
 
 export function useBrowserRoute() {
@@ -47,15 +48,14 @@ export function useAuthRouteModal(
 }
 
 export function useRealtimeRefresh(args: {
-  route: Route;
   rooms: Room[];
   currentRoomId?: string | null;
   threadId?: string | null;
   token?: string | null;
-  onChanged: () => void;
+  onMessage: (change: RealtimeMessageChange) => void;
   onPresence: (update: PresenceUpdate) => void;
 }) {
-  const { route, rooms, currentRoomId, threadId, token, onChanged, onPresence } = args;
+  const { rooms, currentRoomId, threadId, token, onMessage, onPresence } = args;
   const roomScopeKey = useMemo(() => rooms.map((room) => room.id).sort().join("|"), [rooms]);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function useRealtimeRefresh(args: {
         roomIds,
         threadId,
         token,
-        onChanged,
+        onMessage,
         onPresence
       });
     }
@@ -75,8 +75,8 @@ export function useRealtimeRefresh(args: {
     return subscribeToRooms({
       roomIds,
       token,
-      onChanged,
+      onMessage,
       onPresence
     });
-  }, [currentRoomId, onChanged, onPresence, roomScopeKey, threadId, token]);
+  }, [currentRoomId, onMessage, onPresence, roomScopeKey, threadId, token]);
 }
