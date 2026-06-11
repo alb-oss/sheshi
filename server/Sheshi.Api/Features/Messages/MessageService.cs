@@ -14,6 +14,7 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
     private const int DefaultReplyLimit = 80;
     private const int MaxLimit = 100;
     private const int MaxThreadMessages = 1000;
+    private const int MaxDepth = 8;
 
     public async Task<CursorPageDto<MessageDto>> ListRoomMessagesAsync(
         Guid roomId,
@@ -146,14 +147,38 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
             }
         }
 
+        var rootId = parent is null
+            ? Guid.Empty
+            : parent.RootMessageId == Guid.Empty ? parent.Id : parent.RootMessageId;
+
+        Guid? parentId;
+        int depth;
+        if (parent is null)
+        {
+            parentId = request.ParentId;
+            depth = 0;
+        }
+        else if (parent.Depth + 1 > MaxDepth)
+        {
+            // Reparent to the thread root so the tree can never exceed MaxDepth
+            // and recursive traversal/serialization stays bounded.
+            parentId = rootId;
+            depth = 1;
+        }
+        else
+        {
+            parentId = request.ParentId;
+            depth = parent.Depth + 1;
+        }
+
         var message = new Message
         {
             Id = Guid.NewGuid(),
             RoomId = request.RoomId,
             AuthorId = authorId,
-            ParentId = request.ParentId,
-            RootMessageId = parent is null ? Guid.Empty : parent.RootMessageId == Guid.Empty ? parent.Id : parent.RootMessageId,
-            Depth = parent is null ? 0 : parent.Depth + 1,
+            ParentId = parentId,
+            RootMessageId = rootId,
+            Depth = depth,
             Body = request.Body.Trim(),
             ImageUrl = imageUrl
         };
@@ -240,6 +265,9 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
             return ReportMessageResult.NotFound();
         if ((request.Note?.Length ?? 0) > 500)
             return ReportMessageResult.Failed("NOTE_TOO_LONG");
+
+        if (await db.Reports.AnyAsync(r => r.MessageId == messageId && r.ReporterId == reporterId, ct))
+            return ReportMessageResult.Created();
 
         db.Reports.Add(new Report
         {

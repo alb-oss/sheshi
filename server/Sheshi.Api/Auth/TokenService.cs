@@ -52,7 +52,14 @@ public class TokenService(
         var user = await userManager.FindByIdAsync(token.UserId.ToString());
         if (user is null || user.IsBanned) return null;
 
-        token.RevokedAt = DateTimeOffset.UtcNow;
+        // Atomic revoke: only the request that flips RevokedAt from null wins.
+        // A concurrent rotation of the same token matches 0 rows and bails,
+        // so a token can never fork into two valid sessions.
+        var revoked = await db.RefreshTokens
+            .Where(t => t.Id == token.Id && t.RevokedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, DateTimeOffset.UtcNow), ct);
+        if (revoked == 0) return null;
+
         return await CreateAuthResponseAsync(user, ct);
     }
 

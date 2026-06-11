@@ -183,6 +183,19 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
         longReportResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
+        // Reporting the same message again is idempotent (anti-flood): no duplicate row.
+        var duplicateReportResponse = await client.PostAsJsonAsync($"/api/messages/{main.Id}/report", new
+        {
+            reason = "spam",
+            note = "again"
+        });
+        duplicateReportResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        await WithServicesAsync(async sp =>
+        {
+            var db = sp.GetRequiredService<AppDbContext>();
+            (await db.Reports.CountAsync(r => r.MessageId == main.Id)).Should().Be(1);
+        });
+
         var highlightsResponse = await client.GetAsync("/api/highlights?mode=top");
         highlightsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var highlights = await highlightsResponse.Content.ReadFromJsonAsync<MessageDto[]>();
@@ -203,6 +216,19 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var secondPost = await PostMessageAsync(client, room.Id, "Second thread");
         var firstReply = await PostMessageAsync(client, room.Id, "First reply", firstPost.Id);
         var nestedReply = await PostMessageAsync(client, room.Id, "Nested reply", firstReply.Id);
+
+        // Depth is capped: replies past the max reparent to the thread root so the
+        // tree (and recursive traversal) can never grow unbounded.
+        var deepParent = nestedReply;
+        for (var i = 0; i < 12; i++)
+        {
+            deepParent = await PostMessageAsync(client, room.Id, $"deep {i}", deepParent.Id);
+        }
+        await WithServicesAsync(async sp =>
+        {
+            var db = sp.GetRequiredService<AppDbContext>();
+            (await db.Messages.MaxAsync(m => m.Depth)).Should().BeLessThanOrEqualTo(8);
+        });
 
         await WithServicesAsync(async sp =>
         {

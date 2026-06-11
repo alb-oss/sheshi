@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,12 @@ builder.Services.AddControllers()
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(
+        builder.Configuration["DataProtection:KeyPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "keys")))
+    .SetApplicationName("Sheshi");
+builder.Services.AddProblemDetails();
+builder.Services.AddHostedService<RefreshTokenCleanupService>();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
 builder.Services.AddScoped<TokenService>();
@@ -266,6 +273,15 @@ app.UseStaticFiles(new StaticFileOptions
 
 if (app.Configuration.GetValue<bool>("LoadBalancer:UseForwardedHeaders"))
     app.UseForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler(handler => handler.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(new { error = "INTERNAL_ERROR" });
+    }));
+}
 
 app.Use(async (context, next) =>
 {

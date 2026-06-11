@@ -12,9 +12,9 @@
     "BaseUrl": "http://localhost:3001"
   },
   "SeedAdmin": {
-    "Email": "albiidrizi27@gmail.com",
-    "Password": "albiidrizi27",
-    "DisplayName": "Albi Idrizi"
+    "Email": "",
+    "Password": "",
+    "DisplayName": "Sheshi Admin"
   },
   "Authentication": {
     "Google": {
