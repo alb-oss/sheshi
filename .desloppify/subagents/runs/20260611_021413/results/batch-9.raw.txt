@@ -1,0 +1,85 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 9,
+  "assessments": {"mid_level_elegance": 89.5},
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "Service->controller seam is uniform: MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult, ModActionResult are sealed records with named static factories (Created/Failed/NotFound/Forbidden/Ok) carrying explicit Found/Authorized/Succeeded flags; controllers read those flags and map to HTTP status in one obvious block (MessagesController.cs:80-85,128-129; RoomsController.cs:33-38; ModerationController.cs:68-74).",
+        "Entity->DTO translation happens in exactly one place: MessageEnricher.EnrichAsync is the single projection point reused by MessageReader (reads), MessageService (command side, MessageService.cs:91), and HighlightsController (HighlightsController.cs:41) — no ad-hoc mappers scattered across the boundary.",
+        "Clean CQRS read/write split: MessageReader (room feeds, replies, threads, keyset pagination) and MessageService (commands) are separate, both delegating projection to MessageEnricher and root resolution to the shared MessageReader.ResolveRootAsync static (MessageReader.cs:119-135), which is explicitly documented as shared by reads and command-side realtime notifications.",
+        "Realtime seam is minimal and explicit: RealtimeNotifier.MessageChangedAsync takes a single MessageChangeDto (RealtimeNotifier.cs:7-20); the previously-unused Guid/Guid? overload was removed so the notifier exposes exactly the one shape callers use.",
+        "Storage boundary is well-contained: IImageStorage throws ImageStorageException with a .Code; MessageService catches it in one place and translates to a result error (MessageService.cs:45-48), so I/O failure propagation across the storage seam is predictable.",
+        "Moderation controller->service seam was refactored so the controller is a thin auth+audit+HTTP layer; ModerationService returns ModActionResult and the controller's Finish helper maps Found/Succeeded/Errors consistently (ModerationController.cs:68-74).",
+        "Cache eviction is coordinated through a single shared HighlightsCache.Key constant; ranking-relevant writes evict it uniformly across MessageService operations (MessageService.cs:92,110,132,154).",
+        "Minor glue-code entropy: the effective-root-id derivation 'RootMessageId == Guid.Empty && ParentId is null ? Id : RootMessageId' is duplicated across MessageEnricher.cs:57, HighlightsService.cs:199-202 (named EffectiveRootId), and MessageService.cs:53 — a small boundary-translation rule living in three seams instead of one shared helper.",
+        "Service result error codes cross the service->controller seam as bare strings matched by literal comparison; already adjudicated as intentional since those exact strings are the API wire contract consumed by the frontend ApiError.code (api.ts:52-54)."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The effective-root-id derivation is duplicated across three message-feature files (MessageEnricher, HighlightsService, MessageService) instead of a single shared helper, a small but real seam-translation rule that lives in multiple places; the string error codes crossing the service->controller seam, while intentional as the wire contract, still require literal-string coupling between producer and consumer."
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "dimension_character": "Handoffs across module and layer boundaries are explicit, minimal, and unsurprising: services return sealed Result records with named flags that controllers map to HTTP in one obvious place, entity->DTO translation is centralized in a single MessageEnricher reused by every consumer, and the realtime/storage/cache seams each expose one clean contract. The read/write split (MessageReader vs MessageService) reads as composition of collaborators rather than tangled back-and-forth, with shared root resolution documented at the seam. The only friction is a small effective-root-id derivation duplicated across three message-feature files and the intentional string error codes that double as the wire contract.",
+      "score_rationale": "This sits between strong (90) and solid-but-uneven (80): a developer can predict how data and errors cross every boundary because the Result-record + single-enricher pattern is applied uniformly, which pushes the score toward 90. What holds it just below is one genuinely duplicated boundary rule (effective-root-id in three places) and the literal-string error coupling at the service->controller seam, both isolated rather than systemic. Net: 89.5 — reliably good seams with one minor, localized rough edge."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "effective_root_id_duplicated_across_seams",
+      "summary": "The 'effective root id' derivation is duplicated across three message-feature files instead of one shared helper",
+      "related_files": [
+        "server/Sheshi.Api/Features/Messages/MessageEnricher.cs",
+        "server/Sheshi.Api/Features/Messages/HighlightsService.cs",
+        "server/Sheshi.Api/Features/Messages/MessageService.cs"
+      ],
+      "evidence": [
+        "MessageEnricher.cs:57 inlines 'm.RootMessageId == Guid.Empty && m.ParentId is null ? m.Id : m.RootMessageId' when projecting RootMessageId into MessageDto.",
+        "HighlightsService.cs:199-202 implements the same rule as a private static EffectiveRootId helper used by candidate/stats loading.",
+        "MessageService.cs:53 derives the same root id ('parent.RootMessageId == Guid.Empty ? parent.Id : parent.RootMessageId') when creating a message.",
+        "The rule is a boundary-translation invariant (how a stored RootMessageId maps to a thread's effective root) yet lives in three seams; a change to the empty-root convention must be edited in all three."
+      ],
+      "suggestion": "Promote the existing HighlightsService.EffectiveRootId logic to a single shared static (e.g. on Message or a Messages helper) and call it from MessageEnricher's DTO projection and MessageService's create path so the effective-root-id rule has one home.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "mid_level_elegance": {
+      "add": [
+        {
+          "header": "Single enricher centralizes all entity->DTO translation",
+          "description": "MessageEnricher.EnrichAsync is the one projection point reused by MessageReader, MessageService command side, and HighlightsController, so boundary translation happens in one obvious place with no scattered ad-hoc mappers.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Uniform Result-record + named-flag service->controller seam",
+          "description": "Services return sealed records (MessageCreateResult, DeleteMessageResult, ModActionResult, CreateRoomResult) with named factories and explicit Found/Authorized/Succeeded flags; controllers map those flags to HTTP status in one consistent block, making error/lifecycle propagation across the seam predictable.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Clean CQRS read/write split with shared root resolution",
+          "description": "MessageReader (reads) and MessageService (commands) are separate collaborators that both delegate projection to MessageEnricher and root resolution to the documented shared MessageReader.ResolveRootAsync static, so orchestration reads as composition rather than tangled back-and-forth.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Effective-root-id rule duplicated across three message seams",
+          "description": "The 'RootMessageId == Guid.Empty && ParentId is null ? Id : RootMessageId' boundary-translation invariant is inlined in MessageEnricher and MessageService and named EffectiveRootId in HighlightsService, so this one seam rule lives in three places instead of one.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

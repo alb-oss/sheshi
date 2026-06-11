@@ -2062,6 +2062,254 @@
       }
     }
   ],
+  "narrative": {
+    "phase": "refinement",
+    "headline": "All T1 and T2 items cleared!",
+    "dimensions": {
+      "lowest_dimensions": [
+        {
+          "name": "Test health",
+          "strict": 4.2,
+          "failing": 1,
+          "impact": 0.0
+        },
+        {
+          "name": "Test strategy",
+          "strict": 87.0,
+          "failing": 0,
+          "impact": 0.0,
+          "subjective": true,
+          "impact_description": "re-review to improve"
+        },
+        {
+          "name": "Mid elegance",
+          "strict": 87.5,
+          "failing": 0,
+          "impact": 0.0,
+          "subjective": true,
+          "impact_description": "re-review to improve"
+        }
+      ],
+      "biggest_gap_dimensions": [
+        {
+          "name": "Test health",
+          "lenient": 93.9,
+          "strict": 4.2,
+          "gap": 89.7,
+          "wontfix_count": 5
+        },
+        {
+          "name": "File health",
+          "lenient": 100.0,
+          "strict": 98.4,
+          "gap": 1.6,
+          "wontfix_count": 0
+        }
+      ],
+      "stagnant_dimensions": [
+        {
+          "name": "Code quality",
+          "strict": 99.0,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Security",
+          "strict": 100.0,
+          "stuck_scans": 5
+        },
+        {
+          "name": "File health",
+          "strict": 98.4,
+          "stuck_scans": 5
+        },
+        {
+          "name": "Duplication",
+          "strict": 99.8,
+          "stuck_scans": 5
+        }
+      ]
+    },
+    "actions": [
+      {
+        "type": "refactor",
+        "detector": "dupes",
+        "count": 1,
+        "description": "1 dupes work items \u2014 extract shared utility or consolidate duplicates",
+        "command": "desloppify show dupes --status open",
+        "impact": 0.0,
+        "dimension": "Duplication",
+        "priority": 1,
+        "lane": "refactor_0"
+      },
+      {
+        "type": "refactor",
+        "detector": "test_coverage",
+        "count": 1,
+        "description": "1 test_coverage work items \u2014 review test coverage gaps \u2014 focus on critical modules with many importers first; defer test writing until code quality issues are resolved",
+        "command": "desloppify show test_coverage --status open",
+        "impact": 0.0,
+        "dimension": "Test health",
+        "priority": 2,
+        "lane": "test_coverage"
+      },
+      {
+        "type": "refactor",
+        "detector": "signature",
+        "count": 1,
+        "description": "1 signature work items \u2014 consolidate inconsistent function signatures",
+        "command": "desloppify show signature --status open",
+        "impact": 0.0,
+        "dimension": "Unknown",
+        "priority": 3,
+        "lane": "refactor_1"
+      },
+      {
+        "type": "manual_fix",
+        "detector": "stale_exclude",
+        "count": 1,
+        "description": "1 stale_exclude work items \u2014 remove stale exclusion or verify it's still needed",
+        "command": "desloppify show stale_exclude --status open",
+        "impact": 0.0,
+        "dimension": "Code quality",
+        "priority": 4,
+        "lane": "refactor_2"
+      },
+      {
+        "type": "debt_review",
+        "detector": null,
+        "description": "3.8 pts of wontfix debt \u2014 review stale decisions",
+        "command": "desloppify show --status wontfix",
+        "gap": 3.8,
+        "priority": 5,
+        "lane": "debt_review"
+      }
+    ],
+    "strategy": {
+      "fixer_leverage": {
+        "auto_fixable_count": 0,
+        "total_count": 4,
+        "coverage": 0.0,
+        "impact_ratio": 0.0,
+        "recommendation": "none"
+      },
+      "lanes": {
+        "refactor_0": {
+          "actions": [
+            1
+          ],
+          "file_count": 1,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "refactor_1": {
+          "actions": [
+            3
+          ],
+          "file_count": 1,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "refactor_2": {
+          "actions": [
+            4
+          ],
+          "file_count": 1,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "test_coverage": {
+          "actions": [
+            2
+          ],
+          "file_count": 1,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "debt_review": {
+          "actions": [
+            5
+          ],
+          "file_count": 0,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        }
+      },
+      "can_parallelize": false,
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
+    },
+    "tools": {
+      "fixers": [],
+      "move": {
+        "available": true,
+        "relevant": false,
+        "reason": null,
+        "usage": "desloppify move <source> <dest> [--dry-run]"
+      },
+      "plan": {
+        "command": "desloppify plan",
+        "description": "Generate prioritized markdown cleanup plan"
+      },
+      "badge": {
+        "generated": true,
+        "in_readme": false,
+        "path": "scorecard.png",
+        "recommendation": "Add to README: <img src=\"scorecard.png\" width=\"100%\">"
+      }
+    },
+    "debt": {
+      "overall_gap": 3.8,
+      "wontfix_count": 10,
+      "worst_dimension": "Test health",
+      "worst_gap": 89.7,
+      "trend": "growing"
+    },
+    "milestone": "All T1 and T2 items cleared!",
+    "primary_action": {
+      "command": "desloppify show dupes --status open",
+      "description": "1 dupes work items \u2014 extract shared utility or consolidate duplicates"
+    },
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
+    "verification_step": {
+      "command": "desloppify scan",
+      "reason": "revalidate after changes"
+    },
+    "risk_flags": [
+      {
+        "type": "wontfix_gap",
+        "severity": "medium",
+        "message": "Strict/lenient gap is 3.8 pts with 10 wontfix issues"
+      }
+    ],
+    "strict_target": {
+      "target": 85.0,
+      "current": 84.7,
+      "gap": 0.3,
+      "state": "below",
+      "warning": null
+    },
+    "reminders": [
+      {
+        "type": "review_not_run",
+        "message": "Mechanical checks look good! Run a subjective design review to catch issues linters miss: desloppify review --prepare",
+        "command": "desloppify review --prepare",
+        "priority": 3,
+        "severity": "low"
+      }
+    ],
+    "reminder_history": {
+      "zone_classification": 3,
+      "report_scores": 8,
+      "feedback_nudge": 3,
+      "stagnant_nudge": 22,
+      "wontfix_growing": 3,
+      "review_not_run": 2
+    }
+  },
   "config": {
     "review_max_age_days": 30,
     "review_batch_max_files": 80,
@@ -2122,5 +2370,6 @@
     "retrospective_max_issues": 30,
     "retrospective_max_batch_items": 20,
     "config_hash": "7980ddd55e8f69a21372946243ce6d7d55d9381c1238ba28eea2d458a88b1742"
-  }
+  },
+  "next_command": "desloppify review --run-batches --runner codex --parallel --scan-after-import"
 }

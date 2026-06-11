@@ -48,9 +48,7 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
             }
         }
 
-        var rootId = parent is null
-            ? Guid.Empty
-            : parent.RootMessageId == Guid.Empty ? parent.Id : parent.RootMessageId;
+        var rootId = parent?.EffectiveRootId ?? Guid.Empty;
 
         Guid? parentId;
         int depth;

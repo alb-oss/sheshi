@@ -1,18 +1,43 @@
 {
-  "command": "show",
-  "query": "review",
-  "status_filter": "open",
-  "total": 0,
-  "issues": [],
+  "command": "review",
+  "action": "import",
+  "mode": "holistic",
+  "diff": {
+    "new": 4,
+    "auto_resolved": 5,
+    "reopened": 0,
+    "total_current": 4,
+    "suspect_detectors": [
+      "dupes",
+      "review",
+      "signature",
+      "stale_exclude",
+      "test_coverage"
+    ],
+    "chronic_reopeners": [],
+    "skipped_other_lang": 0,
+    "resolved_out_of_scope": 0,
+    "ignored": 0,
+    "ignore_patterns": 0,
+    "raw_issues": 4,
+    "suppressed_pct": 0.0
+  },
+  "next_command": "desloppify show review --status open",
+  "subjective_at_target": [],
+  "assessment_import": {
+    "mode": "trusted_internal",
+    "trusted": true,
+    "reason": "trusted import-run replay from 20260611_021413"
+  },
   "narrative": {
-    "phase": "refinement",
-    "headline": "Crossed 80% strict!",
+    "phase": "stagnation",
+    "headline": "All T1 items cleared! (4 review work items \u2014 run `desloppify show review --status open`)",
     "dimensions": {
       "lowest_dimensions": [
         {
           "name": "Test health",
-          "strict": 7.6,
-          "failing": 0,
+          "strict": 4.6,
+          "failing": 1,
           "impact": 0.0
         },
         {
@@ -24,9 +49,9 @@
           "impact_description": "re-review to improve"
         },
         {
-          "name": "Mid elegance",
-          "strict": 87.5,
-          "failing": 0,
+          "name": "High elegance",
+          "strict": 88.5,
+          "failing": 1,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -35,9 +60,9 @@
       "biggest_gap_dimensions": [
         {
           "name": "Test health",
-          "lenient": 100.0,
-          "strict": 7.6,
-          "gap": 92.4,
+          "lenient": 93.9,
+          "strict": 4.6,
+          "gap": 89.3,
           "wontfix_count": 5
         },
         {
@@ -46,19 +71,12 @@
           "strict": 98.4,
           "gap": 1.6,
           "wontfix_count": 0
-        },
-        {
-          "name": "Code quality",
-          "lenient": 100.0,
-          "strict": 98.9,
-          "gap": 1.1,
-          "wontfix_count": 2
         }
       ],
       "stagnant_dimensions": [
         {
           "name": "Code quality",
-          "strict": 98.9,
+          "strict": 99.0,
           "stuck_scans": 5
         },
         {
@@ -91,6 +109,39 @@
         "lane": "refactor_0"
       },
       {
+        "type": "refactor",
+        "detector": "test_coverage",
+        "count": 1,
+        "description": "1 test_coverage work items \u2014 review test coverage gaps \u2014 focus on critical modules with many importers first; defer test writing until code quality issues are resolved",
+        "command": "desloppify show test_coverage --status open",
+        "impact": 0.0,
+        "dimension": "Test health",
+        "priority": 2,
+        "lane": "test_coverage"
+      },
+      {
+        "type": "refactor",
+        "detector": "signature",
+        "count": 1,
+        "description": "1 signature work items \u2014 consolidate inconsistent function signatures",
+        "command": "desloppify show signature --status open",
+        "impact": 0.0,
+        "dimension": "Unknown",
+        "priority": 3,
+        "lane": "refactor_1"
+      },
+      {
+        "type": "refactor",
+        "detector": "review",
+        "count": 4,
+        "description": "4 review work items need investigation \u2014 run `desloppify show review --status open` to see them",
+        "command": "desloppify show review --status open",
+        "impact": 0.0,
+        "dimension": "Unknown",
+        "priority": 4,
+        "lane": "refactor_2"
+      },
+      {
         "type": "manual_fix",
         "detector": "stale_exclude",
         "count": 5,
@@ -98,8 +149,8 @@
         "command": "desloppify show stale_exclude --status open",
         "impact": 0.0,
         "dimension": "Code quality",
-        "priority": 2,
-        "lane": "refactor_1"
+        "priority": 5,
+        "lane": "refactor_3"
       },
       {
         "type": "debt_review",
@@ -107,14 +158,14 @@
         "description": "3.8 pts of wontfix debt \u2014 review stale decisions",
         "command": "desloppify show --status wontfix",
         "gap": 3.8,
-        "priority": 3,
+        "priority": 6,
         "lane": "debt_review"
       }
     ],
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 6,
+        "total_count": 20,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -131,16 +182,43 @@
         },
         "refactor_1": {
           "actions": [
-            2
+            3
+          ],
+          "file_count": 1,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "refactor_2": {
+          "actions": [
+            4
+          ],
+          "file_count": 1,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
+        "refactor_3": {
+          "actions": [
+            5
           ],
           "file_count": 5,
           "total_impact": 0.0,
           "automation": "manual",
           "run_first": false
         },
+        "test_coverage": {
+          "actions": [
+            2
+          ],
+          "file_count": 1,
+          "total_impact": 0.0,
+          "automation": "manual",
+          "run_first": false
+        },
         "debt_review": {
           "actions": [
-            3
+            6
           ],
           "file_count": 0,
           "total_impact": 0.0,
@@ -149,7 +227,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
+      "hint": "Try a different dimension to break the plateau. Review: 4 issue(s) \u2014 `desloppify show review --status open`."
     },
     "tools": {
       "fixers": [],
@@ -174,15 +252,15 @@
       "overall_gap": 3.8,
       "wontfix_count": 10,
       "worst_dimension": "Test health",
-      "worst_gap": 92.4,
-      "trend": "growing"
+      "worst_gap": 89.3,
+      "trend": "shrinking"
     },
-    "milestone": "Crossed 80% strict!",
+    "milestone": "All T1 items cleared!",
     "primary_action": {
       "command": "desloppify show dupes --status open",
       "description": "1 dupes work items \u2014 extract shared utility or consolidate duplicates"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
+    "why_now": "Try a different dimension to break the plateau. Review: 4 issue(s) \u2014 `desloppify show review --status open`.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -196,12 +274,19 @@
     ],
     "strict_target": {
       "target": 85.0,
-      "current": 84.7,
-      "gap": 0.3,
-      "state": "below",
+      "current": 85.1,
+      "gap": -0.1,
+      "state": "above",
       "warning": null
     },
     "reminders": [
+      {
+        "type": "review_issues_pending",
+        "message": "4 review work item(s) need investigation. Run `desloppify show review --status open` to see the work queue.",
+        "command": "desloppify show review --status open",
+        "priority": 1,
+        "severity": "high"
+      },
       {
         "type": "review_not_run",
         "message": "Mechanical checks look good! Run a subjective design review to catch issues linters miss: desloppify review --prepare",
@@ -212,11 +297,12 @@
     ],
     "reminder_history": {
       "zone_classification": 3,
-      "report_scores": 7,
+      "report_scores": 9,
       "feedback_nudge": 3,
       "stagnant_nudge": 22,
       "wontfix_growing": 3,
-      "review_not_run": 1
+      "review_not_run": 3,
+      "review_issues_pending": 1
     }
   },
   "config": {

@@ -1,0 +1,56 @@
+{
+  "batch": "package_organization",
+  "batch_index": 15,
+  "assessments": {"package_organization": 92.5},
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "Backend uses a clean feature-folder layout: Auth/, Common/, Data/, Domain/, Email/, Features/{Messages,Moderation,Rooms}/, Realtime/, Storage/ — each directory name maps directly to its contained responsibility (e.g. Realtime/ holds ChatHub.cs, PresenceTracker.cs, PresenceController.cs, PresenceDto.cs, RealtimeNotifier.cs, GroupNames.cs, all in namespace Sheshi.Api.Realtime).",
+        "Dependency direction is strictly leaf->consumer with no reciprocal/bidirectional directory edges. coupling_matrix shows only Features/Auth/Data -> Domain/Common/Storage/Realtime/Email flows; Domain/ (avg_fan_in 22, avg_fan_out 0), Common/ (fan_out 0), Storage/ (fan_out 0), Realtime/ (fan_out 0), Email/ (fan_out 0) are all leaf packages.",
+        "No straggler root files in the API project: server/Sheshi.Api root holds only Program.cs (composition-root entry point), the .csproj, .http and appsettings.* config — all framework-mandated, none are domain code that belongs in a focused package.",
+        "No flat-directory overload: the largest production folder is Auth/ (8 files / 565 LOC) and Features/Messages/ (7 files / 892 LOC); both are internally cohesive (auth concerns; message lifecycle: controller/service/reader/enricher/dtos), not mixed-concern dumping grounds.",
+        "Two previously-flagged organization issues are genuinely resolved and verified: the empty Controllers/ directory no longer exists, Domain/ holds only persistence entities (ApplicationUser, Enums, Message, RefreshToken, Report, Room, Vote), and the Slug/Text static helpers now live in Common/.",
+        "Frontend src/ is a conventional flat Vite layout (~17 files) with components/ and views/ subfolders. Lib-style root files are each single-concern: api.ts (HTTP client), appSupport.ts (route/auth/state helpers), appHooks.ts (React hooks), realtime.ts (SignalR), roles.ts (RBAC), types.ts (domain types). The high-fan-in ones (api.ts, appSupport.ts, types.ts each imported by 8-10 siblings) are genuinely core; the rubric flags small projects with flat structure and framework src/ layouts as appropriate to skip.",
+        "package_size_census reports a single 'server' package at 100% — an artifact of the census granularity (it does not decompose into the feature subfolders), not a real disproportionate-package boundary problem."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Frontend src/ keeps a handful of low-fan-in lib-style modules (appHooks.ts, realtime.ts, roles.ts) at the flat root rather than under a small lib/ or hooks/ grouping; acceptable for a sub-20-file Vite app but slightly less self-documenting than the backend's strongly foldered layout, which keeps the codebase from a perfect score."
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "dimension_character": "Package organization is a clear strength of this codebase: the backend follows a disciplined feature-folder convention where every directory name maps to its responsibility, dependency direction flows cleanly from consumers (Features/Auth) to leaf packages (Domain/Common/Storage/Realtime/Email) with zero reciprocal edges, and two prior placement defects (empty Controllers/, helpers co-located with entities) have been genuinely fixed. The frontend uses a conventional flat Vite src/ with components/ and views/ subfolders and cohesive single-concern lib modules. A developer can reliably predict where to find and place things by directory structure alone.",
+      "score_rationale": "This sits in the strong band: the backend layout is essentially exemplary (clean ownership, predictable navigation, no coupling-direction failures, no flat-dir overload, no stragglers), while the frontend's flat src/ with a few low-fan-in root modules is appropriate for a small app but marginally less self-documenting than the backend, keeping it just shy of the 95+ range. No genuine package_organization defects rise to a reportable confidence level, so the score reflects solid, trustworthy structure with only minor placement softness on the frontend."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "package_organization": {
+      "add": [
+        {
+          "header": "Clean leaf->consumer dependency direction in backend",
+          "description": "Domain/Common/Storage/Realtime/Email are all leaf packages (avg_fan_out 0) consumed by Features/Auth/Data; the coupling_matrix has no reciprocal or downstream->upstream edges, so package boundaries match change ownership.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Feature-folder naming maps to responsibility",
+          "description": "Every backend directory (Auth, Common, Data, Domain, Email, Features/*, Realtime, Storage) contains exactly the concern its name implies and shares a matching namespace, so a developer can navigate by structure alone.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend flat src/ is cohesive for app size",
+          "description": "The ~17-file Vite frontend keeps components/ and views/ subfolders plus single-concern lib modules (api, appSupport, appHooks, realtime, roles, types); flat root is appropriate for a sub-20-file project rather than a placement defect.",
+          "settled": false,
+          "positive": true
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 18,
+  "assessments": {"contract_coherence": 92.0},
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "Result-style record contracts are consistent and honest: MessageCreateResult/DeleteMessageResult/ReportMessageResult (MessageService.cs:185-203), ModActionResult (ModerationService.cs:270-276), and CreateRoomResult (RoomService.cs:93-97) all use static factory methods (Created/Failed/NotFound/Forbidden) and callers map them by field, never guessing.",
+        "Nullable return types match all paths: MessageReader.GetMessageAsync/GetThreadAsync return MessageDto?/ThreadDto? and return null on not-found (MessageReader.cs:45-51, 79-98); TokenService.RotateRefreshTokenAsync returns AuthResponse? returning null on every failure branch (TokenService.cs:38-64). Controllers convert null to NotFound/Unauthorized consistently.",
+        "XML docstrings accurately describe behavior including edge cases: Slug.Normalize documents the null-on-nothing-usable contract that the body honors (Slug.cs:7-19); Text.Clip 'empty input becomes null' matches the code (Text.cs:5-11); Message.EffectiveRootId comment explains the Guid.Empty legacy fallback that the expression implements (Message.cs:18-20); MessageEnricher header's 'four queries (no N+1)' claim matches the four awaited batch queries (MessageEnricher.cs:7-50).",
+        "No getter-name-hides-mutation defects: all Get* methods are pure reads (MeController.Get, PresenceController.Get, GetBySlug, GetMessage). GetSnapshotAsync writes the cache, but that memoization is the documented, idiomatic contract and not a hidden side effect (HighlightsService.cs:31-66).",
+        "SignalR snake_case parity is configured (Program.cs:59-60 AddSignalR().AddJsonProtocol SnakeCaseLower), matching AddControllers AddJsonOptions SnakeCaseLower (Program.cs:30-35), so the prior REST/hub casing divergence is resolved and DTOs serialize identically on both transports.",
+        "Minor: RealtimeNotifier.MessageChangedAsync emits a 'message_changed' event with a full MessageChangeDto payload and computes ResolveRootAsync to fill ThreadId (RealtimeNotifier.cs:7-17), but no client subscribes to it — frontend/src/realtime.ts:53-54 only listens to 'changed' and 'presence'. This is an unused emission, not a contract lie."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "RealtimeNotifier emits a structured 'message_changed' payload (plus the cost of ResolveRootAsync to populate it) that has zero consumers; the realtime contract promises richer event data than the frontend or tests actually use, leaving an unverifiable, drift-prone surface."
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "dimension_character": "Contracts in this codebase are reliably honest: signatures, names, nullability, and docstrings consistently predict behavior, and a uniform Result-record pattern with static factory methods makes service outcomes explicit rather than inferred. Getter-named methods are pure reads, return types cover all paths, and the documented snake_case parity between REST and SignalR is now configured in one place. The only blemish is the RealtimeNotifier emitting a structured 'message_changed' event that no consumer reads — an unused emission rather than a misleading one.",
+      "score_rationale": "Per the global anchors this sits between 90 (strong, trustworthy with isolated rough edges) and 100; a developer can trust what signatures, names, and docs promise across services, DTOs, and controllers. The single dead realtime emission is local and non-misleading rather than a contract lie, so it pulls slightly below exemplary but does not undermine the otherwise systemic coherence, landing at 92.0."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "unused_message_changed_event",
+      "summary": "RealtimeNotifier emits a structured 'message_changed' payload no client or test consumes",
+      "related_files": ["server/Sheshi.Api/Realtime/RealtimeNotifier.cs", "frontend/src/realtime.ts"],
+      "evidence": [
+        "RealtimeNotifier.MessageChangedAsync sends both 'changed' (empty) and 'message_changed' (full MessageChangeDto) to the room and thread groups, and computes ResolveRootAsync to populate ThreadId for the payload (RealtimeNotifier.cs:7-17).",
+        "frontend/src/realtime.ts registers handlers only for 'changed' and 'presence' (lines 17-20, 53-54); grep across frontend/src and server tests finds no subscriber for 'message_changed' or any reader of MessageChangeDto."
+      ],
+      "suggestion": "Either drop the 'message_changed' emission (and stop computing its payload) until a consumer needs it, keeping only the 'changed' ping the frontend uses, or wire the frontend to consume 'message_changed' so the richer contract is actually honored. Prefer removal to reduce an unused, drift-prone surface.",
+      "confidence": "low",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "contract_coherence": {
+      "add": [
+        {
+          "header": "Uniform Result-record contracts with factory methods",
+          "description": "Service outcomes are expressed as sealed records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, ModActionResult, CreateRoomResult) with static Created/Failed/NotFound/Forbidden factories, so controllers map outcomes by explicit fields instead of inferring from nulls or exceptions.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Nullable returns honestly signal not-found",
+          "description": "Read methods (GetMessageAsync, GetThreadAsync, GetBySlugAsync) and token rotation (RotateRefreshTokenAsync) return nullable types and return null on every failure path, which controllers translate consistently to NotFound/Unauthorized.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Docstrings match runtime behavior including edge cases",
+          "description": "XML summaries on Slug.Normalize, Text.Clip, Message.EffectiveRootId, MessageEnricher, and HighlightsService.Score accurately state contracts (null-on-empty, legacy Guid.Empty root fallback, no-N+1 query counts), so they serve as trustworthy documentation rather than aspirational comments.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "SignalR/REST snake_case serialization parity configured",
+          "description": "AddSignalR().AddJsonProtocol(SnakeCaseLower) mirrors the AddControllers AddJsonOptions snake_case policy, so the same DTOs serialize identically on both transports and the frontend reads one casing — the prior camelCase/snake_case hub divergence is resolved.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Realtime notifier emits an unconsumed 'message_changed' event",
+          "description": "RealtimeNotifier broadcasts a structured MessageChangeDto via 'message_changed' (and pays ResolveRootAsync to fill it) but the frontend only subscribes to the empty 'changed' ping; the richer event contract has no reader, making it drift-prone dead surface rather than a verified contract.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

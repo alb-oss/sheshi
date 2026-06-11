@@ -1,19 +1,19 @@
 {
   "version": 3,
   "created": "2026-06-11T01:26:13+00:00",
-  "last_scan": "2026-06-11T01:53:03+00:00",
-  "scan_count": 8,
-  "overall_score": 92.8,
-  "objective_score": 100.0,
+  "last_scan": "2026-06-11T02:23:09+00:00",
+  "scan_count": 10,
+  "overall_score": 92.2,
+  "objective_score": 97.9,
   "strict_score": 84.7,
-  "verified_strict_score": 93.9,
+  "verified_strict_score": 93.3,
   "stats": {
-    "total": 131,
+    "total": 129,
     "auto_resolved": 94,
     "deferred": 0,
     "false_positive": 0,
-    "fixed": 20,
-    "open": 7,
+    "fixed": 21,
+    "open": 4,
     "triaged_out": 0,
     "wontfix": 10,
     "by_tier": {
@@ -30,8 +30,8 @@
         "auto_resolved": 27,
         "deferred": 0,
         "false_positive": 0,
-        "fixed": 5,
-        "open": 1,
+        "fixed": 6,
+        "open": 0,
         "triaged_out": 0,
         "wontfix": 2
       },
@@ -40,7 +40,7 @@
         "deferred": 0,
         "false_positive": 0,
         "fixed": 6,
-        "open": 1,
+        "open": 3,
         "triaged_out": 0,
         "wontfix": 7
       },
@@ -49,7 +49,7 @@
         "deferred": 0,
         "false_positive": 0,
         "fixed": 0,
-        "open": 5,
+        "open": 1,
         "triaged_out": 0,
         "wontfix": 0
       }
@@ -153,7 +153,7 @@
         "text": "I have actually reviewed this finding: it is an ASP.NET controller instantiated by the framework via routing/DI (no C# importers by design, it IS an entry point) and is exercised by HTTP integration tests. The orphaned/test-coverage detectors model JS/TS import graphs and cannot recognize C# entry points or HTTP-level coverage. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:32+00:00",
         "scan_verified": true,
-        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verified_at": "2026-06-11T02:23:09+00:00",
         "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
@@ -270,7 +270,7 @@
         "text": "I have actually reviewed this finding: it is a pure DTO record with no behavior, referenced by its feature controller and serialized in every integration test, so there is nothing to unit-test. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:33+00:00",
         "scan_verified": true,
-        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verified_at": "2026-06-11T02:23:09+00:00",
         "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
@@ -2235,7 +2235,7 @@
       "status": "open",
       "note": null,
       "first_seen": "2026-06-11T01:26:15+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": null,
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -2260,7 +2260,7 @@
       "status": "open",
       "note": null,
       "first_seen": "2026-06-11T01:26:15+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": null,
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -2385,7 +2385,7 @@
       "status": "open",
       "note": "Reopened (\u00d71) \u2014 reappeared in scan (was auto_resolved)",
       "first_seen": "2026-06-11T01:26:15+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": null,
       "reopen_count": 1,
       "work_item_kind": "mechanical_defect",
@@ -2460,7 +2460,7 @@
       "status": "open",
       "note": null,
       "first_seen": "2026-06-11T01:26:15+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": null,
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -2485,7 +2485,7 @@
       "status": "open",
       "note": null,
       "first_seen": "2026-06-11T01:26:15+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": null,
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -2615,17 +2615,17 @@
       "file": "server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
       "tier": 3,
       "confidence": "high",
-      "summary": "Untested module (78 LOC, 0 importers)",
+      "summary": "Untested module (78 LOC, 1 importers)",
       "detail": {
         "kind": "untested_module",
         "loc": 78,
-        "importer_count": 0,
+        "importer_count": 1,
         "loc_weight": 8.831760866327848
       },
       "status": "wontfix",
       "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": "2026-06-11T01:40:33+00:00",
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -2730,7 +2730,7 @@
       "status": "wontfix",
       "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": "2026-06-11T01:40:32+00:00",
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -2769,17 +2769,17 @@
       "file": "server/Sheshi.Api/Features/Rooms/RoomService.cs",
       "tier": 3,
       "confidence": "high",
-      "summary": "Untested module (96 LOC, 1 importers)",
+      "summary": "Untested module (97 LOC, 1 importers)",
       "detail": {
         "kind": "untested_module",
-        "loc": 96,
+        "loc": 97,
         "importer_count": 1,
-        "loc_weight": 9.797958971132712
+        "loc_weight": 9.848857801796104
       },
       "status": "wontfix",
       "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": "2026-06-11T01:40:34+00:00",
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -2968,7 +2968,7 @@
       "status": "wontfix",
       "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": "2026-06-11T01:40:33+00:00",
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -3091,17 +3091,17 @@
       "file": "server/Sheshi.Api/Features/Moderation/ModerationController.cs",
       "tier": 3,
       "confidence": "high",
-      "summary": "Untested module (301 LOC, 0 importers)",
+      "summary": "Untested module (80 LOC, 1 importers)",
       "detail": {
         "kind": "untested_module",
-        "loc": 301,
-        "importer_count": 0,
-        "loc_weight": 17.349351572897472
+        "loc": 80,
+        "importer_count": 1,
+        "loc_weight": 8.94427190999916
       },
       "status": "wontfix",
       "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": "2026-06-11T01:40:32+00:00",
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -3386,7 +3386,7 @@
       "status": "open",
       "note": null,
       "first_seen": "2026-06-11T01:36:19+00:00",
-      "last_seen": "2026-06-11T01:40:43+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
       "resolved_at": null,
       "reopen_count": 0,
       "work_item_kind": "mechanical_defect",
@@ -4325,16 +4325,73 @@
         "reasoning": "",
         "summary_hash": "d8df881e"
       },
-      "status": "open",
-      "note": null,
+      "status": "fixed",
+      "note": "Removed the redundant double string evaluation; TryParseStatus is now a single tuple switch in ModerationService, and the lowercase status string is the API contract that justifies explicit parsing",
       "first_seen": "2026-06-11T01:53:03+00:00",
       "last_seen": "2026-06-11T01:53:03+00:00",
-      "resolved_at": null,
+      "resolved_at": "2026-06-11T02:11:57+00:00",
       "reopen_count": 0,
       "work_item_kind": "review_defect",
       "issue_kind": "review_defect",
       "origin": "review_import",
       "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Removed the redundant double string evaluation; TryParseStatus is now a single tuple switch in ModerationService, and the lowercase status string is the API contract that justifies explicit parsing and I am not gaming the score.",
+        "attested_at": "2026-06-11T02:11:57+00:00",
+        "scan_verified": false
+      }
+    },
+    "signature::server/Sheshi.Api/Features/Messages/MessageService.cs::signature_variance::Failed": {
+      "id": "signature::server/Sheshi.Api/Features/Messages/MessageService.cs::signature_variance::Failed",
+      "detector": "signature",
+      "file": "server/Sheshi.Api/Features/Messages/MessageService.cs",
+      "tier": 3,
+      "confidence": "medium",
+      "summary": "'Failed' has 2 different signatures across 3 files",
+      "detail": {},
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T02:12:11+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "mechanical_defect",
+      "issue_kind": "mechanical_defect",
+      "origin": "scan",
+      "lang": "csharp",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationService.cs::untested_module": {
+      "id": "test_coverage::server/Sheshi.Api/Features/Moderation/ModerationService.cs::untested_module",
+      "detector": "test_coverage",
+      "file": "server/Sheshi.Api/Features/Moderation/ModerationService.cs",
+      "tier": 3,
+      "confidence": "high",
+      "summary": "Untested module (276 LOC, 1 importers)",
+      "detail": {
+        "kind": "untested_module",
+        "loc": 276,
+        "importer_count": 1,
+        "loc_weight": 16.61324772583615
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T02:12:11+00:00",
+      "last_seen": "2026-06-11T02:23:09+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "mechanical_defect",
+      "issue_kind": "mechanical_defect",
+      "origin": "scan",
+      "lang": "csharp",
+      "zone": "production",
       "suppressed": false,
       "suppressed_at": null,
       "suppression_pattern": null
@@ -4357,7 +4414,7 @@
         }
       },
       "warnings": [],
-      "updated_at": "2026-06-11T01:40:43+00:00"
+      "updated_at": "2026-06-11T02:23:09+00:00"
     }
   },
   "score_confidence": {
@@ -4371,7 +4428,7 @@
   },
   "subjective_integrity": {
     "status": "disabled",
-    "target_score": null,
+    "target_score": 85.0,
     "matched_count": 0,
     "matched_dimensions": [],
     "reset_dimensions": []
@@ -4396,10 +4453,7 @@
         "Delegation Density": 94.0,
         "Definition Directness": 95.0,
         "Type Discipline": 93.0
-      },
-      "needs_review_refresh": true,
-      "refresh_reason": "mechanical_issues_changed",
-      "stale_since": "2026-06-11T01:53:03+00:00"
+      }
     },
     "ai_generated_debt": {
       "score": 95.5,
@@ -4409,34 +4463,22 @@
     "api_surface_coherence": {
       "score": 90.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T01:57:03+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "authorization_consistency": {
       "score": 90.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:04:20+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "contract_coherence": {
       "score": 91.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:04:20+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "convention_outlier": {
       "score": 89.0,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:04:21+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "cross_module_architecture": {
       "score": 93.0,
@@ -4446,10 +4488,7 @@
     "dependency_health": {
       "score": 95.0,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:04:22+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "design_coherence": {
       "score": 90.5,
@@ -4457,7 +4496,7 @@
       "assessed_at": "2026-06-11T01:53:03+00:00",
       "needs_review_refresh": true,
       "refresh_reason": "mechanical_issues_changed",
-      "stale_since": "2026-06-11T01:53:03+00:00"
+      "stale_since": "2026-06-11T02:23:09+00:00"
     },
     "error_consistency": {
       "score": 92.5,
@@ -4467,10 +4506,7 @@
     "high_level_elegance": {
       "score": 88.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:09:55+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "incomplete_migration": {
       "score": 93.5,
@@ -4485,26 +4521,17 @@
     "logic_clarity": {
       "score": 90.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:09:56+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "low_level_elegance": {
       "score": 91.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:09:57+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "mid_level_elegance": {
       "score": 87.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:11:54+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "naming_quality": {
       "score": 93.5,
@@ -4514,26 +4541,17 @@
     "package_organization": {
       "score": 90.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:11:55+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "test_strategy": {
       "score": 87.0,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_fixed",
-      "stale_since": "2026-06-11T02:11:56+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     },
     "type_safety": {
       "score": 92.5,
       "source": "holistic",
-      "assessed_at": "2026-06-11T01:53:03+00:00",
-      "needs_review_refresh": true,
-      "refresh_reason": "review_issue_wontfix",
-      "stale_since": "2026-06-11T01:57:06+00:00"
+      "assessed_at": "2026-06-11T01:53:03+00:00"
     }
   },
   "scan_history": [
@@ -5568,13 +5586,271 @@
           "strict": 92.5
         }
       }
+    },
+    {
+      "timestamp": "2026-06-11T02:12:12+00:00",
+      "lang": "csharp",
+      "strict_score": 84.7,
+      "verified_strict_score": 93.3,
+      "objective_score": 97.9,
+      "overall_score": 92.2,
+      "open": 4,
+      "diff_new": 2,
+      "diff_resolved": 2,
+      "ignored": 0,
+      "raw_issues": 13,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "disabled",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": 85.0
+      },
+      "score_confidence": {
+        "status": "full",
+        "confidence": 1.0,
+        "detector_count": 0,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 99.0
+        },
+        "Security": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "File health": {
+          "score": 100.0,
+          "strict": 98.4
+        },
+        "Duplication": {
+          "score": 99.8,
+          "strict": 99.8
+        },
+        "Test health": {
+          "score": 93.9,
+          "strict": 4.2
+        },
+        "Abstraction fit": {
+          "score": 92.5,
+          "strict": 92.5
+        },
+        "AI generated debt": {
+          "score": 95.5,
+          "strict": 95.5
+        },
+        "API coherence": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Auth consistency": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Contracts": {
+          "score": 91.5,
+          "strict": 91.5
+        },
+        "Convention drift": {
+          "score": 89.0,
+          "strict": 89.0
+        },
+        "Cross-module arch": {
+          "score": 93.0,
+          "strict": 93.0
+        },
+        "Dep health": {
+          "score": 95.0,
+          "strict": 95.0
+        },
+        "Design coherence": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Error consistency": {
+          "score": 92.5,
+          "strict": 92.5
+        },
+        "High elegance": {
+          "score": 88.5,
+          "strict": 88.5
+        },
+        "Stale migration": {
+          "score": 93.5,
+          "strict": 93.5
+        },
+        "Init coupling": {
+          "score": 96.0,
+          "strict": 96.0
+        },
+        "Logic clarity": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Low elegance": {
+          "score": 91.5,
+          "strict": 91.5
+        },
+        "Mid elegance": {
+          "score": 87.5,
+          "strict": 87.5
+        },
+        "Naming quality": {
+          "score": 93.5,
+          "strict": 93.5
+        },
+        "Structure nav": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Test strategy": {
+          "score": 87.0,
+          "strict": 87.0
+        },
+        "Type safety": {
+          "score": 92.5,
+          "strict": 92.5
+        }
+      }
+    },
+    {
+      "timestamp": "2026-06-11T02:23:09+00:00",
+      "lang": "csharp",
+      "strict_score": 84.7,
+      "verified_strict_score": 93.3,
+      "objective_score": 97.9,
+      "overall_score": 92.2,
+      "open": 4,
+      "diff_new": 0,
+      "diff_resolved": 2,
+      "ignored": 0,
+      "raw_issues": 13,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "disabled",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": 85.0
+      },
+      "score_confidence": {
+        "status": "full",
+        "confidence": 1.0,
+        "detector_count": 0,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 99.0
+        },
+        "Security": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "File health": {
+          "score": 100.0,
+          "strict": 98.4
+        },
+        "Duplication": {
+          "score": 99.8,
+          "strict": 99.8
+        },
+        "Test health": {
+          "score": 93.9,
+          "strict": 4.6
+        },
+        "Abstraction fit": {
+          "score": 92.5,
+          "strict": 92.5
+        },
+        "AI generated debt": {
+          "score": 95.5,
+          "strict": 95.5
+        },
+        "API coherence": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Auth consistency": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Contracts": {
+          "score": 91.5,
+          "strict": 91.5
+        },
+        "Convention drift": {
+          "score": 89.0,
+          "strict": 89.0
+        },
+        "Cross-module arch": {
+          "score": 93.0,
+          "strict": 93.0
+        },
+        "Dep health": {
+          "score": 95.0,
+          "strict": 95.0
+        },
+        "Design coherence": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Error consistency": {
+          "score": 92.5,
+          "strict": 92.5
+        },
+        "High elegance": {
+          "score": 88.5,
+          "strict": 88.5
+        },
+        "Stale migration": {
+          "score": 93.5,
+          "strict": 93.5
+        },
+        "Init coupling": {
+          "score": 96.0,
+          "strict": 96.0
+        },
+        "Logic clarity": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Low elegance": {
+          "score": 91.5,
+          "strict": 91.5
+        },
+        "Mid elegance": {
+          "score": 87.5,
+          "strict": 87.5
+        },
+        "Naming quality": {
+          "score": 93.5,
+          "strict": 93.5
+        },
+        "Structure nav": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Test strategy": {
+          "score": 87.0,
+          "strict": 87.0
+        },
+        "Type safety": {
+          "score": 92.5,
+          "strict": 92.5
+        }
+      }
     }
   ],
   "review_cache": {
     "detectors": {
       "boilerplate": {
         "version": 1,
-        "fingerprint": "f8c72c1a1483b01c0df59e0427037a2c14ca3d95",
+        "fingerprint": "d39d320de3fc773cee474594659bf9bbf4bcf43d",
         "entries": [
           {
             "id": "6377327d1e6db790",
@@ -5604,7 +5880,7 @@
             "locations": [
               {
                 "file": "Sheshi.Api/Features/Messages/HighlightsService.cs",
-                "line": 156
+                "line": 159
               },
               {
                 "file": "Sheshi.Api/Features/Messages/MessageEnricher.cs",
@@ -5625,11 +5901,11 @@
             "locations": [
               {
                 "file": "Sheshi.Api/Auth/AuthController.cs",
-                "line": 244
+                "line": 245
               },
               {
                 "file": "Sheshi.Api/Program.cs",
-                "line": 215
+                "line": 218
               }
             ],
             "sample": [
@@ -5706,80 +5982,80 @@
       },
       "security": {
         "version": 1,
-        "fingerprint": "6d9705bf4c7d35119819ac80980e0e45fec1a825",
+        "fingerprint": "dd0d0d7011f71e3e79aba0b583e888abd9b8fce5",
         "entries": [],
-        "files_scanned": 55,
+        "files_scanned": 56,
         "coverage": null
       },
       "dupes": {
         "version": 1,
         "threshold": 0.9,
         "functions": {
-          "server/Sheshi.Api/Auth/AuthController.cs:Register:25:45": {
+          "server/Sheshi.Api/Auth/AuthController.cs:Register:26:46": {
             "body_hash": "ae111125ff0b40ae66d945ea788c133e",
             "loc": 21
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:ConfirmEmail:48:60": {
+          "server/Sheshi.Api/Auth/AuthController.cs:ConfirmEmail:49:61": {
             "body_hash": "894829630f98782187048698833fb516",
             "loc": 13
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:SendConfirmationEmailAsync:62:79": {
+          "server/Sheshi.Api/Auth/AuthController.cs:SendConfirmationEmailAsync:63:80": {
             "body_hash": "60ff0eb375761755fedb2a0bdf96475e",
             "loc": 18
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:Login:82:103": {
+          "server/Sheshi.Api/Auth/AuthController.cs:Login:83:104": {
             "body_hash": "1238dd4253cb4841d802c33a2d443217",
             "loc": 22
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:Refresh:106:112": {
+          "server/Sheshi.Api/Auth/AuthController.cs:Refresh:107:113": {
             "body_hash": "175972440ff9c1be10ea48264cbd8f55",
             "loc": 7
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:Logout:116:122": {
+          "server/Sheshi.Api/Auth/AuthController.cs:Logout:117:123": {
             "body_hash": "4415f0b2636c57032899b1f6cf5ebe9a",
             "loc": 7
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:ForgotPassword:125:142": {
+          "server/Sheshi.Api/Auth/AuthController.cs:ForgotPassword:126:143": {
             "body_hash": "7aff90af47b5da10cd8bcceec5f2aa51",
             "loc": 18
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:ResetPassword:145:162": {
+          "server/Sheshi.Api/Auth/AuthController.cs:ResetPassword:146:163": {
             "body_hash": "ce2cb997c96f8d00b24e2f761c945c5c",
             "loc": 18
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:Providers:165:165": {
+          "server/Sheshi.Api/Auth/AuthController.cs:Providers:166:166": {
             "body_hash": "c292c2a806dfca2f09a1813ccf74f217",
             "loc": 1
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:External:168:177": {
+          "server/Sheshi.Api/Auth/AuthController.cs:External:169:178": {
             "body_hash": "822337d8f44b861bd15353d6bc797cc3",
             "loc": 10
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:ExternalCallback:180:231": {
+          "server/Sheshi.Api/Auth/AuthController.cs:ExternalCallback:181:232": {
             "body_hash": "ebc1a90690df46c8723269d6dea26fb0",
             "loc": 52
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:FrontendBaseUrl:233:234": {
+          "server/Sheshi.Api/Auth/AuthController.cs:FrontendBaseUrl:234:235": {
             "body_hash": "fecc3f66b5c1e8b0f379ab8950fc9dba",
             "loc": 2
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:ExternalFailureRedirect:236:237": {
+          "server/Sheshi.Api/Auth/AuthController.cs:ExternalFailureRedirect:237:238": {
             "body_hash": "b524534db83308b780cd1ad4314523c9",
             "loc": 2
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:GetEnabledProviders:239:252": {
+          "server/Sheshi.Api/Auth/AuthController.cs:GetEnabledProviders:240:253": {
             "body_hash": "cb2dbc01dfd3727775eeec080e9e5f60",
             "loc": 14
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:HasClientSecret:254:259": {
+          "server/Sheshi.Api/Auth/AuthController.cs:HasClientSecret:255:260": {
             "body_hash": "6f578d8b253e281d98c0c74166c9ed46",
             "loc": 6
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:NormalizeEmail:261:265": {
+          "server/Sheshi.Api/Auth/AuthController.cs:NormalizeEmail:262:266": {
             "body_hash": "282c2059336658bf41f127c22d6b79c8",
             "loc": 5
           },
-          "server/Sheshi.Api/Auth/AuthController.cs:CreateUsername:267:273": {
+          "server/Sheshi.Api/Auth/AuthController.cs:CreateUsername:268:274": {
             "body_hash": "006c14fc16d0f7bd5bc59251702fd742",
             "loc": 7
           },
@@ -5791,11 +6067,11 @@
             "body_hash": "18d8dcb63e771a18ee7a439e4207b065",
             "loc": 7
           },
-          "server/Sheshi.Api/Auth/MeController.cs:Get:18:22": {
+          "server/Sheshi.Api/Auth/MeController.cs:Get:19:23": {
             "body_hash": "0f92c448ad20fbf1276f03adbf6a6da0",
             "loc": 5
           },
-          "server/Sheshi.Api/Auth/MeController.cs:Patch:26:36": {
+          "server/Sheshi.Api/Auth/MeController.cs:Patch:27:37": {
             "body_hash": "c8085dd42b3300efb3505e050dcac23b",
             "loc": 11
           },
@@ -5843,6 +6119,14 @@
             "body_hash": "f8f2cc72623692e487ff403e03b1f2eb",
             "loc": 2
           },
+          "server/Sheshi.Api/Common/Slug.cs:Normalize:12:19": {
+            "body_hash": "ac962ce516aa77e160883239341666a3",
+            "loc": 8
+          },
+          "server/Sheshi.Api/Common/Text.cs:Clip:6:11": {
+            "body_hash": "e090db299ed73d0c314c7375e9142bd9",
+            "loc": 6
+          },
           "server/Sheshi.Api/Data/AppDbContext.cs:OnModelCreating:16:50": {
             "body_hash": "fb4557a39b36f40a3b0a381e8abed5a8",
             "loc": 35
@@ -5867,14 +6151,6 @@
             "body_hash": "8ca56d3ab782cd8d0cd6ec1528428927",
             "loc": 12
           },
-          "server/Sheshi.Api/Domain/Slug.cs:Normalize:12:19": {
-            "body_hash": "ac962ce516aa77e160883239341666a3",
-            "loc": 8
-          },
-          "server/Sheshi.Api/Domain/Text.cs:Clip:6:11": {
-            "body_hash": "e090db299ed73d0c314c7375e9142bd9",
-            "loc": 6
-          },
           "server/Sheshi.Api/Email/SmtpEmailSender.cs:SendPasswordResetAsync:8:9": {
             "body_hash": "6b5650eb128ebf5a8cd951b629dad842",
             "loc": 2
@@ -5895,44 +6171,40 @@
             "body_hash": "90f3a4379896fd727de216d47bd8e9b5",
             "loc": 9
           },
-          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:HighlightsService:36:200": {
-            "body_hash": "7e74a0ffb21c61f717ef3f49374e1429",
-            "loc": 165
+          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:HighlightsService:36:198": {
+            "body_hash": "f1aa14907609825cfa089a8c5b04aaf0",
+            "loc": 163
           },
           "server/Sheshi.Api/Features/Messages/HighlightsService.cs:GetSnapshotAsync:44:66": {
             "body_hash": "9067eaa91fb767d36735a4b04b29be48",
             "loc": 23
           },
-          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:Score:72:90": {
+          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:Score:75:93": {
             "body_hash": "1c24d3c086a2716bc051e3694ff930d8",
             "loc": 19
           },
-          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:Score:92:101": {
+          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:Score:95:104": {
             "body_hash": "d10fdf4a306bdc8fcf2aeb29ead57e16",
             "loc": 10
           },
-          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:FreshTieBreakScore:103:104": {
+          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:FreshTieBreakScore:106:107": {
             "body_hash": "95f9eff3fbad7035a5f2e408acc207e8",
             "loc": 2
           },
-          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:LoadCandidatesAsync:106:131": {
-            "body_hash": "853a22c56e067bf04e1497d18e9e670b",
+          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:LoadCandidatesAsync:109:134": {
+            "body_hash": "aa3a41438603bdd35d6218eb3dc909e1",
             "loc": 26
           },
-          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:LoadStatsAsync:133:194": {
-            "body_hash": "f2578992afbf2fe017a33e99bad73429",
+          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:LoadStatsAsync:136:197": {
+            "body_hash": "084a94a54ed51980c8f18d34a1ca041b",
             "loc": 62
           },
-          "server/Sheshi.Api/Features/Messages/HighlightsService.cs:EffectiveRootId:196:199": {
-            "body_hash": "78cdef75507645822a3eba2fa568a6a8",
-            "loc": 4
-          },
           "server/Sheshi.Api/Features/Messages/MessageEnricher.cs:MessageEnricher:13:68": {
-            "body_hash": "5b12065aa762331db64b999e1f1b51a7",
+            "body_hash": "8d8d312a3665bd27f1de27d8fff5f676",
             "loc": 56
           },
           "server/Sheshi.Api/Features/Messages/MessageEnricher.cs:EnrichAsync:15:67": {
-            "body_hash": "58a23105eea614bd48ac40716d09edec",
+            "body_hash": "a16edda2bd33e89ef2fcb42577ce7908",
             "loc": 53
           },
           "server/Sheshi.Api/Features/Messages/MessageReader.cs:MessageReader:12:180": {
@@ -5979,71 +6251,71 @@
             "body_hash": "20841a0f5572fc2c853040875e679691",
             "loc": 6
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:MessageService:11:185": {
-            "body_hash": "1e57fd03400b70821b9b7590c8a1257d",
-            "loc": 175
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:MessageService:11:183": {
+            "body_hash": "b3ad7c4720d6a5e27e91393ff35dabb7",
+            "loc": 173
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:CreateMessageAsync:15:97": {
-            "body_hash": "9bdb9e55cd3e7aa635ef895a2746f307",
-            "loc": 83
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:CreateMessageAsync:15:95": {
+            "body_hash": "1a8f3ce001e03aadb8777d7dde28c28d",
+            "loc": 81
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:UpvoteAsync:99:115": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:UpvoteAsync:97:113": {
             "body_hash": "3db85b9d99cf7f0186adca30d7c9c252",
             "loc": 17
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:RemoveUpvoteAsync:117:134": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:RemoveUpvoteAsync:115:132": {
             "body_hash": "d6758c39002af804754080168f3d0434",
             "loc": 18
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:SoftDeleteAsync:136:157": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:SoftDeleteAsync:134:155": {
             "body_hash": "01e03bfc9d9829f61ede560ed6318a10",
             "loc": 22
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:ReportAsync:159:183": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:ReportAsync:157:181": {
             "body_hash": "049e7357b5a9c2982bab5c6f6981850a",
             "loc": 25
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:MessageCreateResult:187:191": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:MessageCreateResult:185:189": {
             "body_hash": "f680bd9518e1027d74ae69de51fdd6fa",
             "loc": 5
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:Created:189:189": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:Created:187:187": {
             "body_hash": "4a12bdcdd1cbde232935543724c4ec31",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:Failed:190:190": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:Failed:188:188": {
             "body_hash": "a007da3dce798230e4913372ae36cea6",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:DeleteMessageResult:193:198": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:DeleteMessageResult:191:196": {
             "body_hash": "f8351098fc80a1ee913e5c3abc08de1e",
             "loc": 6
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:NotFound:195:195": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:NotFound:193:193": {
             "body_hash": "e69a7aeca2fb5b75fabca6713b000cae",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:Forbidden:196:196": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:Forbidden:194:194": {
             "body_hash": "01bf69f6a92f7c3141a2aef5bba72ce2",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:Deleted:197:197": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:Deleted:195:195": {
             "body_hash": "cad2175d8b5ada88ab184ca04716c878",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:ReportMessageResult:200:205": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:ReportMessageResult:198:203": {
             "body_hash": "80cbe354041859f6772561f2382053e6",
             "loc": 6
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:NotFound:202:202": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:NotFound:200:200": {
             "body_hash": "c53ba87065a6a5739274e0662e624496",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:Failed:203:203": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:Failed:201:201": {
             "body_hash": "669a78ce55a527e1b4bc4ea355795932",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Messages/MessageService.cs:Created:204:204": {
+          "server/Sheshi.Api/Features/Messages/MessageService.cs:Created:202:202": {
             "body_hash": "f99feec3ceb085de67822b4d2c6b25a7",
             "loc": 1
           },
@@ -6079,111 +6351,167 @@
             "body_hash": "362da3ce037d32ccdf024570dc9d76e5",
             "loc": 10
           },
-          "server/Sheshi.Api/Features/Messages/MessagesController.cs:RemoveUpvote:105:112": {
-            "body_hash": "a8dddc798c351889ece4c6108aae8f4d",
-            "loc": 8
+          "server/Sheshi.Api/Features/Messages/MessagesController.cs:RemoveUpvote:105:113": {
+            "body_hash": "82dc7a4025e7211d15b98265668aabdd",
+            "loc": 9
           },
-          "server/Sheshi.Api/Features/Messages/MessagesController.cs:SoftDelete:117:129": {
+          "server/Sheshi.Api/Features/Messages/MessagesController.cs:SoftDelete:118:132": {
             "body_hash": "3309ce4587ccfe7f53ba7bb1fab6d966",
-            "loc": 13
+            "loc": 15
           },
-          "server/Sheshi.Api/Features/Messages/MessagesController.cs:Report:134:145": {
+          "server/Sheshi.Api/Features/Messages/MessagesController.cs:Report:137:148": {
             "body_hash": "12be3734d60b87278d9b5b6467096285",
             "loc": 12
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Analytics:22:65": {
-            "body_hash": "7e1b0b5e12dfbe7154c61bd93a22704b",
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Analytics:18:19": {
+            "body_hash": "a9099e51aebc81b18dadc6675671e52c",
+            "loc": 2
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Reports:22:26": {
+            "body_hash": "702190005e0f90e54d69b021d505c4b0",
+            "loc": 5
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Users:29:30": {
+            "body_hash": "ea0ce1bd337069f2ef615e69d6c5c023",
+            "loc": 2
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Resolve:33:33": {
+            "body_hash": "86704125d6e4bcdd19f4cd7d8c7e7300",
+            "loc": 1
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Dismiss:36:36": {
+            "body_hash": "18b313bcce1a0285cafe1415bc35663e",
+            "loc": 1
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Ban:39:39": {
+            "body_hash": "88ea2e1c84ea524376479c7168dd035b",
+            "loc": 1
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Unban:42:42": {
+            "body_hash": "f0eb74c8a62e2b65104aa98e7c9dc638",
+            "loc": 1
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:UpdateRole:46:53": {
+            "body_hash": "c764361dc375b82614c067fd9dca119b",
+            "loc": 8
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:SetBan:55:59": {
+            "body_hash": "0b19c2b78b2dc61586abc232ec5ebb08",
+            "loc": 5
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:SetReportStatus:61:66": {
+            "body_hash": "0c66fb546dcdcec369a60bc5c12549d9",
+            "loc": 6
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Finish:68:74": {
+            "body_hash": "9ca434c445eeb4fc0667f566572ddc4e",
+            "loc": 7
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Audit:77:79": {
+            "body_hash": "d5bc094e4fa118991ac67d44174ebcd5",
+            "loc": 3
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:ModerationService:14:268": {
+            "body_hash": "a04d66ea0b594a5eab008ef9c70d8192",
+            "loc": 255
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:BuildAnalyticsAsync:16:59": {
+            "body_hash": "5bdbd64edb5b020e368e3fc87c924918",
             "loc": 44
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:CountRoleMembersAsync:67:73": {
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:ListReportsAsync:61:75": {
+            "body_hash": "bfd84b4800c28979e13ae64b24d3736f",
+            "loc": 15
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:ListUsersAsync:77:104": {
+            "body_hash": "39929652cba80e2040e47d3aa247335d",
+            "loc": 28
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:SetBanAsync:106:124": {
+            "body_hash": "418f5c6b80254c63bd45026d21ffe0a6",
+            "loc": 19
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:SetModeratorAsync:126:138": {
+            "body_hash": "ef1dd6e09054d3cc2992db9083ceff61",
+            "loc": 13
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:SetReportStatusAsync:140:148": {
+            "body_hash": "475bd6cfa06299596f3eb76e6ca051eb",
+            "loc": 9
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:TryParseStatus:150:160": {
+            "body_hash": "9ad72a0ddcbda019d13b426e6f3eb545",
+            "loc": 11
+          },
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:CountRoleMembersAsync:162:168": {
             "body_hash": "07035015454785a8b7e3676a60db8a9f",
             "loc": 7
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:LoadTrendAsync:75:100": {
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:LoadTrendAsync:170:195": {
             "body_hash": "49f0cd49f0b2e2bd3b92600d53475a2a",
             "loc": 26
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:LoadTopRoomsAsync:102:137": {
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:LoadTopRoomsAsync:197:232": {
             "body_hash": "799ec0548e5a444cabb8aa6b44c12807",
             "loc": 36
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:LoadTopPostsAsync:139:172": {
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:LoadTopPostsAsync:234:267": {
             "body_hash": "8c67f60dfc843cfb5c404a05648c5e0d",
             "loc": 34
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Reports:175:195": {
-            "body_hash": "ef2c61a0d3bddd140f087e34e75396ea",
-            "loc": 21
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:ModActionResult:270:276": {
+            "body_hash": "91f8713b7a4d7084f24770be6b5749b2",
+            "loc": 7
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Resolve:198:199": {
-            "body_hash": "7a8cc283b214f4ff6b9f1444296831f1",
-            "loc": 2
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:Ok:273:273": {
+            "body_hash": "979fe3a30ab8dc7e663865fd56a3bf0d",
+            "loc": 1
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Dismiss:202:203": {
-            "body_hash": "8fb659724929a46aee9c6ca7af42e4b8",
-            "loc": 2
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:NotFound:274:274": {
+            "body_hash": "3a1f37df1bf940898eb42283101e4d22",
+            "loc": 1
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Ban:206:220": {
-            "body_hash": "b1048e618b3dbde33bd1b8afa568cf63",
-            "loc": 15
+          "server/Sheshi.Api/Features/Moderation/ModerationService.cs:Failed:275:275": {
+            "body_hash": "6b84f125416d7a191e22f4b18198851e",
+            "loc": 1
           },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Unban:223:231": {
-            "body_hash": "ba972de0d6c6431a176b5aa372b4e9cd",
-            "loc": 9
-          },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:UpdateRole:235:248": {
-            "body_hash": "00f1dce7836877ece04a254ebe0fd642",
-            "loc": 14
-          },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:Users:251:278": {
-            "body_hash": "61a1271622ba0c9facd80a2bfe36a1c8",
-            "loc": 28
-          },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:SetReportStatus:280:288": {
-            "body_hash": "17535bd87b333c6f130fbca98af3a4cb",
-            "loc": 9
-          },
-          "server/Sheshi.Api/Features/Moderation/ModerationController.cs:TryParseStatus:290:300": {
-            "body_hash": "e85f2e3b323c3777938ef5e7a043db8f",
-            "loc": 11
-          },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:RoomService:7:90": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:RoomService:8:91": {
             "body_hash": "4ed46266d9c3ae91a79057766706c675",
             "loc": 84
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:ListAsync:9:17": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:ListAsync:10:18": {
             "body_hash": "1b34815910fb392c4df17d44caa7b7cf",
             "loc": 9
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:GetBySlugAsync:19:26": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:GetBySlugAsync:20:27": {
             "body_hash": "6da5e2d25ce49711e13b5c4f2f77f051",
             "loc": 8
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:CreateAsync:28:51": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:CreateAsync:29:52": {
             "body_hash": "93653377ff3a63dff604b7a8a1b01723",
             "loc": 24
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:ToDtosAsync:53:80": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:ToDtosAsync:54:81": {
             "body_hash": "dd48c0e6518cc352f592236994fba867",
             "loc": 28
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:NormalizeName:82:87": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:NormalizeName:83:88": {
             "body_hash": "8b85036891537d40cc2e483e4c11da01",
             "loc": 6
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:NormalizeSlug:89:89": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:NormalizeSlug:90:90": {
             "body_hash": "6469ca100bb00fc61e0768d29348626d",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:CreateRoomResult:92:96": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:CreateRoomResult:93:97": {
             "body_hash": "afb0978c464424a7eeadd4491b3bc3b3",
             "loc": 5
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:Created:94:94": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:Created:95:95": {
             "body_hash": "19449cff5bb1c781089f2238268c7929",
             "loc": 1
           },
-          "server/Sheshi.Api/Features/Rooms/RoomService.cs:Failed:95:95": {
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs:Failed:96:96": {
             "body_hash": "5a1efac4009693e6cde0d89a40ec8278",
             "loc": 1
           },
@@ -6199,23 +6527,23 @@
             "body_hash": "fda0257b7ba6e4a0ff58a1ca06277311",
             "loc": 10
           },
-          "server/Sheshi.Api/Realtime/ChatHub.cs:JoinRoom:7:12": {
+          "server/Sheshi.Api/Realtime/ChatHub.cs:JoinRoom:12:17": {
             "body_hash": "db00068ca7bd37bfc29c5aff9fadd9fd",
             "loc": 6
           },
-          "server/Sheshi.Api/Realtime/ChatHub.cs:LeaveRoom:14:19": {
+          "server/Sheshi.Api/Realtime/ChatHub.cs:LeaveRoom:19:24": {
             "body_hash": "f3b585d99d18568fff42c9a6a52acf15",
             "loc": 6
           },
-          "server/Sheshi.Api/Realtime/ChatHub.cs:JoinThread:21:22": {
+          "server/Sheshi.Api/Realtime/ChatHub.cs:JoinThread:26:27": {
             "body_hash": "c052b6fe0557a41859998243008a4779",
             "loc": 2
           },
-          "server/Sheshi.Api/Realtime/ChatHub.cs:LeaveThread:24:25": {
+          "server/Sheshi.Api/Realtime/ChatHub.cs:LeaveThread:29:30": {
             "body_hash": "78f9cca115f2e95aff4d8290be818b85",
             "loc": 2
           },
-          "server/Sheshi.Api/Realtime/ChatHub.cs:OnDisconnectedAsync:27:34": {
+          "server/Sheshi.Api/Realtime/ChatHub.cs:OnDisconnectedAsync:32:39": {
             "body_hash": "3ac9147b7d335bb5fe2516b571f1f33c",
             "loc": 8
           },
@@ -6247,15 +6575,11 @@
             "body_hash": "99c4e77b48b706a61ea405b8d224e8f2",
             "loc": 7
           },
-          "server/Sheshi.Api/Realtime/RealtimeNotifier.cs:RealtimeNotifier:5:25": {
-            "body_hash": "28231c100bfd3381e9a8698c20f476ec",
-            "loc": 21
+          "server/Sheshi.Api/Realtime/RealtimeNotifier.cs:RealtimeNotifier:5:18": {
+            "body_hash": "21df7ffb316ef48a6ab07b006c2721b4",
+            "loc": 14
           },
-          "server/Sheshi.Api/Realtime/RealtimeNotifier.cs:MessageChangedAsync:7:12": {
-            "body_hash": "f1efe28392aed603e8bb4414a356e940",
-            "loc": 6
-          },
-          "server/Sheshi.Api/Realtime/RealtimeNotifier.cs:MessageChangedAsync:14:24": {
+          "server/Sheshi.Api/Realtime/RealtimeNotifier.cs:MessageChangedAsync:7:17": {
             "body_hash": "4228b94a1b7b33181b1007ccf674cca9",
             "loc": 11
           },
@@ -6294,53 +6618,53 @@
   },
   "zone_distribution": {
     "test": 10,
-    "production": 44,
+    "production": 45,
     "config": 1
   },
   "tool_hash": "2ead5ae7d4e6",
-  "scan_path": null,
+  "scan_path": "server",
   "scan_completeness": {
     "csharp": "full"
   },
   "potentials": {
     "csharp": {
-      "structural": 44,
-      "flat_dirs": 12,
+      "structural": 45,
+      "flat_dirs": 13,
       "single_use": 0,
-      "cycles": 44,
-      "orphaned": 44,
-      "test_coverage": 265,
-      "security": 55,
+      "cycles": 45,
+      "orphaned": 45,
+      "signature": 1,
+      "test_coverage": 274,
+      "security": 56,
       "boilerplate_duplication": 0,
-      "dupes": 138,
-      "stale_wontfix": 7,
-      "review": 10
+      "dupes": 150,
+      "stale_wontfix": 5
     }
   },
   "codebase_metrics": {
     "csharp": {
-      "total_files": 55,
+      "total_files": 56,
       "total_loc": 0,
-      "total_directories": 11
+      "total_directories": 12
     }
   },
   "dimension_scores": {
     "Code quality": {
       "score": 100.0,
-      "strict": 98.9,
-      "verified_strict_score": 98.9,
-      "checks": 56,
+      "strict": 99.0,
+      "verified_strict_score": 99.0,
+      "checks": 58,
       "failing": 0,
       "tier": 3,
       "detectors": {
         "orphaned": {
-          "potential": 44,
+          "potential": 45,
           "pass_rate": 1.0,
           "failing": 0,
           "weighted_failures": 0.0
         },
         "flat_dirs": {
-          "potential": 12,
+          "potential": 13,
           "pass_rate": 1.0,
           "failing": 0,
           "weighted_failures": 0.0
@@ -6351,18 +6675,18 @@
       "score": 100.0,
       "strict": 100.0,
       "verified_strict_score": 100.0,
-      "checks": 99,
+      "checks": 101,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "cycles": {
-          "potential": 44,
+          "potential": 45,
           "pass_rate": 1.0,
           "failing": 0,
           "weighted_failures": 0.0
         },
         "security": {
-          "potential": 55,
+          "potential": 56,
           "pass_rate": 1.0,
           "failing": 0,
           "weighted_failures": 0.0
@@ -6373,12 +6697,12 @@
       "score": 100.0,
       "strict": 98.4,
       "verified_strict_score": 100.0,
-      "checks": 44,
+      "checks": 45,
       "failing": 0,
       "tier": 3,
       "detectors": {
         "structural": {
-          "potential": 44,
+          "potential": 45,
           "pass_rate": 1.0,
           "failing": 0,
           "weighted_failures": 0.0
@@ -6389,31 +6713,31 @@
       "score": 99.8,
       "strict": 99.8,
       "verified_strict_score": 99.8,
-      "checks": 138,
+      "checks": 150,
       "failing": 1,
       "tier": 3,
       "detectors": {
         "dupes": {
-          "potential": 138,
-          "pass_rate": 0.9978260869565216,
+          "potential": 150,
+          "pass_rate": 0.9979999999999999,
           "failing": 1,
           "weighted_failures": 0.3
         }
       }
     },
     "Test health": {
-      "score": 100.0,
-      "strict": 7.6,
-      "verified_strict_score": 82.8,
-      "checks": 265,
-      "failing": 0,
+      "score": 93.9,
+      "strict": 4.6,
+      "verified_strict_score": 80.3,
+      "checks": 274,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "test_coverage": {
-          "potential": 265,
-          "pass_rate": 1.0,
-          "failing": 0,
-          "weighted_failures": 0.0
+          "potential": 274,
+          "pass_rate": 0.9393677090297949,
+          "failing": 1,
+          "weighted_failures": 16.61324772583615
         }
       }
     },
@@ -6836,13 +7160,13 @@
       "strict": 92.5,
       "verified_strict_score": 92.5,
       "checks": 10,
-      "failing": 1,
+      "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
           "pass_rate": 0.925,
-          "failing": 1,
+          "failing": 0,
           "weighted_failures": 0.75,
           "assessment_score": 92.5,
           "placeholder": false,
@@ -6855,10 +7179,11 @@
   },
   "reminder_history": {
     "zone_classification": 3,
-    "report_scores": 7,
+    "report_scores": 9,
     "feedback_nudge": 3,
     "stagnant_nudge": 22,
-    "wontfix_growing": 3
+    "wontfix_growing": 3,
+    "review_not_run": 2
   },
   "concern_dismissals": {
     "e433643d6506ad2a": {

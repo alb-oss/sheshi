@@ -54,7 +54,7 @@ public class MessageEnricher(AppDbContext db)
             m.RoomId,
             m.AuthorId,
             m.ParentId,
-            m.RootMessageId == Guid.Empty && m.ParentId is null ? m.Id : m.RootMessageId,
+            m.EffectiveRootId,
             m.Depth,
             m.DeletedAt is null ? m.Body : "",
             m.DeletedAt is null ? m.ImageUrl : null,

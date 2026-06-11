@@ -1,0 +1,537 @@
+{
+  "assessments": {
+    "api_surface_coherence": 91.5,
+    "authorization_consistency": 93.5,
+    "contract_coherence": 92.0,
+    "convention_outlier": 90.5,
+    "high_level_elegance": 88.5,
+    "mid_level_elegance": 89.5,
+    "package_organization": 92.5
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "Backend top-level folders map cleanly to capabilities: Domain/ (entities), Data/ (DbContext+seeder), Auth/, Common/ (Text+Slug helpers), Email/, Realtime/ (SignalR), Storage/ (image storage), and Features/{Messages,Moderation,Rooms} \u2014 a new engineer can explain why each exists.",
+        "Each feature folder follows a single consistent pattern: thin Controller + Service + Dtos. MessagesController and ModerationController are both thin auth+HTTP+audit layers delegating to MessageService/MessageReader and ModerationService respectively (ModerationController is 80 LOC).",
+        "The Messages feature's extra files are principled, not accidental: MessageReader (query path), MessageService (command path), MessageEnricher (shared DTO projection), HighlightsService (ranking) \u2014 a clean command/query separation rather than a god service.",
+        "Public surface per folder is small: each service exposes a focused set of methods (RoomService: List/GetBySlug/Create; MessageReader: 4 read methods; MessageService: 5 write methods).",
+        "server/README.md matches runtime reality: documented endpoints (/health, /api/rooms, /api/highlights, /api/rooms/presence, /api/auth/providers, /hub), single-instance rationale, auto-migrate behavior, and seed-room (#sheshi) all correspond to Program.cs and DbSeeder.cs.",
+        "Frontend is mostly domain-aligned: api.ts (HTTP client), realtime.ts (SignalR), roles.ts (auth predicates), types.ts (shared types), views/ (route pages), components/ (chrome/messages/overlays).",
+        "frontend/src/appSupport.ts is a low-cohesion 'support' module bundling unrelated concern families: route type+parsing, auth/theme/storage helpers, clipboard (copyText/withTimeout), display formatting (displayName, authorInitial, authorAccent, timeAgo), and thread-tree operations (patchThread, findReplyNode, sortHomeThreads/hotScore). Its grab-bag name and mixed contents blur file-level ownership.",
+        "Three previously flagged high-level issues are confirmed resolved: ModerationController split into thin controller + ModerationService, stale codebase_analysis.md removed, empty Controllers/ scaffolding directory deleted."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "appSupport.ts is a low-cohesion grab-bag mixing routing, storage, clipboard, formatting, and thread-tree concerns under a generic 'support' name, blurring file-level ownership on the frontend. App.tsx also concentrates most frontend orchestration/state in one 588-line component, though that reads more as a mid-level handoff concern than a top-level decomposition failure."
+    },
+    "convention_outlier": {
+      "evidence": [
+        "Backend Features/ directories follow a uniform vertical-slice convention: each has XController.cs, XService.cs, XDtos.cs with PascalCase filenames, records for DTOs, primary-constructor classes, and folder-matching namespaces (Messages/, Moderation/, Rooms/).",
+        "Result-record protocol is consistent across sibling services: each defines sealed record XResult with named static factory methods (Created, Failed, NotFound, Forbidden, Ok) returning self (MessageCreateResult, CreateRoomResult, ReportMessageResult, DeleteMessageResult, ModActionResult).",
+        "Frontend uses named function exports uniformly across components/ and views/; App.tsx is the only default export (conventional React root). Non-component modules use camelCase (api.ts, appHooks.ts, appSupport.ts, realtime.ts, roles.ts, types.ts).",
+        "Convention drift: frontend/src/components/ files are lowercase (chrome.tsx, messages.tsx, overlays.tsx) while frontend/src/views/ files are PascalCase (Auth.tsx, Feeds.tsx, Moderation.tsx, Profile.tsx) even though both directories contain React component modules of the same kind.",
+        "The 'Failed' factory signature differs (Failed(string) in domain results vs Failed(IReadOnlyList<string>) in ModActionResult) but this is semantically justified \u2014 ModActionResult wraps ASP.NET Identity error arrays \u2014 not arbitrary drift."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "components/ uses lowercase filenames (chrome.tsx, messages.tsx, overlays.tsx) while sibling views/ uses PascalCase for the same kind of React component module \u2014 a developer learning the views/ casing convention cannot trust it holds in components/."
+    },
+    "mid_level_elegance": {
+      "evidence": [
+        "Service->controller seam is uniform: MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult, ModActionResult are sealed records with named static factories (Created/Failed/NotFound/Forbidden/Ok) carrying explicit Found/Authorized/Succeeded flags; controllers read those flags and map to HTTP status in one obvious block (MessagesController.cs:80-85,128-129; RoomsController.cs:33-38; ModerationController.cs:68-74).",
+        "Entity->DTO translation happens in exactly one place: MessageEnricher.EnrichAsync is the single projection point reused by MessageReader (reads), MessageService (command side, MessageService.cs:91), and HighlightsController (HighlightsController.cs:41) \u2014 no ad-hoc mappers scattered across the boundary.",
+        "Clean CQRS read/write split: MessageReader (room feeds, replies, threads, keyset pagination) and MessageService (commands) are separate, both delegating projection to MessageEnricher and root resolution to the shared MessageReader.ResolveRootAsync static (MessageReader.cs:119-135), which is explicitly documented as shared by reads and command-side realtime notifications.",
+        "Realtime seam is minimal and explicit: RealtimeNotifier.MessageChangedAsync takes a single MessageChangeDto (RealtimeNotifier.cs:7-20); the previously-unused Guid/Guid? overload was removed so the notifier exposes exactly the one shape callers use.",
+        "Storage boundary is well-contained: IImageStorage throws ImageStorageException with a .Code; MessageService catches it in one place and translates to a result error (MessageService.cs:45-48), so I/O failure propagation across the storage seam is predictable.",
+        "Moderation controller->service seam was refactored so the controller is a thin auth+audit+HTTP layer; ModerationService returns ModActionResult and the controller's Finish helper maps Found/Succeeded/Errors consistently (ModerationController.cs:68-74).",
+        "Cache eviction is coordinated through a single shared HighlightsCache.Key constant; ranking-relevant writes evict it uniformly across MessageService operations (MessageService.cs:92,110,132,154).",
+        "Minor glue-code entropy: the effective-root-id derivation 'RootMessageId == Guid.Empty && ParentId is null ? Id : RootMessageId' is duplicated across MessageEnricher.cs:57, HighlightsService.cs:199-202 (named EffectiveRootId), and MessageService.cs:53 \u2014 a small boundary-translation rule living in three seams instead of one shared helper.",
+        "Service result error codes cross the service->controller seam as bare strings matched by literal comparison; already adjudicated as intentional since those exact strings are the API wire contract consumed by the frontend ApiError.code (api.ts:52-54)."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The effective-root-id derivation is duplicated across three message-feature files (MessageEnricher, HighlightsService, MessageService) instead of a single shared helper, a small but real seam-translation rule that lives in multiple places; the string error codes crossing the service->controller seam, while intentional as the wire contract, still require literal-string coupling between producer and consumer."
+    },
+    "api_surface_coherence": {
+      "evidence": [
+        "Every controller follows one shape: primary-constructor ControllerBase with [ApiController], [Route(\"api/...\")], [EnableRateLimiting(...)], returning ActionResult<T>/IActionResult. A developer can predict endpoint shape after seeing one (RoomsController, MessagesController, ModerationController, AuthController, MeController, HighlightsController, PresenceController).",
+        "Consistent async convention across the public service surface: I/O methods are async Task<T>, named with Async suffix, and take a trailing CancellationToken ct = default (MessageService, MessageReader, RoomService, ModerationService, TokenService, HighlightsService). The scan's sync_async_mix flag is a false positive \u2014 the only sync members are pure static helpers (HighlightsService.Score, MessageReader.NormalizeLimit/EncodeCursor/DecodeCursor, ModerationService.TryParseStatus), not blocking I/O wrapped in async.",
+        "Uniform result-object error contract: mutations return small sealed records with static factory constructors (MessageCreateResult, DeleteMessageResult, ReportMessageResult, ModActionResult, CreateRoomResult), and controllers map .Error/.Found/.Succeeded to HTTP codes. Error contracts are present via types, not just docs.",
+        "Reader/command split is clean: MessageReader holds reads, MessageService holds writes; parameter ordering is consistent across readers (id, Guid? callerId, int limit, string? cursor, CancellationToken ct).",
+        "Two PostMessage overloads are disambiguated by [Consumes] content type (application/json vs multipart/form-data) and both delegate to one private CreateMessageAsync \u2014 idiomatic ASP.NET content negotiation, not an overloaded interface switching on argument types.",
+        "Global JsonNamingPolicy.SnakeCaseLower (Program.cs) makes the frontend's snake_case request bodies and PascalCase C# records map cleanly \u2014 coherent wire contract end to end.",
+        "Minor asymmetry: MessageService.UpvoteAsync returns Task<bool> (found-or-not, controller returns NotFound on miss) while RemoveUpvoteAsync returns Task (void, controller always returns NoContent). Deliberate idempotent-DELETE semantics but a small shape difference between sibling vote mutations.",
+        "HighlightsService.Score(int,int,int,int,bool,DateTimeOffset,DateTimeOffset,DateTimeOffset) is a public static method with 8 parameters; mitigated by a 2-arg Score(HighlightStats, now) overload that all real callers use, and each param is an independent numeric input where grouping would obscure meaning."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The wide 8-parameter public Score overload sits at the upper edge of the >5-param heuristic, and the Upvote/RemoveUpvote return-shape asymmetry (Task<bool> vs Task) is a small inconsistency between sibling mutations. Both are minor and defensible, so they pull the score down only slightly from exemplary."
+    },
+    "authorization_consistency": {
+      "evidence": [
+        "Role/permission strings are centralized as constants in Domain/Enums.cs (Roles.User/Moderator/Admin/ModeratorOrAdmin); every controller references Roles.* \u2014 no magic permission literals anywhere (RoomsController.cs:27, ModerationController.cs:10,44,48, MessagesController.cs:76).",
+        "Write endpoints follow a uniform guard protocol: [Authorize] + GetUserAsync null check + IsBanned guard. PostMessage, Upvote, RemoveUpvote, and Report all apply the IsBanned guard (MessagesController.cs:73,95,109,141); SoftDelete documents its intentional skip with a rationale (lines 122-123).",
+        "Privileged moderation surface is class-gated [Authorize(Roles = Roles.ModeratorOrAdmin)] with UpdateRole narrowed to [Authorize(Roles = Roles.Admin)]; every privileged mutation routes through Audit() logging the acting moderator id and target (ModerationController.cs:10,44,64,72,77-79).",
+        "Read endpoints (rooms, messages, replies, threads, highlights, presence) are consistently anonymous public-read and pass a nullable User.GetUserId() for per-user enrichment, a single coherent pattern across MessageReader, HighlightsController, RoomsController GETs.",
+        "JWT bearer is the default scheme and role claims are minted into the access token (TokenService.cs:107; Program.cs:160-189), so [Authorize(Roles=...)] is genuinely enforced; bans revoke active refresh tokens and IsBanned blocks token rotation (ModerationService.cs:115-121, TokenService.cs:44-53).",
+        "ChatHub documents its intentional anonymous access (presence/pings only, no writes/sensitive data) at ChatHub.cs:1-9, reconciling the JWT-from-query wiring in Program.cs:183-185 with the public trust boundary.",
+        "All three historical authorization_consistency issues (IsBanned guard symmetry, ChatHub trust-boundary documentation, missing moderation audit trail) are verified fixed in the current code."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The auth posture relies on per-action imperative guards in controller bodies (GetUserAsync + IsBanned repeated across write endpoints) rather than a policy/requirement abstraction, so a new write endpoint can silently omit the IsBanned check without any compile-time or policy-level enforcement \u2014 the SoftDelete deviation shows the pattern is already non-uniform by design and is held together by discipline and inline comments rather than a shared guard. This is the one structural caveat keeping the score below the mid-90s."
+    },
+    "package_organization": {
+      "evidence": [
+        "Backend uses a clean feature-folder layout: Auth/, Common/, Data/, Domain/, Email/, Features/{Messages,Moderation,Rooms}/, Realtime/, Storage/ \u2014 each directory name maps directly to its contained responsibility (e.g. Realtime/ holds ChatHub.cs, PresenceTracker.cs, PresenceController.cs, PresenceDto.cs, RealtimeNotifier.cs, GroupNames.cs, all in namespace Sheshi.Api.Realtime).",
+        "Dependency direction is strictly leaf->consumer with no reciprocal/bidirectional directory edges. coupling_matrix shows only Features/Auth/Data -> Domain/Common/Storage/Realtime/Email flows; Domain/ (avg_fan_in 22, avg_fan_out 0), Common/ (fan_out 0), Storage/ (fan_out 0), Realtime/ (fan_out 0), Email/ (fan_out 0) are all leaf packages.",
+        "No straggler root files in the API project: server/Sheshi.Api root holds only Program.cs (composition-root entry point), the .csproj, .http and appsettings.* config \u2014 all framework-mandated, none are domain code that belongs in a focused package.",
+        "No flat-directory overload: the largest production folder is Auth/ (8 files / 565 LOC) and Features/Messages/ (7 files / 892 LOC); both are internally cohesive (auth concerns; message lifecycle: controller/service/reader/enricher/dtos), not mixed-concern dumping grounds.",
+        "Two previously-flagged organization issues are genuinely resolved and verified: the empty Controllers/ directory no longer exists, Domain/ holds only persistence entities (ApplicationUser, Enums, Message, RefreshToken, Report, Room, Vote), and the Slug/Text static helpers now live in Common/.",
+        "Frontend src/ is a conventional flat Vite layout (~17 files) with components/ and views/ subfolders. Lib-style root files are each single-concern: api.ts (HTTP client), appSupport.ts (route/auth/state helpers), appHooks.ts (React hooks), realtime.ts (SignalR), roles.ts (RBAC), types.ts (domain types). The high-fan-in ones (api.ts, appSupport.ts, types.ts each imported by 8-10 siblings) are genuinely core; the rubric flags small projects with flat structure and framework src/ layouts as appropriate to skip.",
+        "package_size_census reports a single 'server' package at 100% \u2014 an artifact of the census granularity (it does not decompose into the feature subfolders), not a real disproportionate-package boundary problem."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Frontend src/ keeps a handful of low-fan-in lib-style modules (appHooks.ts, realtime.ts, roles.ts) at the flat root rather than under a small lib/ or hooks/ grouping; acceptable for a sub-20-file Vite app but slightly less self-documenting than the backend's strongly foldered layout, which keeps the codebase from a perfect score."
+    },
+    "contract_coherence": {
+      "evidence": [
+        "Result-style record contracts are consistent and honest: MessageCreateResult/DeleteMessageResult/ReportMessageResult (MessageService.cs:185-203), ModActionResult (ModerationService.cs:270-276), and CreateRoomResult (RoomService.cs:93-97) all use static factory methods (Created/Failed/NotFound/Forbidden) and callers map them by field, never guessing.",
+        "Nullable return types match all paths: MessageReader.GetMessageAsync/GetThreadAsync return MessageDto?/ThreadDto? and return null on not-found (MessageReader.cs:45-51, 79-98); TokenService.RotateRefreshTokenAsync returns AuthResponse? returning null on every failure branch (TokenService.cs:38-64). Controllers convert null to NotFound/Unauthorized consistently.",
+        "XML docstrings accurately describe behavior including edge cases: Slug.Normalize documents the null-on-nothing-usable contract that the body honors (Slug.cs:7-19); Text.Clip 'empty input becomes null' matches the code (Text.cs:5-11); Message.EffectiveRootId comment explains the Guid.Empty legacy fallback that the expression implements (Message.cs:18-20); MessageEnricher header's 'four queries (no N+1)' claim matches the four awaited batch queries (MessageEnricher.cs:7-50).",
+        "No getter-name-hides-mutation defects: all Get* methods are pure reads (MeController.Get, PresenceController.Get, GetBySlug, GetMessage). GetSnapshotAsync writes the cache, but that memoization is the documented, idiomatic contract and not a hidden side effect (HighlightsService.cs:31-66).",
+        "SignalR snake_case parity is configured (Program.cs:59-60 AddSignalR().AddJsonProtocol SnakeCaseLower), matching AddControllers AddJsonOptions SnakeCaseLower (Program.cs:30-35), so the prior REST/hub casing divergence is resolved and DTOs serialize identically on both transports.",
+        "Minor: RealtimeNotifier.MessageChangedAsync emits a 'message_changed' event with a full MessageChangeDto payload and computes ResolveRootAsync to fill ThreadId (RealtimeNotifier.cs:7-17), but no client subscribes to it \u2014 frontend/src/realtime.ts:53-54 only listens to 'changed' and 'presence'. This is an unused emission, not a contract lie."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "RealtimeNotifier emits a structured 'message_changed' payload (plus the cost of ResolveRootAsync to populate it) that has zero consumers; the realtime contract promises richer event data than the frontend or tests actually use, leaving an unverifiable, drift-prone surface."
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "dimension_character": "The backend exhibits strong, consistent high-level decomposition: capability-aligned top-level folders (Domain, Data, Auth, Common, Email, Realtime, Storage) and uniform feature folders that all use the same thin-controller + service + DTO pattern, with the Messages feature's read/write/enrich split being genuinely principled rather than accidental. Documentation is trustworthy \u2014 the README and Program.cs/DbSeeder agree on endpoints, migration behavior, and seeded data. The frontend is largely domain-aligned too, with one notable exception: appSupport.ts is a generic 'support' module that bundles routing, storage, clipboard, formatting, and thread-tree concerns, blurring ownership at the file level.",
+      "score_rationale": "Ownership and change boundaries are predictable across the backend and most of the frontend, a small architectural-pattern vocabulary is applied consistently, and reference docs match reality \u2014 placing this well into the 'strong' band where a developer trusts the structure. The score is held below 90 by the appSupport.ts low-cohesion grab-bag and the App.tsx orchestration concentration, which are isolated rather than systemic, so they create only minor friction rather than undermining the otherwise clear decomposition."
+    },
+    "convention_outlier": {
+      "dimension_character": "Conventions are strong and predictable across both stacks: the C# backend applies a uniform vertical-slice + Result-record-with-static-factory protocol across all sibling feature directories, and the frontend uses named exports with camelCase utility modules consistently. The single noticeable drift is that frontend component files in components/ are lowercase while the same kind of component modules in views/ are PascalCase, so a developer who learns one directory's file-casing convention cannot assume it holds in its sibling.",
+      "score_rationale": "Against the global anchors this sits at 'strong' (90): patterns a developer sees in one area reliably hold elsewhere, with one minor style island (component file casing across components/ vs views/) that causes a momentary 'why is this different?' rather than recurring friction. It is held just below 90 of pure consistency by that real cross-directory naming drift, but well above the 80 'noticeable drift across major areas' band because the drift is isolated to file casing in two small frontend folders and every behavioral/export/result convention is uniform."
+    },
+    "mid_level_elegance": {
+      "dimension_character": "Handoffs across module and layer boundaries are explicit, minimal, and unsurprising: services return sealed Result records with named flags that controllers map to HTTP in one obvious place, entity->DTO translation is centralized in a single MessageEnricher reused by every consumer, and the realtime/storage/cache seams each expose one clean contract. The read/write split (MessageReader vs MessageService) reads as composition of collaborators rather than tangled back-and-forth, with shared root resolution documented at the seam. The only friction is a small effective-root-id derivation duplicated across three message-feature files and the intentional string error codes that double as the wire contract.",
+      "score_rationale": "This sits between strong (90) and solid-but-uneven (80): a developer can predict how data and errors cross every boundary because the Result-record + single-enricher pattern is applied uniformly, which pushes the score toward 90. What holds it just below is one genuinely duplicated boundary rule (effective-root-id in three places) and the literal-string error coupling at the service->controller seam, both isolated rather than systemic. Net: 89.5 \u2014 reliably good seams with one minor, localized rough edge."
+    },
+    "api_surface_coherence": {
+      "dimension_character": "The API surface is strikingly consistent: controllers share one structural template, every async public method follows the same Async/CancellationToken convention, and service mutations expose a uniform sealed-record result contract that controllers translate to HTTP. The few irregularities are minor and intentional \u2014 a content-type-disambiguated PostMessage overload, a deliberately idempotent DELETE returning void where its PUT sibling returns a found flag, and a single wide pure-function Score overload that already provides a narrow alternative its callers use.",
+      "score_rationale": "This sits near the 90 anchor (strong, trustworthy with isolated rough edges): a developer can predict API shape and error behavior from one example across controllers and services. It stops short of higher because of the 8-parameter Score overload and the small Upvote/RemoveUpvote return-shape asymmetry \u2014 real but trivial friction, not recurring irregularity."
+    },
+    "authorization_consistency": {
+      "dimension_character": "Authorization is uniformly and deliberately applied across the codebase: role strings are centralized constants, read endpoints are consistently anonymous public-read with nullable caller ids, write endpoints share an [Authorize] + null-check + IsBanned guard protocol, and the privileged moderation surface is role-gated and fully audit-logged. Every intentional exception \u2014 anonymous reads, ChatHub presence, and SoftDelete's ban-guard skip \u2014 carries an inline rationale, so a developer reviewing security can trust the coverage rather than second-guess it. The only residual friction is that guards are enforced imperatively inside controller bodies rather than via a policy abstraction, meaning consistency is upheld by convention and comments rather than by the type system or a shared requirement.",
+      "score_rationale": "This sits in the strong band: a developer can predict the auth pattern from one example and find it holds across siblings, with all exceptions documented \u2014 matching the 90 anchor (trustworthy, only minor friction). It falls short of exemplary because the per-action imperative guards leave room for a future endpoint to omit a check undetected (the SoftDelete deviation already breaks strict symmetry by design), so it is not the uniform-by-construction coverage the 100 anchor describes. No genuine defects were found; all three prior issues are resolved and confirmed in code."
+    },
+    "package_organization": {
+      "dimension_character": "Package organization is a clear strength of this codebase: the backend follows a disciplined feature-folder convention where every directory name maps to its responsibility, dependency direction flows cleanly from consumers (Features/Auth) to leaf packages (Domain/Common/Storage/Realtime/Email) with zero reciprocal edges, and two prior placement defects (empty Controllers/, helpers co-located with entities) have been genuinely fixed. The frontend uses a conventional flat Vite src/ with components/ and views/ subfolders and cohesive single-concern lib modules. A developer can reliably predict where to find and place things by directory structure alone.",
+      "score_rationale": "This sits in the strong band: the backend layout is essentially exemplary (clean ownership, predictable navigation, no coupling-direction failures, no flat-dir overload, no stragglers), while the frontend's flat src/ with a few low-fan-in root modules is appropriate for a small app but marginally less self-documenting than the backend, keeping it just shy of the 95+ range. No genuine package_organization defects rise to a reportable confidence level, so the score reflects solid, trustworthy structure with only minor placement softness on the frontend."
+    },
+    "contract_coherence": {
+      "dimension_character": "Contracts in this codebase are reliably honest: signatures, names, nullability, and docstrings consistently predict behavior, and a uniform Result-record pattern with static factory methods makes service outcomes explicit rather than inferred. Getter-named methods are pure reads, return types cover all paths, and the documented snake_case parity between REST and SignalR is now configured in one place. The only blemish is the RealtimeNotifier emitting a structured 'message_changed' event that no consumer reads \u2014 an unused emission rather than a misleading one.",
+      "score_rationale": "Per the global anchors this sits between 90 (strong, trustworthy with isolated rough edges) and 100; a developer can trust what signatures, names, and docs promise across services, DTOs, and controllers. The single dead realtime emission is local and non-misleading rather than a contract lie, so it pulls slightly below exemplary but does not undermine the otherwise systemic coherence, landing at 92.0."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "appsupport_grab_bag",
+      "summary": "appSupport.ts bundles unrelated concern families under a generic 'support' name, blurring file ownership",
+      "confidence": "medium",
+      "suggestion": "Split appSupport.ts along its existing concern seams into a few focused modules that already have sibling precedent in src/: move route type + parseRoute/navigate into a routing.ts, the auth/theme/saved storage keys+helpers into a storage.ts (or merge with existing api/auth concerns), and the thread-tree/sort helpers (patchThread, findReplyNode, sortHomeThreads, hotScore) into a messages/threads helper module near components/messages.tsx. Keep copyText and the small formatting helpers wherever they are most-used. Do not add a barrel/index file \u2014 just relocate to the simpler, name-matching modules.",
+      "related_files": [
+        "frontend/src/appSupport.ts"
+      ],
+      "evidence": [
+        "Single 201-line module mixes: Route type + parseRoute/navigate (routing), authKey/themeKey/savedKey + loadAuth/saveAuth/loadSavedIds (storage), copyText/withTimeout (clipboard), displayName/authorInitial/authorAccent/timeAgo (presentation formatting), and patchThread/findReplyNode/sortHomeThreads/hotScore (thread-tree domain logic).",
+        "The 'appSupport' name communicates 'miscellaneous helpers' rather than a domain capability, so a developer cannot predict from the name what lives there or where new helpers of a given kind belong."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "component_file_casing_drift",
+      "summary": "components/ uses lowercase filenames while sibling views/ uses PascalCase for the same React component module type",
+      "confidence": "medium",
+      "suggestion": "Rename components/chrome.tsx, messages.tsx, overlays.tsx to PascalCase (Chrome.tsx, Messages.tsx, Overlays.tsx) to match the views/ convention already settled for component-containing files, and update the imports in App.tsx and views/Feeds.tsx.",
+      "related_files": [
+        "frontend/src/components/chrome.tsx",
+        "frontend/src/components/messages.tsx",
+        "frontend/src/components/overlays.tsx",
+        "frontend/src/views/Feeds.tsx"
+      ],
+      "evidence": [
+        "components/ files are lowercase: chrome.tsx, messages.tsx, overlays.tsx \u2014 each exporting PascalCase React components (TopBar, ThreadCard, Dialog).",
+        "views/ files are PascalCase: Auth.tsx, Feeds.tsx, Moderation.tsx, Profile.tsx \u2014 same kind of artifact (component modules), and a prior issue already renamed feeds.tsx -> Feeds.tsx to make views/ uniform.",
+        "Both directories hold React component modules, so the casing choice diverges by directory rather than by artifact type."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "signature_Failed_2sigs_3files",
+      "reasoning": "Signature difference is semantically justified (Identity error arrays vs single domain error code); the static-factory Result protocol is otherwise uniform across all sibling result records."
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "effective_root_id_duplicated_across_seams",
+      "summary": "The 'effective root id' derivation is duplicated across three message-feature files instead of one shared helper",
+      "confidence": "medium",
+      "suggestion": "Promote the existing HighlightsService.EffectiveRootId logic to a single shared static (e.g. on Message or a Messages helper) and call it from MessageEnricher's DTO projection and MessageService's create path so the effective-root-id rule has one home.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Messages/MessageEnricher.cs",
+        "server/Sheshi.Api/Features/Messages/HighlightsService.cs",
+        "server/Sheshi.Api/Features/Messages/MessageService.cs"
+      ],
+      "evidence": [
+        "MessageEnricher.cs:57 inlines 'm.RootMessageId == Guid.Empty && m.ParentId is null ? m.Id : m.RootMessageId' when projecting RootMessageId into MessageDto.",
+        "HighlightsService.cs:199-202 implements the same rule as a private static EffectiveRootId helper used by candidate/stats loading.",
+        "MessageService.cs:53 derives the same root id ('parent.RootMessageId == Guid.Empty ? parent.Id : parent.RootMessageId') when creating a message.",
+        "The rule is a boundary-translation invariant (how a stored RootMessageId maps to a thread's effective root) yet lives in three seams; a change to the empty-root convention must be edited in all three."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "unused_message_changed_event",
+      "summary": "RealtimeNotifier emits a structured 'message_changed' payload no client or test consumes",
+      "confidence": "low",
+      "suggestion": "Either drop the 'message_changed' emission (and stop computing its payload) until a consumer needs it, keeping only the 'changed' ping the frontend uses, or wire the frontend to consume 'message_changed' so the richer contract is actually honored. Prefer removal to reduce an unused, drift-prone surface.",
+      "related_files": [
+        "server/Sheshi.Api/Realtime/RealtimeNotifier.cs",
+        "frontend/src/realtime.ts"
+      ],
+      "evidence": [
+        "RealtimeNotifier.MessageChangedAsync sends both 'changed' (empty) and 'message_changed' (full MessageChangeDto) to the room and thread groups, and computes ResolveRootAsync to populate ThreadId for the payload (RealtimeNotifier.cs:7-17).",
+        "frontend/src/realtime.ts registers handlers only for 'changed' and 'presence' (lines 17-20, 53-54); grep across frontend/src and server tests finds no subscriber for 'message_changed' or any reader of MessageChangeDto."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "review_quality": {
+    "batch_count": 7,
+    "dimension_coverage": 0.05,
+    "evidence_density": 7.143,
+    "high_score_missing_issue_note": 0
+  },
+  "context_updates": {
+    "high_level_elegance": {
+      "add": [
+        {
+          "header": "Consistent backend feature-folder decomposition",
+          "description": "Every Features/* folder uses the same thin-controller + service + DTO pattern, and top-level folders (Domain, Data, Auth, Common, Email, Realtime, Storage) map one-to-one to capabilities, so ownership and placement are predictable for a new engineer.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Messages read/write/enrich split is principled",
+          "description": "MessageReader (queries), MessageService (commands), MessageEnricher (shared DTO projection), and HighlightsService (ranking) are separated by genuine concern rather than as a god service, giving the busiest feature clean internal decomposition.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "README matches runtime reality",
+          "description": "server/README.md documents endpoints, single-instance rationale, auto-migrate behavior, and the seeded #sheshi room that all correspond to Program.cs and DbSeeder, so the reference docs are trustworthy.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "appSupport.ts is a low-cohesion frontend grab-bag",
+          "description": "Unlike the capability-aligned backend folders, the frontend collects routing, storage, clipboard, formatting, and thread-tree helpers into one generically named 'support' module, blurring file-level ownership and weakening predictability of where helpers live.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "convention_outlier": {
+      "add": [
+        {
+          "header": "Uniform vertical-slice + Result-record protocol in backend",
+          "description": "Every Features/ directory follows the same XController/XService/XDtos layout with records for DTOs and sealed-record results exposing named static factories (Created/Failed/NotFound/Ok), so a developer can predict a feature's shape from any one example.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Component file casing differs between components/ and views/",
+          "description": "components/ uses lowercase filenames (chrome/messages/overlays.tsx) while views/ uses PascalCase for the same kind of React component module, so the file-casing convention does not hold across the two sibling component directories.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Frontend module casing split by artifact type",
+          "description": "Non-component modules use camelCase (api/appHooks/appSupport/realtime/roles/types.ts) and named exports are used everywhere except the App.tsx root default export, giving a consistent and predictable module-naming scheme outside the components/views casing drift.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    },
+    "mid_level_elegance": {
+      "add": [
+        {
+          "header": "Single enricher centralizes all entity->DTO translation",
+          "description": "MessageEnricher.EnrichAsync is the one projection point reused by MessageReader, MessageService command side, and HighlightsController, so boundary translation happens in one obvious place with no scattered ad-hoc mappers.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Uniform Result-record + named-flag service->controller seam",
+          "description": "Services return sealed records (MessageCreateResult, DeleteMessageResult, ModActionResult, CreateRoomResult) with named factories and explicit Found/Authorized/Succeeded flags; controllers map those flags to HTTP status in one consistent block, making error/lifecycle propagation across the seam predictable.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Clean CQRS read/write split with shared root resolution",
+          "description": "MessageReader (reads) and MessageService (commands) are separate collaborators that both delegate projection to MessageEnricher and root resolution to the documented shared MessageReader.ResolveRootAsync static, so orchestration reads as composition rather than tangled back-and-forth.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Effective-root-id rule duplicated across three message seams",
+          "description": "The 'RootMessageId == Guid.Empty && ParentId is null ? Id : RootMessageId' boundary-translation invariant is inlined in MessageEnricher and MessageService and named EffectiveRootId in HighlightsService, so this one seam rule lives in three places instead of one.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "api_surface_coherence": {
+      "add": [
+        {
+          "header": "Uniform controller + async-suffix + CancellationToken convention",
+          "description": "Every controller is a primary-constructor ControllerBase with [ApiController]/[Route]/[EnableRateLimiting] returning ActionResult<T>, and every I/O service method is async Task<T> named *Async with a trailing CancellationToken ct = default. This uniformity lets a developer predict any endpoint or service call from a single example.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Sealed result records as the typed error contract",
+          "description": "Service mutations return small sealed records with static factory constructors (MessageCreateResult, DeleteMessageResult, ReportMessageResult, ModActionResult, CreateRoomResult) carrying .Error/.Found/.Succeeded, which controllers map to HTTP. The failure modes are encoded in types rather than left to documentation.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Content-type-disambiguated PostMessage overloads delegate to one core",
+          "description": "The two [HttpPost(\"messages\")] actions are split by [Consumes] (json vs multipart) and both forward to a single private CreateMessageAsync, which is idiomatic ASP.NET content negotiation rather than an overloaded interface switching on argument types.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Upvote/RemoveUpvote return-shape asymmetry",
+          "description": "UpvoteAsync returns Task<bool> (controller maps to NotFound on miss) while RemoveUpvoteAsync returns Task and the controller always returns NoContent \u2014 a deliberate idempotent-DELETE choice that nonetheless makes sibling vote mutations differ in shape.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "authorization_consistency": {
+      "add": [
+        {
+          "header": "Centralized role constants, zero magic permission strings",
+          "description": "All role/permission strings live in Domain/Enums.cs Roles (User/Moderator/Admin/ModeratorOrAdmin) and every controller references Roles.*, so authorization never drifts onto raw string literals.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Uniform write-endpoint guard protocol",
+          "description": "Mutating endpoints consistently apply [Authorize] + GetUserAsync null guard + IsBanned check; the single deviation (SoftDelete skipping the ban guard) is documented inline as withdrawal-not-participation, so the pattern is predictable and exceptions are explained.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Role-gated, audit-logged privileged surface",
+          "description": "ModerationController class-gates [Authorize(Roles=ModeratorOrAdmin)] with UpdateRole narrowed to Admin, and every privileged mutation routes through Audit() logging the acting moderator and target \u2014 admin actions are isolated and traceable.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Read endpoints intentionally anonymous public-read",
+          "description": "Room/message/thread/highlights/presence GETs are deliberately unauthenticated and pass a nullable User.GetUserId() purely for per-user enrichment; this is a single coherent trust boundary, not an inconsistency.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Guards are imperative in controller bodies, not policy-enforced",
+          "description": "Auth/ban consistency is upheld by repeated in-body guard code and inline comments rather than a shared authorization policy or requirement, so a new write endpoint could omit IsBanned without any compile-time or policy-level signal.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "package_organization": {
+      "add": [
+        {
+          "header": "Clean leaf->consumer dependency direction in backend",
+          "description": "Domain/Common/Storage/Realtime/Email are all leaf packages (avg_fan_out 0) consumed by Features/Auth/Data; the coupling_matrix has no reciprocal or downstream->upstream edges, so package boundaries match change ownership.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Feature-folder naming maps to responsibility",
+          "description": "Every backend directory (Auth, Common, Data, Domain, Email, Features/*, Realtime, Storage) contains exactly the concern its name implies and shares a matching namespace, so a developer can navigate by structure alone.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend flat src/ is cohesive for app size",
+          "description": "The ~17-file Vite frontend keeps components/ and views/ subfolders plus single-concern lib modules (api, appSupport, appHooks, realtime, roles, types); flat root is appropriate for a sub-20-file project rather than a placement defect.",
+          "settled": false,
+          "positive": true
+        }
+      ]
+    },
+    "contract_coherence": {
+      "add": [
+        {
+          "header": "Uniform Result-record contracts with factory methods",
+          "description": "Service outcomes are expressed as sealed records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, ModActionResult, CreateRoomResult) with static Created/Failed/NotFound/Forbidden factories, so controllers map outcomes by explicit fields instead of inferring from nulls or exceptions.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Nullable returns honestly signal not-found",
+          "description": "Read methods (GetMessageAsync, GetThreadAsync, GetBySlugAsync) and token rotation (RotateRefreshTokenAsync) return nullable types and return null on every failure path, which controllers translate consistently to NotFound/Unauthorized.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Docstrings match runtime behavior including edge cases",
+          "description": "XML summaries on Slug.Normalize, Text.Clip, Message.EffectiveRootId, MessageEnricher, and HighlightsService.Score accurately state contracts (null-on-empty, legacy Guid.Empty root fallback, no-N+1 query counts), so they serve as trustworthy documentation rather than aspirational comments.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "SignalR/REST snake_case serialization parity configured",
+          "description": "AddSignalR().AddJsonProtocol(SnakeCaseLower) mirrors the AddControllers AddJsonOptions snake_case policy, so the same DTOs serialize identically on both transports and the frontend reads one casing \u2014 the prior camelCase/snake_case hub divergence is resolved.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Realtime notifier emits an unconsumed 'message_changed' event",
+          "description": "RealtimeNotifier broadcasts a structured MessageChangeDto via 'message_changed' (and pays ResolveRootAsync to fill it) but the frontend only subscribes to the empty 'changed' ping; the richer event contract has no reader, making it drift-prone dead surface rather than a verified contract.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    }
+  },
+  "review_scope": {
+    "reviewed_files_count": 0,
+    "successful_batch_count": 7,
+    "full_sweep_included": false,
+    "total_files": 45,
+    "imported_dimensions": [
+      "api_surface_coherence",
+      "authorization_consistency",
+      "contract_coherence",
+      "convention_outlier",
+      "high_level_elegance",
+      "mid_level_elegance",
+      "package_organization"
+    ]
+  },
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "dry-run",
+    "run_stamp": "20260611_021413",
+    "created_at": "2026-06-11T02:23:31+00:00",
+    "batch_count": 7,
+    "batch_indexes": [
+      2,
+      3,
+      9,
+      11,
+      12,
+      15,
+      18
+    ],
+    "packet_path": "/Users/albiidrizi/Desktop/sheshi/.desloppify/review_packet_blind.json",
+    "packet_sha256": "ac8e8968792e0d5b30648c9e57f5a1dfa41d9c56ff05ee9a7b6e64422e41b749"
+  },
+  "assessment_coverage": {
+    "scored_dimensions": [
+      "naming_quality",
+      "logic_clarity",
+      "type_safety",
+      "contract_coherence",
+      "error_consistency",
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "high_level_elegance",
+      "mid_level_elegance",
+      "low_level_elegance",
+      "cross_module_architecture",
+      "initialization_coupling",
+      "convention_outlier",
+      "dependency_health",
+      "test_strategy",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "incomplete_migration",
+      "package_organization",
+      "design_coherence"
+    ],
+    "selected_dimensions": [
+      "naming_quality",
+      "logic_clarity",
+      "type_safety",
+      "contract_coherence",
+      "error_consistency",
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "high_level_elegance",
+      "mid_level_elegance",
+      "low_level_elegance",
+      "cross_module_architecture",
+      "initialization_coupling",
+      "convention_outlier",
+      "dependency_health",
+      "test_strategy",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "incomplete_migration",
+      "package_organization",
+      "design_coherence"
+    ],
+    "imported_dimensions": [
+      "api_surface_coherence",
+      "authorization_consistency",
+      "contract_coherence",
+      "convention_outlier",
+      "high_level_elegance",
+      "mid_level_elegance",
+      "package_organization"
+    ],
+    "missing_dimensions": [
+      "naming_quality",
+      "logic_clarity",
+      "type_safety",
+      "error_consistency",
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "low_level_elegance",
+      "cross_module_architecture",
+      "initialization_coupling",
+      "dependency_health",
+      "test_strategy",
+      "incomplete_migration",
+      "design_coherence"
+    ]
+  }
+}

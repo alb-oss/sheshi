@@ -164,7 +164,38 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         UseBearer(client, futureMod.AccessToken);
         var futureModReportsResponse = await client.GetAsync("/api/mod/reports");
         futureModReportsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Analytics and user-listing reads return a populated, well-formed payload.
+        UseBearer(client, admin.AccessToken);
+        var analytics = await client.GetFromJsonAsync<ModAnalyticsDto>("/api/mod/analytics");
+        analytics.Should().NotBeNull();
+        analytics!.Totals.Users.Should().BeGreaterThan(0);
+        analytics.Totals.Messages.Should().BeGreaterThanOrEqualTo(1);
+        analytics.Trend.Should().HaveCount(7);
+        analytics.Users.Moderators.Should().BeGreaterThanOrEqualTo(1);
+
+        var usersResponse = await client.GetAsync("/api/mod/users?query=mod");
+        usersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var modUsers = await usersResponse.Content.ReadFromJsonAsync<ModUserDto[]>();
+        modUsers.Should().NotBeNull();
+        modUsers!.Should().Contain(u => u.Roles.Contains("moderator"));
     }
+
+    private sealed record ModAnalyticsDto(
+        [property: JsonPropertyName("totals")] ModTotals Totals,
+        [property: JsonPropertyName("users")] ModUserCounts Users,
+        [property: JsonPropertyName("trend")] object[] Trend);
+
+    private sealed record ModTotals(
+        [property: JsonPropertyName("users")] int Users,
+        [property: JsonPropertyName("messages")] int Messages);
+
+    private sealed record ModUserCounts(
+        [property: JsonPropertyName("moderators")] int Moderators);
+
+    private sealed record ModUserDto(
+        [property: JsonPropertyName("id")] Guid Id,
+        [property: JsonPropertyName("roles")] string[] Roles);
 
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {

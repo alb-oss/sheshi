@@ -1,0 +1,65 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 11,
+  "assessments": {"api_surface_coherence": 91.5},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "Every controller follows one shape: primary-constructor ControllerBase with [ApiController], [Route(\"api/...\")], [EnableRateLimiting(...)], returning ActionResult<T>/IActionResult. A developer can predict endpoint shape after seeing one (RoomsController, MessagesController, ModerationController, AuthController, MeController, HighlightsController, PresenceController).",
+        "Consistent async convention across the public service surface: I/O methods are async Task<T>, named with Async suffix, and take a trailing CancellationToken ct = default (MessageService, MessageReader, RoomService, ModerationService, TokenService, HighlightsService). The scan's sync_async_mix flag is a false positive — the only sync members are pure static helpers (HighlightsService.Score, MessageReader.NormalizeLimit/EncodeCursor/DecodeCursor, ModerationService.TryParseStatus), not blocking I/O wrapped in async.",
+        "Uniform result-object error contract: mutations return small sealed records with static factory constructors (MessageCreateResult, DeleteMessageResult, ReportMessageResult, ModActionResult, CreateRoomResult), and controllers map .Error/.Found/.Succeeded to HTTP codes. Error contracts are present via types, not just docs.",
+        "Reader/command split is clean: MessageReader holds reads, MessageService holds writes; parameter ordering is consistent across readers (id, Guid? callerId, int limit, string? cursor, CancellationToken ct).",
+        "Two PostMessage overloads are disambiguated by [Consumes] content type (application/json vs multipart/form-data) and both delegate to one private CreateMessageAsync — idiomatic ASP.NET content negotiation, not an overloaded interface switching on argument types.",
+        "Global JsonNamingPolicy.SnakeCaseLower (Program.cs) makes the frontend's snake_case request bodies and PascalCase C# records map cleanly — coherent wire contract end to end.",
+        "Minor asymmetry: MessageService.UpvoteAsync returns Task<bool> (found-or-not, controller returns NotFound on miss) while RemoveUpvoteAsync returns Task (void, controller always returns NoContent). Deliberate idempotent-DELETE semantics but a small shape difference between sibling vote mutations.",
+        "HighlightsService.Score(int,int,int,int,bool,DateTimeOffset,DateTimeOffset,DateTimeOffset) is a public static method with 8 parameters; mitigated by a 2-arg Score(HighlightStats, now) overload that all real callers use, and each param is an independent numeric input where grouping would obscure meaning."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The wide 8-parameter public Score overload sits at the upper edge of the >5-param heuristic, and the Upvote/RemoveUpvote return-shape asymmetry (Task<bool> vs Task) is a small inconsistency between sibling mutations. Both are minor and defensible, so they pull the score down only slightly from exemplary."
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "dimension_character": "The API surface is strikingly consistent: controllers share one structural template, every async public method follows the same Async/CancellationToken convention, and service mutations expose a uniform sealed-record result contract that controllers translate to HTTP. The few irregularities are minor and intentional — a content-type-disambiguated PostMessage overload, a deliberately idempotent DELETE returning void where its PUT sibling returns a found flag, and a single wide pure-function Score overload that already provides a narrow alternative its callers use.",
+      "score_rationale": "This sits near the 90 anchor (strong, trustworthy with isolated rough edges): a developer can predict API shape and error behavior from one example across controllers and services. It stops short of higher because of the 8-parameter Score overload and the small Upvote/RemoveUpvote return-shape asymmetry — real but trivial friction, not recurring irregularity."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "possible_false_positives": [
+      "api_surface.sync_async_mix list flags files that mix async I/O methods with pure static helpers (Score, NormalizeLimit, TryParseStatus); these are not genuine sync/async API mixing."
+    ]
+  },
+  "context_updates": {
+    "api_surface_coherence": {
+      "add": [
+        {
+          "header": "Uniform controller + async-suffix + CancellationToken convention",
+          "description": "Every controller is a primary-constructor ControllerBase with [ApiController]/[Route]/[EnableRateLimiting] returning ActionResult<T>, and every I/O service method is async Task<T> named *Async with a trailing CancellationToken ct = default. This uniformity lets a developer predict any endpoint or service call from a single example.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Sealed result records as the typed error contract",
+          "description": "Service mutations return small sealed records with static factory constructors (MessageCreateResult, DeleteMessageResult, ReportMessageResult, ModActionResult, CreateRoomResult) carrying .Error/.Found/.Succeeded, which controllers map to HTTP. The failure modes are encoded in types rather than left to documentation.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Content-type-disambiguated PostMessage overloads delegate to one core",
+          "description": "The two [HttpPost(\"messages\")] actions are split by [Consumes] (json vs multipart) and both forward to a single private CreateMessageAsync, which is idiomatic ASP.NET content negotiation rather than an overloaded interface switching on argument types.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Upvote/RemoveUpvote return-shape asymmetry",
+          "description": "UpvoteAsync returns Task<bool> (controller maps to NotFound on miss) while RemoveUpvoteAsync returns Task and the controller always returns NoContent — a deliberate idempotent-DELETE choice that nonetheless makes sibling vote mutations differ in shape.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

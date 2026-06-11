@@ -1,12 +1,9 @@
 {
   "version": 8,
   "created": "2026-06-11T01:26:16+00:00",
-  "updated": "2026-06-11T02:11:57+00:00",
+  "updated": "2026-06-11T02:23:09+00:00",
   "queue_order": [
-    "subjective::abstraction_fitness",
-    "subjective::design_coherence",
-    "subjective::logic_clarity",
-    "review::.::holistic::type_safety::mod_status_string_enum_reparse"
+    "subjective::design_coherence"
   ],
   "deferred": [],
   "skipped": {
@@ -465,13 +462,13 @@
       "issue_id": "stale_exclude::frontend/node_modules::frontend/node_modules",
       "created_at": "2026-06-11T01:26:16+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "stale_exclude::frontend/dist::frontend/dist": {
       "issue_id": "stale_exclude::frontend/dist::frontend/dist",
       "created_at": "2026-06-11T01:26:16+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "stale_exclude::server/Sheshi.Api/bin::server/Sheshi.Api/bin": {
       "issue_id": "stale_exclude::server/Sheshi.Api/bin::server/Sheshi.Api/bin",
@@ -500,8 +497,8 @@
     "stale_exclude::server/Sheshi.Api/Migrations::server/Sheshi.Api/Migrations": {
       "issue_id": "stale_exclude::server/Sheshi.Api/Migrations::server/Sheshi.Api/Migrations",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": null,
-      "updated_at": "2026-06-11T01:36:19+00:00"
+      "cluster": "auto/stale_exclude",
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "stale_exclude::server/Sheshi.Api/keys::server/Sheshi.Api/keys": {
       "issue_id": "stale_exclude::server/Sheshi.Api/keys::server/Sheshi.Api/keys",
@@ -519,227 +516,151 @@
       "issue_id": "stale_exclude::.superpowers::.superpowers",
       "created_at": "2026-06-11T01:26:16+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "stale_exclude::.claude::.claude": {
       "issue_id": "stale_exclude::.claude::.claude",
       "created_at": "2026-06-11T01:26:16+00:00",
       "cluster": "auto/stale_exclude",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::abstraction_fitness": {
       "issue_id": "subjective::abstraction_fitness",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::ai_generated_debt": {
       "issue_id": "subjective::ai_generated_debt",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::api_surface_coherence": {
       "issue_id": "subjective::api_surface_coherence",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::authorization_consistency": {
       "issue_id": "subjective::authorization_consistency",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::contract_coherence": {
       "issue_id": "subjective::contract_coherence",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::convention_outlier": {
       "issue_id": "subjective::convention_outlier",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::cross_module_architecture": {
       "issue_id": "subjective::cross_module_architecture",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::dependency_health": {
       "issue_id": "subjective::dependency_health",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::design_coherence": {
       "issue_id": "subjective::design_coherence",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::error_consistency": {
       "issue_id": "subjective::error_consistency",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::high_level_elegance": {
       "issue_id": "subjective::high_level_elegance",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::incomplete_migration": {
       "issue_id": "subjective::incomplete_migration",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::initialization_coupling": {
       "issue_id": "subjective::initialization_coupling",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::logic_clarity": {
       "issue_id": "subjective::logic_clarity",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::low_level_elegance": {
       "issue_id": "subjective::low_level_elegance",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::mid_level_elegance": {
       "issue_id": "subjective::mid_level_elegance",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::naming_quality": {
       "issue_id": "subjective::naming_quality",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::package_organization": {
       "issue_id": "subjective::package_organization",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::test_strategy": {
       "issue_id": "subjective::test_strategy",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     },
     "subjective::type_safety": {
       "issue_id": "subjective::type_safety",
       "created_at": "2026-06-11T01:26:16+00:00",
-      "cluster": "auto/initial-review",
-      "updated_at": "2026-06-11T01:26:16+00:00"
+      "cluster": null,
+      "updated_at": "2026-06-11T02:23:09+00:00"
     }
   },
   "clusters": {
-    "auto/test_coverage-untested_module": {
-      "name": "auto/test_coverage-untested_module",
-      "description": "Fix 34 test coverage issues",
-      "issue_ids": [],
-      "created_at": "2026-06-11T01:26:16+00:00",
-      "updated_at": "2026-06-11T01:26:16+00:00",
-      "auto": true,
-      "cluster_key": "detector::test_coverage::untested_module",
-      "action": "review test coverage gaps",
-      "execution_status": "done",
-      "user_modified": false,
-      "action_type": "refactor",
-      "execution_policy": "planned_only"
-    },
-    "auto/test_coverage-untested_critical": {
-      "name": "auto/test_coverage-untested_critical",
-      "description": "Fix 7 test coverage issues",
-      "issue_ids": [],
-      "created_at": "2026-06-11T01:26:16+00:00",
-      "updated_at": "2026-06-11T01:26:16+00:00",
-      "auto": true,
-      "cluster_key": "detector::test_coverage::untested_critical",
-      "action": "review test coverage gaps",
-      "execution_status": "done",
-      "user_modified": false,
-      "action_type": "refactor",
-      "execution_policy": "planned_only"
-    },
-    "auto/security-hardcoded_secret_name": {
-      "name": "auto/security-hardcoded_secret_name",
-      "description": "Fix 17 security issues",
-      "issue_ids": [],
-      "created_at": "2026-06-11T01:26:16+00:00",
-      "updated_at": "2026-06-11T01:26:16+00:00",
-      "auto": true,
-      "cluster_key": "detector::security::hardcoded_secret_name",
-      "action": "review and fix security issues",
-      "execution_status": "done",
-      "user_modified": false,
-      "action_type": "manual_fix",
-      "execution_policy": "planned_only"
-    },
     "auto/stale_exclude": {
       "name": "auto/stale_exclude",
-      "description": "Fix 11 stale exclude issues",
+      "description": "Fix 5 stale exclude issues",
       "issue_ids": [
         "stale_exclude::frontend/node_modules::frontend/node_modules",
         "stale_exclude::frontend/dist::frontend/dist",
+        "stale_exclude::server/Sheshi.Api/Migrations::server/Sheshi.Api/Migrations",
         "stale_exclude::.superpowers::.superpowers",
         "stale_exclude::.claude::.claude"
       ],
       "created_at": "2026-06-11T01:26:16+00:00",
-      "updated_at": "2026-06-11T01:26:16+00:00",
+      "updated_at": "2026-06-11T02:23:09+00:00",
       "auto": true,
       "cluster_key": "detector::stale_exclude",
       "action": "remove stale exclusion or verify it's still needed",
-      "execution_status": "review",
-      "user_modified": false,
-      "action_type": "manual_fix",
-      "execution_policy": "planned_only"
-    },
-    "auto/initial-review": {
-      "name": "auto/initial-review",
-      "description": "Initial review of 20 unscored subjective dimensions",
-      "issue_ids": [
-        "subjective::abstraction_fitness",
-        "subjective::ai_generated_debt",
-        "subjective::api_surface_coherence",
-        "subjective::authorization_consistency",
-        "subjective::contract_coherence",
-        "subjective::convention_outlier",
-        "subjective::cross_module_architecture",
-        "subjective::dependency_health",
-        "subjective::design_coherence",
-        "subjective::error_consistency",
-        "subjective::high_level_elegance",
-        "subjective::incomplete_migration",
-        "subjective::initialization_coupling",
-        "subjective::logic_clarity",
-        "subjective::low_level_elegance",
-        "subjective::mid_level_elegance",
-        "subjective::naming_quality",
-        "subjective::package_organization",
-        "subjective::test_strategy",
-        "subjective::type_safety"
-      ],
-      "created_at": "2026-06-11T01:26:16+00:00",
-      "updated_at": "2026-06-11T01:26:16+00:00",
-      "auto": true,
-      "cluster_key": "subjective::unscored",
-      "action": "desloppify review --prepare --dimensions abstraction_fitness,ai_generated_debt,api_surface_coherence,authorization_consistency,contract_coherence,convention_outlier,cross_module_architecture,dependency_health,design_coherence,error_consistency,high_level_elegance,incomplete_migration,initialization_coupling,logic_clarity,low_level_elegance,mid_level_elegance,naming_quality,package_organization,test_strategy,type_safety",
       "execution_status": "review",
       "user_modified": false,
       "action_type": "manual_fix",
@@ -1444,15 +1365,16 @@
   },
   "promoted_ids": [],
   "plan_start_scores": {
-    "strict": 16.7,
-    "overall": 16.7,
-    "objective": 66.8,
-    "verified": 66.8
+    "strict": 84.7,
+    "overall": 92.2,
+    "objective": 97.9,
+    "verified": 93.3
   },
   "refresh_state": {
     "_subjective_migration_pruned": true,
     "lifecycle_phase": "plan",
-    "subjective_review_completed_at_scan_count": 8
+    "subjective_review_completed_at_scan_count": 8,
+    "postflight_scan_completed_at_scan_count": 10
   },
   "execution_log": [
     {
@@ -2561,6 +2483,128 @@
       "actor": "user",
       "note": "Removed the redundant double string evaluation; TryParseStatus is now a single tuple switch in ModerationService, and the lowercase status string is the API contract that justifies explicit parsing",
       "detail": {}
+    },
+    {
+      "timestamp": "2026-06-11T02:11:57+00:00",
+      "action": "resolve",
+      "issue_ids": [
+        "review::.::holistic::type_safety::mod_status_string_enum_reparse"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": "Removed the redundant double string evaluation; TryParseStatus is now a single tuple switch in ModerationService, and the lowercase status string is the API contract that justifies explicit parsing",
+      "detail": {
+        "status": "fixed",
+        "attestation": "I have actually Removed the redundant double string evaluation; TryParseStatus is now a single tuple switch in ModerationService, and the lowercase status string is the API contract that justifies explicit parsing and I am not gaming the score."
+      }
+    },
+    {
+      "timestamp": "2026-06-11T02:11:57+00:00",
+      "action": "sync_subjective",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-06-11T02:11:57+00:00",
+      "action": "sync_communicate_score",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "auto_resolved": true
+      }
+    },
+    {
+      "timestamp": "2026-06-11T02:12:10+00:00",
+      "action": "commit_record",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::empty_controllers_dir_straggler",
+        "review::.::holistic::high_level_elegance::moderation_no_service_layer",
+        "review::.::holistic::high_level_elegance::stale_structure_doc",
+        "review::.::holistic::logic_clarity::tryparsestatus_redundant_eval",
+        "review::.::holistic::low_level_elegance::tryparsestatus_redundant_branches",
+        "review::.::holistic::mid_level_elegance::cross_runtime_score_duplication",
+        "review::.::holistic::mid_level_elegance::dead_notifier_overload",
+        "review::.::holistic::package_organization::domain_entity_utility_mix",
+        "review::.::holistic::package_organization::empty_controllers_dir",
+        "review::.::holistic::test_strategy::frontend_zero_tests",
+        "review::.::holistic::type_safety::mod_status_string_enum_reparse"
+      ],
+      "cluster_name": null,
+      "actor": "user",
+      "note": null,
+      "detail": {
+        "sha": "b522c99a847b",
+        "branch": "desloppify/code-health"
+      }
+    },
+    {
+      "timestamp": "2026-06-11T02:12:12+00:00",
+      "action": "clear_start_scores",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-06-11T02:12:12+00:00",
+      "action": "complete_postflight_scan",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "scan_count": 9
+      }
+    },
+    {
+      "timestamp": "2026-06-11T02:23:09+00:00",
+      "action": "sync_subjective",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-06-11T02:23:09+00:00",
+      "action": "auto_cluster",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "changes": true
+      }
+    },
+    {
+      "timestamp": "2026-06-11T02:23:09+00:00",
+      "action": "seed_start_scores",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {}
+    },
+    {
+      "timestamp": "2026-06-11T02:23:09+00:00",
+      "action": "complete_postflight_scan",
+      "issue_ids": [],
+      "cluster_name": null,
+      "actor": "system",
+      "note": null,
+      "detail": {
+        "scan_count": 10
+      }
     }
   ],
   "epic_triage_meta": {},
@@ -2593,20 +2637,35 @@
       "recorded_at": "2026-06-11T02:05:36+00:00",
       "note": null,
       "cluster_name": null
+    },
+    {
+      "sha": "b522c99a847b",
+      "branch": "desloppify/code-health",
+      "issue_ids": [
+        "review::.::holistic::high_level_elegance::empty_controllers_dir_straggler",
+        "review::.::holistic::high_level_elegance::moderation_no_service_layer",
+        "review::.::holistic::high_level_elegance::stale_structure_doc",
+        "review::.::holistic::logic_clarity::tryparsestatus_redundant_eval",
+        "review::.::holistic::low_level_elegance::tryparsestatus_redundant_branches",
+        "review::.::holistic::mid_level_elegance::cross_runtime_score_duplication",
+        "review::.::holistic::mid_level_elegance::dead_notifier_overload",
+        "review::.::holistic::package_organization::domain_entity_utility_mix",
+        "review::.::holistic::package_organization::empty_controllers_dir",
+        "review::.::holistic::test_strategy::frontend_zero_tests",
+        "review::.::holistic::type_safety::mod_status_string_enum_reparse"
+      ],
+      "recorded_at": "2026-06-11T02:12:10+00:00",
+      "note": null,
+      "cluster_name": null
     }
   ],
-  "uncommitted_issues": [
-    "review::.::holistic::high_level_elegance::empty_controllers_dir_straggler",
-    "review::.::holistic::high_level_elegance::moderation_no_service_layer",
-    "review::.::holistic::high_level_elegance::stale_structure_doc",
-    "review::.::holistic::logic_clarity::tryparsestatus_redundant_eval",
-    "review::.::holistic::low_level_elegance::tryparsestatus_redundant_branches",
-    "review::.::holistic::mid_level_elegance::cross_runtime_score_duplication",
-    "review::.::holistic::mid_level_elegance::dead_notifier_overload",
-    "review::.::holistic::package_organization::domain_entity_utility_mix",
-    "review::.::holistic::package_organization::empty_controllers_dir",
-    "review::.::holistic::test_strategy::frontend_zero_tests"
-  ],
+  "uncommitted_issues": [],
   "commit_tracking_branch": null,
-  "scan_count_at_plan_start": 1
+  "scan_count_at_plan_start": 10,
+  "previous_plan_start_scores": {
+    "strict": 16.7,
+    "overall": 16.7,
+    "objective": 66.8,
+    "verified": 66.8
+  }
 }
