@@ -88,6 +88,14 @@ export type ModUser = {
   roles: string[];
 };
 
+export type TrendPoint = {
+  date: string;
+  users: number;
+  messages: number;
+  votes: number;
+  reports: number;
+};
+
 export type ModAnalytics = {
   totals: {
     rooms: number;

@@ -16,7 +16,7 @@ import type { Chart as ChartInstance } from "chart.js";
 import { api, ApiError, threadPath } from "../api";
 import { navigate } from "../appSupport";
 import type { AuthState } from "../appSupport";
-import type { ModAnalytics, ModReport, ModUser } from "../types";
+import type { ModAnalytics, ModReport, ModUser, TrendPoint } from "../types";
 import { EmptyState, LoadingRows } from "../components/overlays";
 
 let chartJsModule: Promise<typeof import("chart.js")> | null = null;
@@ -276,10 +276,25 @@ export function ModerationView(props: {
   );
 }
 
-function AdminOverview(props: { analytics: ModAnalytics | null; loading: boolean }) {
+function AdminOverview(props: { analytics: ModAnalytics | null; loading: boolean; token?: string | null }) {
   const analytics = props.analytics;
+  const [range, setRange] = useState<7 | 30>(7);
+  const [history, setHistory] = useState<TrendPoint[] | null>(null);
+  const token = props.token;
+
+  useEffect(() => {
+    if (range !== 30 || !token) return;
+    let active = true;
+    api.modAnalyticsHistory({ token, days: 30 })
+      .then((points) => { if (active) setHistory(points); })
+      .catch(() => { if (active) setHistory(null); });
+    return () => { active = false; };
+  }, [range, token]);
+
   if (!analytics && props.loading) return <LoadingRows />;
   if (!analytics) return <p className="muted admin-empty">Analitika nuk u ngarkua.</p>;
+
+  const trend = range === 30 && history ? history : analytics.trend;
 
   const health = analytics.moderation_health;
   const statCards = [
@@ -308,8 +323,17 @@ function AdminOverview(props: { analytics: ModAnalytics | null; loading: boolean
 
       <div className="admin-analytics-grid">
         <section className="admin-panel analytics-panel wide">
-          <AdminPanelHead icon={<BarChart3 size={18} />} label="7 DITE" title="Aktiviteti" />
-          <AnalyticsChart analytics={analytics} />
+          <div className="admin-panel-head">
+            <div>
+              <span className="section-label"><BarChart3 size={18} />{range === 30 ? "30 DITE" : "7 DITE"}</span>
+              <h2>Aktiviteti</h2>
+            </div>
+            <div className="tabs compact-tabs">
+              <button className={range === 7 ? "active" : ""} onClick={() => setRange(7)}>7d</button>
+              <button className={range === 30 ? "active" : ""} onClick={() => setRange(30)}>30d</button>
+            </div>
+          </div>
+          <AnalyticsChart trend={trend} />
         </section>
 
         <section className="admin-panel analytics-panel">
@@ -384,7 +408,7 @@ function AdminPanelHead(props: { icon: ReactNode; label: string; title: string; 
   );
 }
 
-function AnalyticsChart(props: { analytics: ModAnalytics }) {
+function AnalyticsChart(props: { trend: TrendPoint[] }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -392,7 +416,7 @@ function AnalyticsChart(props: { analytics: ModAnalytics }) {
     let disposed = false;
     let chart: ChartInstance<"line", number[], string> | undefined;
 
-    const labels = props.analytics.trend.map((point) => point.date);
+    const labels = props.trend.map((point) => point.date);
 
     void loadChartJs().then(({ Chart }) => {
       if (disposed || !canvasRef.current) return;
@@ -403,7 +427,7 @@ function AnalyticsChart(props: { analytics: ModAnalytics }) {
           datasets: [
             {
               label: "Postime",
-              data: props.analytics.trend.map((point) => point.messages),
+              data: props.trend.map((point) => point.messages),
               borderColor: "#ef4d55",
               backgroundColor: "rgba(239, 77, 85, 0.14)",
               fill: true,
@@ -411,14 +435,14 @@ function AnalyticsChart(props: { analytics: ModAnalytics }) {
             },
             {
               label: "Vota",
-              data: props.analytics.trend.map((point) => point.votes),
+              data: props.trend.map((point) => point.votes),
               borderColor: "#4f8cff",
               backgroundColor: "rgba(79, 140, 255, 0.1)",
               tension: 0.35
             },
             {
               label: "Raporte",
-              data: props.analytics.trend.map((point) => point.reports),
+              data: props.trend.map((point) => point.reports),
               borderColor: "#f2b84b",
               backgroundColor: "rgba(242, 184, 75, 0.1)",
               tension: 0.35
@@ -445,7 +469,7 @@ function AnalyticsChart(props: { analytics: ModAnalytics }) {
       disposed = true;
       chart?.destroy();
     };
-  }, [props.analytics]);
+  }, [props.trend]);
 
   return <div className="analytics-chart"><canvas ref={canvasRef} /></div>;
 }

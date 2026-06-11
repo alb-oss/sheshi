@@ -1,4 +1,4 @@
-import type { AuthResponse, CursorPage, Message, ModAnalytics, ModReport, ModUser, Room, Thread, User } from "./types";
+import type { AuthResponse, CursorPage, Message, ModAnalytics, ModReport, ModUser, Room, Thread, TrendPoint, User } from "./types";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5080").replace(/\/$/, "");
 
@@ -115,6 +115,8 @@ export const api = {
 
   modAnalytics: ({ token }: MeRequest) =>
     requestJson<ModAnalytics>("/api/mod/analytics", { token }),
+  modAnalyticsHistory: ({ token, days }: { token: string; days: number }) =>
+    requestJson<TrendPoint[]>(`/api/mod/analytics/history?days=${days}`, { token }),
   modReports: ({ token, status = "open" }: ModReportsRequest) =>
     requestJson<ModReport[]>(`/api/mod/reports?status=${encodeURIComponent(status)}`, { token }),
   resolveReport: ({ token, id }: ModReportActionRequest) =>
