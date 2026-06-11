@@ -174,6 +174,13 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         analytics.Trend.Should().HaveCount(7);
         analytics.Users.Moderators.Should().BeGreaterThanOrEqualTo(1);
 
+        // New insight metrics.
+        analytics.ActiveUsers.Weekly.Should().BeGreaterThanOrEqualTo(1); // admin posted this week
+        analytics.Growth.Messages.Current.Should().BeGreaterThanOrEqualTo(1);
+        analytics.ModerationHealth.AvgResolutionHours.Should().NotBeNull(); // a report was resolved above
+        analytics.ModerationHealth.ReportsPerThousandMessages.Should().BeGreaterThan(0);
+        analytics.TopAuthors.Should().NotBeEmpty();
+
         var usersResponse = await client.GetAsync("/api/mod/users?query=mod");
         usersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var modUsers = await usersResponse.Content.ReadFromJsonAsync<ModUserDto[]>();
@@ -184,7 +191,12 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
     private sealed record ModAnalyticsDto(
         [property: JsonPropertyName("totals")] ModTotals Totals,
         [property: JsonPropertyName("users")] ModUserCounts Users,
-        [property: JsonPropertyName("trend")] object[] Trend);
+        [property: JsonPropertyName("active_users")] ModActiveUsers ActiveUsers,
+        [property: JsonPropertyName("growth")] ModGrowth Growth,
+        [property: JsonPropertyName("engagement")] ModEngagement Engagement,
+        [property: JsonPropertyName("moderation_health")] ModModerationHealth ModerationHealth,
+        [property: JsonPropertyName("trend")] object[] Trend,
+        [property: JsonPropertyName("top_authors")] ModAuthor[] TopAuthors);
 
     private sealed record ModTotals(
         [property: JsonPropertyName("users")] int Users,
@@ -192,6 +204,32 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
 
     private sealed record ModUserCounts(
         [property: JsonPropertyName("moderators")] int Moderators);
+
+    private sealed record ModActiveUsers(
+        [property: JsonPropertyName("daily")] int Daily,
+        [property: JsonPropertyName("weekly")] int Weekly,
+        [property: JsonPropertyName("monthly")] int Monthly);
+
+    private sealed record ModGrowth(
+        [property: JsonPropertyName("messages")] ModGrowthPoint Messages);
+
+    private sealed record ModGrowthPoint(
+        [property: JsonPropertyName("current")] int Current,
+        [property: JsonPropertyName("previous")] int Previous);
+
+    private sealed record ModEngagement(
+        [property: JsonPropertyName("answered_threads_pct")] double AnsweredThreadsPct,
+        [property: JsonPropertyName("avg_replies_per_thread")] double AvgRepliesPerThread);
+
+    private sealed record ModModerationHealth(
+        [property: JsonPropertyName("avg_resolution_hours")] double? AvgResolutionHours,
+        [property: JsonPropertyName("reports_per_thousand_messages")] double ReportsPerThousandMessages,
+        [property: JsonPropertyName("deletion_rate_pct")] double DeletionRatePct);
+
+    private sealed record ModAuthor(
+        [property: JsonPropertyName("id")] Guid Id,
+        [property: JsonPropertyName("author")] string Author,
+        [property: JsonPropertyName("messages")] int Messages);
 
     private sealed record ModUserDto(
         [property: JsonPropertyName("id")] Guid Id,

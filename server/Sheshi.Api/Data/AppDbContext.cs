@@ -17,7 +17,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     {
         base.OnModelCreating(b);
 
-        b.Entity<ApplicationUser>(e => e.HasIndex(u => u.UserName).IsUnique());
+        b.Entity<ApplicationUser>(e =>
+        {
+            e.HasIndex(u => u.UserName).IsUnique();
+            e.HasIndex(u => u.CreatedAt); // analytics: new-user windows
+        });
 
         b.Entity<Room>(e => { e.HasIndex(r => r.Slug).IsUnique(); });
 
@@ -30,11 +34,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasIndex(m => new { m.RoomId, m.CreatedAt, m.Id }).IsDescending(false, true, true).HasFilter("\"ParentId\" IS NULL");
             e.HasIndex(m => new { m.RootMessageId, m.CreatedAt, m.Id });
             e.HasIndex(m => m.ParentId);
+            e.HasIndex(m => m.CreatedAt); // analytics: global time-window aggregates
         });
 
         b.Entity<Vote>(e =>
         {
             e.HasKey(v => new { v.MessageId, v.UserId });
+            e.HasIndex(v => v.CreatedAt); // analytics: vote windows
             e.HasOne(v => v.Message).WithMany().HasForeignKey(v => v.MessageId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -42,6 +48,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         b.Entity<Report>(e =>
         {
             e.Property(r => r.Note).HasMaxLength(500);
+            e.HasIndex(r => r.CreatedAt);
+            e.HasIndex(r => r.Status);
             e.HasOne(r => r.Message).WithMany().HasForeignKey(r => r.MessageId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(r => r.Reporter).WithMany().HasForeignKey(r => r.ReporterId).OnDelete(DeleteBehavior.Restrict);
         });

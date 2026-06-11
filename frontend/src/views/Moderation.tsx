@@ -281,13 +281,16 @@ function AdminOverview(props: { analytics: ModAnalytics | null; loading: boolean
   if (!analytics && props.loading) return <LoadingRows />;
   if (!analytics) return <p className="muted admin-empty">Analitika nuk u ngarkua.</p>;
 
+  const health = analytics.moderation_health;
   const statCards = [
     { label: "Perdorues", value: analytics.totals.users, sub: `+${analytics.last24_hours.users} / 24h`, icon: <Users size={18} /> },
-    { label: "Tema", value: analytics.totals.threads, sub: `+${analytics.last24_hours.threads} / 24h`, icon: <MessageSquare size={18} /> },
-    { label: "Pergjigje", value: analytics.totals.replies, sub: `+${analytics.last24_hours.replies} / 24h`, icon: <Activity size={18} /> },
-    { label: "Vota", value: analytics.totals.votes, sub: `+${analytics.last24_hours.votes} / 24h`, icon: <BarChart3 size={18} /> },
-    { label: "Raporte hapur", value: analytics.reports.open, sub: `${analytics.reports.resolved} resolved`, icon: <Flag size={18} /> },
-    { label: "Banned", value: analytics.users.banned, sub: `${analytics.users.admins} admin / ${analytics.users.moderators} mod`, icon: <Ban size={18} /> }
+    { label: "Aktive / jave", value: analytics.active_users.weekly, sub: `${analytics.active_users.daily} sot · ${analytics.active_users.monthly} / muaj`, icon: <Activity size={18} /> },
+    { label: "Tema", value: analytics.totals.threads, sub: growthLabel(analytics.growth.messages), icon: <MessageSquare size={18} /> },
+    { label: "Pergjigje", value: analytics.totals.replies, sub: `${analytics.engagement.answered_threads_pct}% tema me pergjigje`, icon: <Check size={18} /> },
+    { label: "Vota", value: analytics.totals.votes, sub: growthLabel(analytics.growth.votes), icon: <BarChart3 size={18} /> },
+    { label: "Raporte hapur", value: analytics.reports.open, sub: health.avg_resolution_hours == null ? "pa zgjidhje ende" : `~${health.avg_resolution_hours}h per zgjidhje`, icon: <Flag size={18} /> },
+    { label: "Banned", value: analytics.users.banned, sub: `${analytics.users.admins} admin · ${analytics.users.moderators} mod`, icon: <Ban size={18} /> },
+    { label: "Fshirje", value: `${health.deletion_rate_pct}%`, sub: `${health.reports_per_thousand_messages} raporte / 1k`, icon: <ShieldCheck size={18} /> }
   ];
 
   return (
@@ -316,6 +319,9 @@ function AdminOverview(props: { analytics: ModAnalytics | null; loading: boolean
             <Meter label="Zgjidhur" value={analytics.reports.resolved} total={analytics.totals.reports} />
             <Meter label="Hequr" value={analytics.reports.dismissed} total={analytics.totals.reports} />
           </div>
+          {health.open_backlog_avg_age_hours != null && (
+            <p className="muted admin-empty">Mosha mesatare e radhes: ~{health.open_backlog_avg_age_hours}h</p>
+          )}
         </section>
       </div>
 
@@ -331,6 +337,19 @@ function AdminOverview(props: { analytics: ModAnalytics | null; loading: boolean
           }))}
         />
         <AdminDataTable
+          title="Autoret kryesore"
+          label="AUTORE"
+          rows={analytics.top_authors.map((author) => ({
+            key: author.id,
+            primary: author.author,
+            secondary: "kontribues",
+            value: `${author.messages} postime`
+          }))}
+        />
+      </div>
+
+      <div className="admin-analytics-grid">
+        <AdminDataTable
           title="Postimet kryesore"
           label="POSTIME"
           rows={analytics.top_posts.map((post) => ({
@@ -344,6 +363,13 @@ function AdminOverview(props: { analytics: ModAnalytics | null; loading: boolean
       </div>
     </div>
   );
+}
+
+// Signed week-over-week change, e.g. "+12% / jave" or "i ri" when there's no baseline.
+function growthLabel(point: { current: number; previous: number }): string {
+  if (point.previous === 0) return point.current > 0 ? "i ri / jave" : "—";
+  const pct = Math.round(((point.current - point.previous) / point.previous) * 100);
+  return `${pct >= 0 ? "+" : ""}${pct}% / jave`;
 }
 
 function AdminPanelHead(props: { icon: ReactNode; label: string; title: string; loading?: boolean }) {
