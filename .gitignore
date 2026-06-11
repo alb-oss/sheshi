@@ -22,3 +22,7 @@ server/Sheshi.Api/keys/
 
 # Harness
 .claude/
+
+# desloppify tool state
+.desloppify/
+scorecard.png
