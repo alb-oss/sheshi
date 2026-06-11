@@ -19,3 +19,6 @@ server/Sheshi.Api/keys/
 .DS_Store
 .superpowers/
 .vite/
+
+# Harness
+.claude/
