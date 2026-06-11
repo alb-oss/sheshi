@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Sheshi.Api.Data;
@@ -11,9 +12,11 @@ using Sheshi.Api.Data;
 namespace Sheshi.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611135018_AnalyticsIndexesAndResolvedAt")]
+    partial class AnalyticsIndexesAndResolvedAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -232,28 +235,6 @@ namespace Sheshi.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("Sheshi.Api.Domain.DailyStat", b =>
-                {
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Messages")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("NewUsers")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Reports")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Votes")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Date");
-
-                    b.ToTable("DailyStats");
                 });
 
             modelBuilder.Entity("Sheshi.Api.Domain.Message", b =>

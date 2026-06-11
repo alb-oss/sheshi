@@ -10,4 +10,7 @@ public class Report
     public string? Note { get; set; }
     public ReportStatus Status { get; set; } = ReportStatus.Open;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    // Set when the report leaves the Open state, so resolution time is measurable.
+    public DateTimeOffset? ResolvedAt { get; set; }
 }

@@ -39,27 +39,51 @@ public class HighlightsScoreTests
 {
     private static readonly DateTimeOffset Now = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
+    // Score only reads its options + the stats, never db/cache.
+    private static readonly HighlightsService Svc =
+        new(null!, null!, Options.Create(new HighlightsOptions()));
+
+    private static HighlightStats Stats(
+        int upvotes = 0, int branchVotes = 0, int directReplies = 0, int uniqueRepliers = 0,
+        int descendants = 0, bool isReply = false, DateTimeOffset? createdAt = null, DateTimeOffset? activityAt = null) =>
+        new(new Message { ParentId = isReply ? Guid.NewGuid() : null, CreatedAt = createdAt ?? Now },
+            upvotes, directReplies, activityAt ?? Now)
+        {
+            BranchVotes = branchVotes,
+            Descendants = descendants,
+            UniqueRepliers = uniqueRepliers
+        };
+
     [Fact]
-    public void More_replies_score_higher_than_fewer()
+    public void More_discussion_scores_higher_than_less()
     {
-        var busy = HighlightsService.Score(0, 0, 10, 20, false, Now.AddHours(-2), Now.AddMinutes(-5), Now);
-        var quiet = HighlightsService.Score(0, 0, 1, 1, false, Now.AddHours(-2), Now.AddMinutes(-5), Now);
+        var busy = Svc.Score(Stats(directReplies: 10, uniqueRepliers: 10, descendants: 20, createdAt: Now.AddHours(-2), activityAt: Now.AddMinutes(-5)), Now);
+        var quiet = Svc.Score(Stats(directReplies: 1, uniqueRepliers: 1, descendants: 1, createdAt: Now.AddHours(-2), activityAt: Now.AddMinutes(-5)), Now);
         busy.Should().BeGreaterThan(quiet);
+    }
+
+    [Fact]
+    public void Unique_repliers_drive_the_discussion_weight_not_raw_reply_count()
+    {
+        // Same 10 replies, but one is from a single sock-puppet vs ten distinct people.
+        var farmed = Svc.Score(Stats(directReplies: 10, uniqueRepliers: 1, createdAt: Now.AddHours(-2), activityAt: Now.AddMinutes(-5)), Now);
+        var organic = Svc.Score(Stats(directReplies: 10, uniqueRepliers: 10, createdAt: Now.AddHours(-2), activityAt: Now.AddMinutes(-5)), Now);
+        organic.Should().BeGreaterThan(farmed);
     }
 
     [Fact]
     public void Recent_activity_scores_higher_than_stale_for_equal_engagement()
     {
-        var fresh = HighlightsService.Score(5, 3, 4, 4, false, Now.AddHours(-3), Now.AddMinutes(-10), Now);
-        var stale = HighlightsService.Score(5, 3, 4, 4, false, Now.AddHours(-3), Now.AddDays(-5), Now);
+        var fresh = Svc.Score(Stats(upvotes: 5, branchVotes: 3, directReplies: 4, uniqueRepliers: 4, descendants: 4, createdAt: Now.AddHours(-3), activityAt: Now.AddMinutes(-10)), Now);
+        var stale = Svc.Score(Stats(upvotes: 5, branchVotes: 3, directReplies: 4, uniqueRepliers: 4, descendants: 4, createdAt: Now.AddHours(-3), activityAt: Now.AddDays(-5)), Now);
         fresh.Should().BeGreaterThan(stale);
     }
 
     [Fact]
     public void Replies_with_engagement_get_a_branch_bonus()
     {
-        var withChildren = HighlightsService.Score(0, 0, 2, 0, isReply: true, Now.AddHours(-1), Now.AddHours(-1), Now);
-        var noChildren = HighlightsService.Score(0, 0, 0, 0, isReply: true, Now.AddHours(-1), Now.AddHours(-1), Now);
+        var withChildren = Svc.Score(Stats(directReplies: 2, uniqueRepliers: 2, isReply: true, createdAt: Now.AddHours(-1), activityAt: Now.AddHours(-1)), Now);
+        var noChildren = Svc.Score(Stats(isReply: true, createdAt: Now.AddHours(-1), activityAt: Now.AddHours(-1)), Now);
         (withChildren - noChildren).Should().BeGreaterThan(18);
     }
 

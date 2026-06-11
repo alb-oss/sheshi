@@ -88,6 +88,14 @@ export type ModUser = {
   roles: string[];
 };
 
+export type TrendPoint = {
+  date: string;
+  users: number;
+  messages: number;
+  votes: number;
+  reports: number;
+};
+
 export type ModAnalytics = {
   totals: {
     rooms: number;
@@ -116,6 +124,31 @@ export type ModAnalytics = {
     moderators: number;
     admins: number;
   };
+  active_users: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+  };
+  growth: {
+    users: { current: number; previous: number };
+    messages: { current: number; previous: number };
+    votes: { current: number; previous: number };
+  };
+  engagement: {
+    answered_threads_pct: number;
+    avg_replies_per_thread: number;
+  };
+  moderation_health: {
+    avg_resolution_hours: number | null;
+    open_backlog_avg_age_hours: number | null;
+    reports_per_thousand_messages: number;
+    deletion_rate_pct: number;
+  };
+  top_authors: Array<{
+    id: string;
+    author: string;
+    messages: number;
+  }>;
   trend: Array<{
     date: string;
     users: number;
