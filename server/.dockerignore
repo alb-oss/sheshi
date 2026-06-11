@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/.vs/
+Sheshi.Api/uploads/
+Sheshi.Api/keys/
+Sheshi.Api.Tests/
+*.user
+.git/
+.github/
