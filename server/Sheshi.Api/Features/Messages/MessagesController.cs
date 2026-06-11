@@ -106,6 +106,7 @@ public class MessagesController(
     {
         var user = await userManager.GetUserAsync(User);
         if (user is null) return Unauthorized();
+        if (user.IsBanned) return Forbid(); // symmetric with Upvote: banned users don't change vote state
 
         await messageService.RemoveUpvoteAsync(id, user.Id, ct);
         return NoContent();
@@ -118,6 +119,8 @@ public class MessagesController(
     {
         var user = await userManager.GetUserAsync(User);
         if (user is null) return Unauthorized();
+        // No IsBanned guard on purpose: removing one's own content (or a moderator
+        // acting) is a withdrawal, not participation, so it stays allowed when banned.
 
         var canModerate = await userManager.IsInRoleAsync(user, Roles.Moderator) ||
                           await userManager.IsInRoleAsync(user, Roles.Admin);

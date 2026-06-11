@@ -1,0 +1,69 @@
+{
+  "batch": "cross_module_architecture",
+  "batch_index": 1,
+  "assessments": {
+    "cross_module_architecture": 93.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Strictly layered backend: Domain/ is a pure leaf (avg_fan_out 0, avg_fan_in 21); every directory edge in the coupling_matrix flows downward (Features/Messages, Auth, Data, Rooms, Moderation -> Domain) with no reciprocal or bidirectional edges.",
+        "Vertical-slice feature folders (Messages, Rooms, Moderation) with clean intra-module decomposition: MessageReader (read side), MessageService (write side), MessageEnricher (projection), HighlightsService (ranking) each own a single responsibility and depend only downward on Data/Domain/Realtime/Storage.",
+        "Shared concerns are centralized in the right owner: HighlightsCache.Key constant, a single HighlightsService.Score() formula reused by both the public highlights feed and ModerationController analytics, and RealtimeNotifier/MessageChangeDto owned by Realtime and consumed downward by Features (Features -> Realtime, correct direction).",
+        "Features/Messages -> Auth (16 edges) is limited to the cross-cutting User.GetUserId() extension and Roles constants (MessagesController.cs:25,76,122; HighlightsController.cs:41) — a legitimate downward dependency on a shared auth utility, not a boundary inversion.",
+        "Features/Moderation -> Features/Messages (7 edges) reuses HighlightsService.GetSnapshotAsync/Score for the admin top-posts panel (ModerationController.cs:142-145) — intentional reuse of the ranking snapshot, downward and acyclic, avoiding a re-walk of every thread.",
+        "Frontend is strictly acyclic and layered: types.ts (leaf) <- api.ts <- appSupport.ts (shared base) <- appHooks.ts/realtime.ts/components/views <- App.tsx (composition root). No view imports another view, no component imports a view, and base modules (appSupport, api, types, roles, realtime) have no back-edges to higher layers (verified by grep).",
+        "No import-time side effects or shared mutable global state coordinating modules: the only statics are a single-flight SemaphoreSlim and the DI MemoryCache key in HighlightsService, both intentional. No compatibility shims or cross-package duplication.",
+        "Minor: Domain/ conflates pure entities (Message, Room, Vote, etc.) with static text utilities (Slug, Text) under one hub folder counted as 21 importers each; this slightly blurs the leaf's role but has negligible blast radius at 2,611 LOC."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Domain/ mixes pure persistence entities with static string utilities (Slug.cs, Text.cs) in the same top-level hub folder that every module imports; the conflation is benign here but means the most-imported boundary owns two distinct roles, so the dependency hub is not perfectly single-purpose."
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "dimension_character": "This is a small, deliberately layered codebase whose dependency direction is coherent and intentional end to end: the backend flows downward from controllers through feature services to a pure Domain leaf with no reciprocal directory edges, and the frontend is a strictly acyclic graph rooted at a single App.tsx composition root. Cross-module reuse (the shared Score formula, HighlightsCache key, RealtimeNotifier) is centralized in the correct owners rather than duplicated, and the cross-feature edge from Moderation into Messages' highlights is an intentional, downward reuse rather than a cycle. The only friction is cosmetic — the Domain hub folder blends entities with static text helpers — which does not create blast radius or boundary ambiguity for a new developer.",
+      "score_rationale": "A developer here can trust dependency direction and boundaries immediately, which is the hallmark of the 90+ band; there are no recurring boundary violations, cycles, hub modules with surprising ripple, import-time side effects, or compatibility shims. It falls short of exemplary only because the Domain hub mixes entity and utility roles, a minor single-folder blur, so I place it at 93.0 rather than higher. The lone mechanical near-duplicate signal on MessageEnricher.cs is a false positive (the detector matched the class name against its single same-file method), so it does not pull the score down."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "root_causes": [],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "MessageEnricher near-duplicate cluster — the detector matched class MessageEnricher against its own EnrichAsync method within one file; there is no cross-module duplication or missing shared boundary."
+    ]
+  },
+  "context_updates": {
+    "cross_module_architecture": {
+      "add": [
+        {
+          "header": "Strictly downward layered backend with pure Domain leaf",
+          "description": "Every directory edge flows downward to a fan-out-0 Domain layer with no reciprocal edges, so common changes have a predictable, bounded blast radius and a new developer can trust dependency direction on sight.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Shared logic centralized in correct owners, not duplicated",
+          "description": "The single HighlightsService.Score formula, HighlightsCache.Key, and RealtimeNotifier are owned by one module and consumed downward (including Moderation reusing the highlights snapshot), avoiding cross-package duplication and missing-boundary debt.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Acyclic, composition-rooted frontend module graph",
+          "description": "types -> api -> appSupport -> hooks/components/views -> App forms a clean DAG with no view-to-view or base-to-higher back-edges, so frontend changes stay local to their layer.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Domain hub folder blends entities with static utilities",
+          "description": "Slug.cs and Text.cs sit alongside persistence entities in the most-imported Domain folder; benign at this size but the dependency hub owns two distinct roles rather than one.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

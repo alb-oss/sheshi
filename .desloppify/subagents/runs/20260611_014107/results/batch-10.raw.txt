@@ -1,0 +1,100 @@
+{
+  "batch": "test_strategy",
+  "batch_index": 10,
+  "assessments": {"test_strategy": 87.0},
+  "dimension_notes": {
+    "test_strategy": {
+      "evidence": [
+        "Integration suite (CoreApiTests, AuthFlowTests, RealtimeStorageModerationTests, SeedAdminTests, CorsTests, SmokeTests) runs against a real Postgres via Testcontainers + WebApplicationFactory<Program>, exercising the full startup pipeline (migrations + role/room seeding) — no DB mocking, so tests validate real behavior rather than stubs.",
+        "Critical server paths are covered behaviorally: auth (register/login/refresh rotation + token-theft family revocation + logout + lockout-after-5-failures + confirm-email + forgot/reset revoking prior sessions), RBAC for room creation, message post/reply/nesting, depth-cap reparenting, vote idempotency, report idempotency, cursor keyset pagination, thread tree assembly, highlights ranking, moderation roles/ban/role-grant, SignalR 'changed' events + presence counts, and image upload with magic-byte sniffing/size-cap/type rejection.",
+        "UnitTests.cs gives a fast, dependency-free layer for pure logic the HTTP suite only hits indirectly: Text.Clip (Theory), Slug.Normalize (Theory incl. unicode/edge inputs), HighlightsService.Score/FreshTieBreakScore ranking invariants, PresenceTracker join/leave/disconnect semantics, ClaimsPrincipalExtensions.GetUserId parsing, LocalFileImageStorage save/reject/size paths.",
+        "Tests assert HTTP status + JSON DTO shape (locally-redeclared records with [JsonPropertyName]) and observable invariants, not implementation internals — low test-production coupling; refactors that preserve the API contract won't break them. Zero snapshot/Verify-style tests (0% snapshot, not >50%).",
+        "ModelParityTests asserts EF FK delete-behaviors and the keyset pagination index/filter directly against the model — a deliberate guard for the Supabase->EF port. EnvTemplateTests guards .env.example contract.",
+        "Frontend React/TS SPA (frontend/src: api.ts, realtime.ts, appHooks.ts, components/, views/) has ZERO automated tests and no test runner configured in package.json — one entire client-side layer is unvalidated.",
+        "CoreApiTests.Threads_store_root_depth_and_feeds_page_by_cursor relies on `await Task.Delay(5)` (line 215) to separate CreatedAt of two posts so cursor ordering is deterministic — a small timing reliance that could theoretically flake under coarse clock resolution.",
+        "CoreApiTests shares one fixture DB across its class (IClassFixture); the author handles isolation explicitly via GUID-unique emails/labels and documents the shared-room caveat — a managed tradeoff, not uncontrolled cross-test state."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The frontend SPA has no automated tests at all, leaving a whole client-side layer (api client, realtime, hooks, views) unvalidated; and a 5ms Task.Delay introduces a minor timing reliance in the pagination ordering test."
+    }
+  },
+  "dimension_judgment": {
+    "test_strategy": {
+      "dimension_character": "The server test strategy is genuinely strong and well-architected: a clear pyramid of fast pure-logic unit tests plus full-stack integration tests against a real throwaway Postgres, covering every critical backend path (auth token lifecycle and theft detection, RBAC, message/thread/vote/report flows, cursor pagination, moderation, realtime, image validation) by asserting contracts rather than internals, with no snapshot overuse and isolated per-class containers. The defects are bounded and at the edges — the React/TS frontend has no tests whatsoever, and one integration test leans on a 5ms delay for ordering — so a developer changing server code would feel well-protected, while a developer changing frontend code has no safety net. Overall the strengths are systemic and the gaps are localized.",
+      "score_rationale": "This lands solidly in the strong band (90 = trustworthy with isolated rough edges) for the server, pulled toward 87 by the complete absence of frontend tests in a two-tier app and a minor timing reliance. It is well above 80 (solid-but-uneven) because the server coverage is broad, behavior-focused, low-coupling, and uses real infrastructure rather than fragile mocks; it falls short of the low-90s because one full client layer is unvalidated, which a careful reviewer would flag as a real strategic blind spot."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "test_strategy",
+      "identifier": "frontend_zero_tests",
+      "summary": "React/TS frontend SPA has no automated tests and no configured test runner",
+      "related_files": ["frontend/src/api.ts", "frontend/src/realtime.ts", "frontend/src/appHooks.ts", "frontend/package.json"],
+      "evidence": [
+        "No *.test.* or *.spec.* files exist under frontend/src; package.json scripts contain only dev/build/preview — no test runner (vitest/jest) is wired up.",
+        "frontend/src contains the API client (api.ts), SignalR realtime layer (realtime.ts), role logic (roles.ts), hooks (appHooks.ts), and feature views/components — none are exercised by any test, so client-side regressions (request shaping, optimistic vote/report handling, realtime reconnection, role gating) are caught only manually."
+      ],
+      "suggestion": "Add a lightweight Vitest setup and cover the highest-value pure modules first: api.ts request/response mapping, roles.ts gating, and realtime.ts connection/event handling with a mocked hub. This validates the client contract without needing a full browser harness.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "delay_ordering_reliance",
+      "summary": "Pagination ordering test depends on a 5ms Task.Delay to separate CreatedAt timestamps",
+      "related_files": ["server/Sheshi.Api.Tests/CoreApiTests.cs"],
+      "evidence": [
+        "Threads_store_root_depth_and_feeds_page_by_cursor posts two messages separated by `await Task.Delay(5)` (line 215), then asserts which post appears on page one — correctness hinges on the 5ms gap producing distinct CreatedAt values under the DB/clock resolution.",
+        "The keyset index includes Id as a tiebreaker, so the test could be made deterministic without relying on wall-clock spacing."
+      ],
+      "suggestion": "Remove the Task.Delay and make ordering deterministic by asserting against the index's full ordering (CreatedAt desc, Id desc) or by controlling CreatedAt directly so the test does not depend on timing resolution.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": ["Backend-first testing investment: the .NET API has a deliberate, layered test strategy while the React SPA was left without a test harness entirely."],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "test_strategy": {
+      "add": [
+        {
+          "header": "Real-Postgres integration suite via Testcontainers + WAF",
+          "description": "Integration tests boot the full app (migrations + seeding) against a throwaway Postgres container instead of mocking the data layer, so they validate true runtime behavior and stay resilient to internal refactors. This is the primary reason backend confidence is high.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Behavior/contract assertions over implementation coupling",
+          "description": "Tests assert HTTP status codes and JSON DTO shapes (locally redeclared records with [JsonPropertyName]) plus observable invariants, not internal call sequences, keeping test-production coupling low. There is zero snapshot/Verify usage.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Balanced unit layer for pure logic",
+          "description": "UnitTests.cs isolates pure, dependency-free logic (slug/text normalization, highlight scoring, presence tracking, claim parsing, image storage validation) with Theory-driven edge cases, complementing the slower integration suite rather than duplicating it.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend SPA has no automated tests",
+          "description": "The React/TS client (api client, realtime, hooks, views) has no test files and no configured runner, so client-side regressions are caught only manually — the main strategic blind spot in an otherwise strong portfolio.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Per-class isolated containers with GUID-based data isolation",
+          "description": "Each test class owns its own ApiFactory/container and isolates data with GUID-unique emails/labels rather than shared mutable global state, with the one shared-fixture caveat documented inline — a managed tradeoff, not fragile cross-test coupling.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    }
+  }
+}

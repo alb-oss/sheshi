@@ -1,0 +1,1504 @@
+{
+  "assessments": {
+    "abstraction_fitness": {
+      "score": 92.5,
+      "components": [
+        "Abstraction Leverage",
+        "Indirection Cost",
+        "Interface Honesty",
+        "Delegation Density",
+        "Definition Directness",
+        "Type Discipline"
+      ],
+      "component_scores": {
+        "Abstraction Leverage": 92.0,
+        "Indirection Cost": 95.0,
+        "Interface Honesty": 96.0,
+        "Delegation Density": 94.0,
+        "Definition Directness": 95.0,
+        "Type Discipline": 93.0
+      }
+    },
+    "ai_generated_debt": 95.5,
+    "api_surface_coherence": 90.5,
+    "authorization_consistency": 90.5,
+    "contract_coherence": 91.5,
+    "convention_outlier": 89.0,
+    "cross_module_architecture": 93.0,
+    "dependency_health": 95.0,
+    "design_coherence": 90.5,
+    "error_consistency": 92.5,
+    "high_level_elegance": 88.5,
+    "incomplete_migration": 93.5,
+    "initialization_coupling": 96.0,
+    "logic_clarity": 90.5,
+    "low_level_elegance": 91.5,
+    "mid_level_elegance": 87.5,
+    "naming_quality": 93.5,
+    "package_organization": 90.5,
+    "test_strategy": 87.0,
+    "type_safety": 92.5
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "Strictly layered backend: Domain/ is a pure leaf (avg_fan_out 0, avg_fan_in 21); every directory edge in the coupling_matrix flows downward (Features/Messages, Auth, Data, Rooms, Moderation -> Domain) with no reciprocal or bidirectional edges.",
+        "Vertical-slice feature folders (Messages, Rooms, Moderation) with clean intra-module decomposition: MessageReader (read side), MessageService (write side), MessageEnricher (projection), HighlightsService (ranking) each own a single responsibility and depend only downward on Data/Domain/Realtime/Storage.",
+        "Shared concerns are centralized in the right owner: HighlightsCache.Key constant, a single HighlightsService.Score() formula reused by both the public highlights feed and ModerationController analytics, and RealtimeNotifier/MessageChangeDto owned by Realtime and consumed downward by Features (Features -> Realtime, correct direction).",
+        "Features/Messages -> Auth (16 edges) is limited to the cross-cutting User.GetUserId() extension and Roles constants (MessagesController.cs:25,76,122; HighlightsController.cs:41) \u2014 a legitimate downward dependency on a shared auth utility, not a boundary inversion.",
+        "Features/Moderation -> Features/Messages (7 edges) reuses HighlightsService.GetSnapshotAsync/Score for the admin top-posts panel (ModerationController.cs:142-145) \u2014 intentional reuse of the ranking snapshot, downward and acyclic, avoiding a re-walk of every thread.",
+        "Frontend is strictly acyclic and layered: types.ts (leaf) <- api.ts <- appSupport.ts (shared base) <- appHooks.ts/realtime.ts/components/views <- App.tsx (composition root). No view imports another view, no component imports a view, and base modules (appSupport, api, types, roles, realtime) have no back-edges to higher layers (verified by grep).",
+        "No import-time side effects or shared mutable global state coordinating modules: the only statics are a single-flight SemaphoreSlim and the DI MemoryCache key in HighlightsService, both intentional. No compatibility shims or cross-package duplication.",
+        "Minor: Domain/ conflates pure entities (Message, Room, Vote, etc.) with static text utilities (Slug, Text) under one hub folder counted as 21 importers each; this slightly blurs the leaf's role but has negligible blast radius at 2,611 LOC."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Domain/ mixes pure persistence entities with static string utilities (Slug.cs, Text.cs) in the same top-level hub folder that every module imports; the conflation is benign here but means the most-imported boundary owns two distinct roles, so the dependency hub is not perfectly single-purpose."
+    },
+    "high_level_elegance": {
+      "evidence": [
+        "Backend uses a clean, domain-aligned decomposition: Domain/ (entities + small value helpers Slug/Text), Data/ (AppDbContext, DbSeeder, design-time factory), Auth/, Email/, Realtime/, Storage/, and Features/{Messages,Rooms,Moderation}. A new engineer can explain why each top-level folder exists without reading much code.",
+        "A small, consistently applied pattern set: thin controllers delegate to feature services; domain errors use result-object records (MessageCreateResult/DeleteMessageResult/ReportMessageResult/RoomCreateResult) instead of exceptions; controllers translate result codes to HTTP. Pattern repeats across Messages and Rooms.",
+        "The Messages feature shows a deliberate CQRS-style split with coherent ownership: MessageService.cs (commands/writes), MessageReader.cs (read queries + pagination), MessageEnricher.cs (DTO projection / N+1 avoidance), HighlightsService.cs (cached ranking). XML doc comments on MessageReader/MessageEnricher/HighlightsService explicitly state each file's role, e.g. 'Read side ... Commands live in MessageService'.",
+        "Public surface per feature is small: each Features/* folder exposes a controller + service(s) + a DTOs file; Realtime owns its wire DTO (MessageChangeDto in RealtimeNotifier.cs) which is consumed by MessageService \u2014 a sensible ownership choice.",
+        "Program.cs is a clean composition root: DI registration, auth/OAuth wiring, rate-limit policies, security headers, and startup migration/seed all in one entry point; static local helpers (GetAllowedOrigins, ValidateJwtOptions, GetRateLimitKey) keep it readable.",
+        "Frontend mirrors the same discipline: views/ (page components), components/ (reusable chrome/messages/overlays), and flat support modules with clear single responsibilities \u2014 api.ts (HTTP), realtime.ts (SignalR), appHooks.ts (custom hooks), appSupport.ts (routing + pure helpers + types), roles.ts (permission predicates).",
+        "ModerationController.cs (379 LOC) performs all analytics aggregation, report triage, ban/role mutations, and user listing directly in the controller with private query helpers (LoadTrendAsync/LoadTopRoomsAsync/LoadTopPostsAsync) \u2014 it has no ModerationService, unlike its Messages/Rooms siblings which split controller from service. A mild layering inconsistency, though Moderation is read/admin-mostly and the controller is the only consumer.",
+        "An empty Controllers/ directory persists at server/Sheshi.Api/Controllers (a scaffolding leftover) alongside the feature-foldered controllers \u2014 a small straggler that momentarily implies a flat-controllers organization that the codebase abandoned.",
+        "codebase_analysis.md is a high-quality reference doc but its Directory Structure section has drifted from runtime: it documents the frontend as monolithic views.tsx (861 lines) and ui.tsx (532 lines) single files, but the code is actually split into views/ and components/ directories; it lists App.tsx as 536 lines (actual 589); its Gaps section still claims 'Not a git repository', 'No Dockerfiles for the API', and a README referencing a stale alb_sheshi/ path \u2014 all no longer true."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "ModerationController carries feature-service responsibilities inline while sibling features (Messages/Rooms) split controller from service, so the layering pattern is not uniform across all features; an empty leftover Controllers/ directory and a stale Directory-Structure section in codebase_analysis.md (frontend described as monolithic views.tsx/ui.tsx files that no longer exist) slightly erode the trustworthiness of the structure/reference docs."
+    },
+    "convention_outlier": {
+      "evidence": [
+        "Backend C# is uniformly conventional: every controller (AuthController, MessagesController, RoomsController, ModerationController, PresenceController) uses primary constructors, [ApiController]/[Route]/[EnableRateLimiting] attributes, PascalCase types/methods with Async suffix, camelCase params, and namespaces that mirror folder paths.",
+        "DTOs follow one pattern everywhere: positional `record` types in per-feature `*Dtos.cs` files with `*Dto` suffix for responses and `*Request` for inputs (RoomDtos.cs, AuthDtos.cs, ModerationDtos.cs, MessageDtos.cs).",
+        "Service results follow a uniform sealed-record-with-static-factory protocol (MessageCreateResult/DeleteMessageResult/ReportMessageResult in MessageService.cs, CreateRoomResult in RoomService.cs).",
+        "Frontend non-component modules are consistently camelCase filenames with named exports and zero default exports (api.ts, appHooks.ts, appSupport.ts, realtime.ts, roles.ts, types.ts); components grouped thematically with named exports (chrome.tsx, messages.tsx, overlays.tsx).",
+        "Convention outlier: in frontend/src/views/, Auth.tsx, Moderation.tsx, and Profile.tsx are PascalCase but feeds.tsx is lowercase, despite all four holding top-level routed view components (App.tsx:25-28 imports them side-by-side, App.tsx:466-556 routes Home/RoomView/ThreadView identically to Profile/ModerationView/AuthPage).",
+        "Structural variation (not a defect): Moderation has no service layer (analytics logic lives in ModerationController) while Messages/Rooms split controller+service; this is reasonable read-heavy variation and the rubric's skip list discourages forcing unification."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The frontend views/ directory mixes PascalCase (Auth.tsx, Moderation.tsx, Profile.tsx) and lowercase (feeds.tsx) file names for files of identical role, creating a small style island a developer scanning the import block at App.tsx:25-28 would notice."
+    },
+    "error_consistency": {
+      "evidence": [
+        "Service layer uses a uniform Result-record idiom for expected domain failures: MessageCreateResult, DeleteMessageResult, ReportMessageResult (MessageService.cs:187-205) and CreateRoomResult (RoomService.cs:92-96) all expose static factory methods (Created/Failed/NotFound/Forbidden) carrying a string error code.",
+        "Read paths consistently return null for not-found (MessageReader.GetMessageAsync/GetThreadAsync, RoomService.GetBySlugAsync, TokenService.RotateRefreshTokenAsync) and controllers translate null->NotFound()/Unauthorized() uniformly (MessagesController.cs:32-33,49-52; RoomsController.cs:23-24).",
+        "Controllers translate service Result/null into HTTP responses with a single error envelope shape `{ error = \"CODE\" }` using SCREAMING_SNAKE codes (ROOM_NOT_FOUND, PARENT_ROOM_MISMATCH, INVALID_MODE, RATE_LIMITED); MessagesController.cs:80-83, RoomsController.cs:33-38, HighlightsController.cs:18.",
+        "Storage layer throws a typed domain exception (ImageStorageException with a Code property, ImageStorageException.cs) carrying machine codes; MessageService catches it specifically and converts ex.Code into a Result.Failed(ex.Code) (MessageService.cs:45-48) \u2014 a clean throw->Result boundary between layers.",
+        "LocalFileImageStorage.SaveAsync wraps file I/O in try/catch that cleans up the temp file and `throw;` re-raises the original exception with no context loss (LocalFileImageStorage.cs:64-68).",
+        "Background and startup boundaries are deliberate top-level handlers: RefreshTokenCleanupService separates OperationCanceledException (shutdown) from generic Exception (log warning + retry next interval) (RefreshTokenCleanupService.cs:44-51); Program.cs startup catch logs then rethrows (fail-fast); ValidateJwtOptions and DbSeeder throw InvalidOperationException with descriptive messages for misconfiguration.",
+        "AuthController.SendConfirmationEmailAsync swallow is documented best-effort ('a broken mail server must not block registration') and logs a warning with the exception (AuthController.cs:64-78) \u2014 intentional, not silent.",
+        "Top-level pipeline gives predictable failure surface: app.UseExceptionHandler returns `{ error = \"INTERNAL_ERROR\" }` and the rate limiter returns `{ error = \"RATE_LIMITED\" }` (Program.cs:66-70,281-286), AddProblemDetails registered.",
+        "Frontend mirrors the backend: a single ApiError class carries status + code, one send() boundary parses the server `{error|errors}` envelope into ApiError, and call sites distinguish 404 from generic failure (api.ts:31-58; App.tsx:253-261). localStorage/clipboard catches in appSupport.ts are intentional fallback boundaries.",
+        "The strategy_by_directory scan signal (result_type in Auth/Messages/Moderation/Rooms, throws in Storage/Data, returns_null in Domain/readers) reflects intentional per-layer strategy, exactly the variation the rubric instructs to skip \u2014 not accidental inconsistency."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Two unsuppressed I/O boundaries write to the database without a feature-local failure strategy, leaving them to bubble to the generic 500 handler: TokenService.CreateAuthResponseAsync/RotateRefreshTokenAsync and the report/vote SaveChanges paths have no transient-failure handling, and the only documented public error-contract surface is the in-code SCREAMING_SNAKE codes (no OpenAPI/ProducesResponseType annotations enumerating them). These are minor and consistent with the codebase's deliberate fail-to-500 posture, but they keep the dimension just short of exemplary."
+    },
+    "naming_quality": {
+      "evidence": [
+        "Backend service/reader split is named by intent: MessageService holds commands (CreateMessageAsync, UpvoteAsync, SoftDeleteAsync, ReportAsync), MessageReader holds reads (ListRoomMessagesAsync, ListRepliesAsync, GetThreadAsync); a developer can predict responsibility from the class name.",
+        "Domain helpers read as verbs that match behavior: TokenService.RotateRefreshTokenAsync, RevokeAllForUserAsync, HashRefreshToken; HighlightsService.GetSnapshotAsync/Score/FreshTieBreakScore; MessageEnricher.EnrichAsync; ResolveRootAsync.",
+        "Boolean/predicate names are honest: IsBanned, IsActive, HasValidSignature, HasClientSecret, canModerate/canAdmin/hasRole \u2014 every Is*/Has*/Can* returns a bool and no Get* method mutates state (verified by grep across server/).",
+        "Frontend names communicate intent without ceremony: subscribeToRealtime, useRealtimeRefresh, buildShareTarget, copyShareTarget, requireAuth, patchThread, findReplyNode, hotScore, authorAccent, timeAgo.",
+        "Consistent C# casing (PascalCase public members/types, camelCase locals/params) and consistent camelCase in TS; no convention drift between layers.",
+        "Minor: api.ts private helper dispatch() is a slightly generic verb for 'fetch with auth headers' (the public wrapper is the clearer send()) \u2014 isolated, 2-use, low impact.",
+        "Intentional Albanian route literals (dhoma/tema/profili/moderim) in parseRoute/roomPath are a deliberate localized URL vocabulary, not naming drift."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "A private fetch helper named dispatch() in api.ts uses a slightly generic verb where the codebase otherwise favors precise names, and a few realtime params use messageId where the value is conceptually a thread/root id; both are trivial and isolated but keep naming just short of fully exemplary."
+    },
+    "abstraction_fitness": {
+      "evidence": [
+        "Only two I* interfaces exist (IImageStorage, IEmailSender) and both are genuine external-boundary adapters: IEmailSender is replaced with CapturingEmailSender in AuthFlowTests.cs (real test seam), and LocalFileImageStorage wraps the filesystem with magic-byte validation and atomic temp-file writes (swappable for S3/blob). Both fall under the rubric's explicit skip list.",
+        "Service classes carry real policy, not delegation: MessageService.CreateMessageAsync (Features/Messages/MessageService.cs:15) does validation, depth-capping/reparenting, image storage, and realtime/cache side effects; TokenService.RotateRefreshTokenAsync (Auth/TokenService.cs:38) implements atomic single-winner revocation and replay-detection. No method merely forwards to a repository.",
+        "Controllers are thin but earn their existence by translating domain Result records into HTTP status codes and applying auth/role/ban checks (MessagesController.cs:69-86, RoomsController.cs:33-38, ModerationController.Ban revokes refresh tokens) \u2014 not pass-through delegation.",
+        "Read/write concerns are split into focused collaborators (MessageReader, MessageEnricher, HighlightsService) each with a distinct responsibility documented in the class summary; MessageEnricher batch-loads in 4 queries to avoid N+1, HighlightsService centralizes the single scoring formula + single-flight cache.",
+        "Options objects (StorageOptions, JwtOptions) are small and fully consumed by their single owner; no wide context/option bag is plumbed broadly while methods use few members.",
+        "The 19 mechanical indirection_hotspots are EF Core/LINQ fluent chains (.Where().OrderBy().Take().ToListAsync()), not abstraction-layer indirection \u2014 a false positive for this dimension.",
+        "Minor: RoomService.NormalizeSlug (Features/Rooms/RoomService.cs:89) is a one-line private wrapper that only forwards to Slug.Normalize, adding no policy \u2014 a trivial, isolated thin-delegate helper."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "One trivial pass-through helper (RoomService.NormalizeSlug forwards to Slug.Normalize with no added behavior); abstraction count is so minimal that there is essentially no test-seam diversity beyond the two boundary interfaces, so the layer design is good but lightly exercised as an abstraction strategy.",
+      "sub_axes": {
+        "abstraction_leverage": 92.0,
+        "indirection_cost": 95.0,
+        "interface_honesty": 96.0,
+        "delegation_density": 94.0,
+        "definition_directness": 95.0,
+        "type_discipline": 93.0
+      }
+    },
+    "dependency_health": {
+      "evidence": [
+        "Frontend (frontend/package.json) has 5 production deps and every one is used: chart.js (views/Moderation.tsx), lucide-react (7 files), @microsoft/signalr (src/realtime.ts), react and react-dom (src/main.tsx).",
+        "Single HTTP layer: src/api.ts uses native fetch; no axios or competing client. Single charting lib (chart.js, no recharts/d3/victory). No date libraries at all, so no moment+dayjs-style overlap.",
+        "Backend Sheshi.Api.csproj has 8 PackageReferences, all exercised in code: AddGoogle/AddMicrosoftAccount/AddApple/AddJwtBearer/AddOpenApi/UseNpgsql all present in Program.cs; Identity.EntityFrameworkCore via AppDbContext.",
+        "Microsoft.EntityFrameworkCore.Design is correctly scoped with PrivateAssets=all and build-only IncludeAssets, so it is a design-time tool dependency rather than a runtime drag.",
+        "package-lock.json resolves react and react-dom to a single version (19.2.7); the multiple 'react' version strings seen are transitive peer-dependency ranges, not an actual conflict.",
+        "Minor: backend ASP.NET Core line packages mostly pin to 10.0.8 but a few drift on patch (AspNet.Security.OAuth.Apple 10.0.0, Microsoft.AspNetCore.OpenApi 10.0.7, Npgsql.EntityFrameworkCore.PostgreSQL 10.0.2). These are separately-versioned vendor packages on the same major line, so this is cosmetic patch spread rather than a real version conflict."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Minor patch-version drift across the backend ASP.NET Core 10.0.x package set (10.0.0 / 10.0.2 / 10.0.7 / 10.0.8) means a developer auditing versions sees inconsistent pins, though none represents an actual incompatibility."
+    },
+    "low_level_elegance": {
+      "evidence": [
+        "MessageService.CreateMessageAsync (MessageService.cs:15-97) reads as a clean linear pipeline: guard clauses for empty/too-long body, early-return validation for room/parent, scoped try/catch only around the image I/O boundary, then a small distinct branch tree (parent null / over-depth reparent / normal) that computes parentId+depth. Branches are necessary and distinct; the reparent branch carries a WHY comment.",
+        "MessageReader.cs uses bounded helpers (NormalizeLimit, EncodeCursor/DecodeCursor, ResolveRootAsync with a HashSet cycle guard, BuildReplyNodes recursion) \u2014 extraction level is balanced, no micro-fragmentation, recursion is inherent to the tree.",
+        "TokenService.RotateRefreshTokenAsync (TokenService.cs:38-64) handles the stolen-token replay and atomic-revoke race precisely with early returns and a row-count check; side effects are explicit and local.",
+        "LocalFileImageStorage.SaveAsync (LocalFileImageStorage.cs:16-71) is precise low-level craft: temp-file + File.Move atomicity, streaming with a running byte cap, magic-byte signature validation on the first chunk, and a single catch that cleans up the temp file and rethrows.",
+        "HighlightsService.GetSnapshotAsync uses a textbook double-checked single-flight pattern; LoadStatsAsync walks ancestors with a per-message seen-set guard. Dense but the complexity is inherent to the ranking domain and well-commented.",
+        "PresenceTracker mutations are all bounded inside a single lock with consistent dictionary-cleanup-on-empty handling across JoinRoom/LeaveRoom/Disconnect.",
+        "ModerationController.TryParseStatus (ModerationController.cs:290-300) is the one local rough edge: a switch computes the `parsed` out value, then the return statement re-evaluates `status.ToLowerInvariant()` against the same three string literals (a third time), duplicating the branch logic and ignoring the computed result.",
+        "Frontend internals are equally tidy: realtime.ts subscribeToRealtime uses a disposed flag to guard async start/stop teardown; appHooks.ts effects all return correct cleanup. messages.tsx ReplyTree repeats `props.savedIds.has(node.message.id)` inline four times (lines 138-144) \u2014 minor noise, standard JSX."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "ModerationController.TryParseStatus triple-evaluates status.ToLowerInvariant() and duplicates its branch set in the return rather than deriving success from the switch; minor inline-expression repetition in messages.tsx ReplyTree. These are isolated rough edges, not systemic, but they keep this below the 95+ band reserved for uniformly proportionate internals."
+    },
+    "mid_level_elegance": {
+      "evidence": [
+        "Service layer returns explicit result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) with static factory methods; controllers translate the single Error code field to an HTTP status in one obvious place (MessagesController.CreateMessageAsync lines 80-85, RoomsController.Create lines 33-38) \u2014 handoffs are minimal and unsurprising.",
+        "Error propagation across the storage->service->controller chain is predictable: LocalFileImageStorage throws ImageStorageException(code), MessageService catches it and folds the code into MessageCreateResult.Failed (MessageService.cs lines 45-48), the controller maps it to a response. One direction, one obvious seam.",
+        "JSON boundary translation is centralized once in Program.cs (SnakeCaseLower naming policy + enum converter, lines 30-35), so the snake_case wire contract the frontend depends on (room_id, parent_id, display_name) has a single source of truth rather than per-DTO mapping.",
+        "Read/write are split into MessageReader and MessageService that both compose the shared MessageEnricher projection seam and the shared static MessageReader.ResolveRootAsync; orchestration reads as composition of collaborators (CreateMessageAsync: persist -> enrich -> evict cache -> notify realtime, MessageService.cs lines 88-96).",
+        "Frontend api.ts funnels every call through one send() seam with transparent 401 refresh-and-retry and a single ApiError carrying the backend error code (lines 42-58); the cross-runtime error contract mirrors the backend's { error } / { errors } shape.",
+        "Friction: error codes cross the service->controller seam as bare strings matched by literal (result.Error == \"ROOM_NOT_FOUND\", \"PARENT_ROOM_MISMATCH\"); the discriminator is an implicit string contract rather than an enum, so a typo silently falls through to the generic branch.",
+        "Vestigial seam: RealtimeNotifier.MessageChangedAsync(Guid roomId, Guid? threadId, ...) overload has zero callers (all four call sites use the MessageChangeDto overload) \u2014 a dead boundary surface.",
+        "Cross-language rule duplication: appSupport.ts hotScore reimplements HighlightsService.Score's recency constants (42 / pow(age+1,0.95) + 14 / pow(age+1,0.45)) with no link between the two; deliberate (client re-sort cannot share C# code) but the divergence is undocumented.",
+        "Presence seam is shape-asymmetric: the REST endpoint returns a snake-cased Dictionary<string,int> while SignalR pushes a PresenceDto, so the frontend RealtimePresenceUpdate/PresenceUpdate type hedges with both roomId and room_id."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Service->controller error contract is stringly-typed (literal-matched codes), one dead notifier overload, and a recency-scoring rule duplicated across the C#/TS boundary without a documented link. These are isolated frictions on an otherwise clean, consistent set of seams."
+    },
+    "test_strategy": {
+      "evidence": [
+        "Integration suite (CoreApiTests, AuthFlowTests, RealtimeStorageModerationTests, SeedAdminTests, CorsTests, SmokeTests) runs against a real Postgres via Testcontainers + WebApplicationFactory<Program>, exercising the full startup pipeline (migrations + role/room seeding) \u2014 no DB mocking, so tests validate real behavior rather than stubs.",
+        "Critical server paths are covered behaviorally: auth (register/login/refresh rotation + token-theft family revocation + logout + lockout-after-5-failures + confirm-email + forgot/reset revoking prior sessions), RBAC for room creation, message post/reply/nesting, depth-cap reparenting, vote idempotency, report idempotency, cursor keyset pagination, thread tree assembly, highlights ranking, moderation roles/ban/role-grant, SignalR 'changed' events + presence counts, and image upload with magic-byte sniffing/size-cap/type rejection.",
+        "UnitTests.cs gives a fast, dependency-free layer for pure logic the HTTP suite only hits indirectly: Text.Clip (Theory), Slug.Normalize (Theory incl. unicode/edge inputs), HighlightsService.Score/FreshTieBreakScore ranking invariants, PresenceTracker join/leave/disconnect semantics, ClaimsPrincipalExtensions.GetUserId parsing, LocalFileImageStorage save/reject/size paths.",
+        "Tests assert HTTP status + JSON DTO shape (locally-redeclared records with [JsonPropertyName]) and observable invariants, not implementation internals \u2014 low test-production coupling; refactors that preserve the API contract won't break them. Zero snapshot/Verify-style tests (0% snapshot, not >50%).",
+        "ModelParityTests asserts EF FK delete-behaviors and the keyset pagination index/filter directly against the model \u2014 a deliberate guard for the Supabase->EF port. EnvTemplateTests guards .env.example contract.",
+        "Frontend React/TS SPA (frontend/src: api.ts, realtime.ts, appHooks.ts, components/, views/) has ZERO automated tests and no test runner configured in package.json \u2014 one entire client-side layer is unvalidated.",
+        "CoreApiTests.Threads_store_root_depth_and_feeds_page_by_cursor relies on `await Task.Delay(5)` (line 215) to separate CreatedAt of two posts so cursor ordering is deterministic \u2014 a small timing reliance that could theoretically flake under coarse clock resolution.",
+        "CoreApiTests shares one fixture DB across its class (IClassFixture); the author handles isolation explicitly via GUID-unique emails/labels and documents the shared-room caveat \u2014 a managed tradeoff, not uncontrolled cross-test state."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The frontend SPA has no automated tests at all, leaving a whole client-side layer (api client, realtime, hooks, views) unvalidated; and a 5ms Task.Delay introduces a minor timing reliance in the pagination ordering test."
+    },
+    "api_surface_coherence": {
+      "evidence": [
+        "Controllers are highly uniform: every controller uses primary-constructor DI, [ApiController]+[Route(\"api/...\")], ActionResult<T> return types, a trailing CancellationToken ct parameter, and [EnableRateLimiting] partitioned read/write/auth/moderation. A developer can predict the next endpoint's shape from any example.",
+        "Service-layer error contracts are consistent: command methods return small sealed result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) with static factory methods (Created/Failed/NotFound/Forbidden), and controllers translate them to HTTP codes the same way; read methods return nullable DTOs mapped to NotFound().",
+        "Pagination is uniform: CursorPageDto<T> plus (limit, cursor, ct) ordering in both MessageReader.ListRoomMessagesAsync and ListRepliesAsync.",
+        "RealtimeNotifier exposes two public overloads of MessageChangedAsync; the (Guid roomId, Guid? threadId = null, ct) overload has zero callers (all four call sites in MessageService.cs use the MessageChangeDto overload) -- a dead, inconsistent-shape overload on the notifier surface.",
+        "HighlightsService.Score has an 8-parameter public static overload (upvotes, branchVotes, directReplies, descendants, isReply, createdAt, activityAt, now) alongside a Score(HighlightStats, now) convenience overload; the wide primitive list exceeds the >5-param guideline though it is a pure single-purpose scoring function.",
+        "The two [HttpPost(\"messages\")] actions distinguished by [Consumes] JSON vs multipart are an intentional, framework-supported content-negotiation overload that normalizes into one CreateMessageAsync -- not a defect.",
+        "The sync/async-mix signal reflects sync helpers (Score, EncodeCursor/DecodeCursor, TryParseStatus, Snapshot) coexisting with async public methods, which is normal; no genuinely blocking sync call sits on an otherwise-async public API."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "One dead public overload (RealtimeNotifier.MessageChangedAsync(Guid roomId,...)) leaves an unused, inconsistent shape on the notifier surface; HighlightsService.Score's 8-parameter primitive overload is a mild width rough edge. Both are isolated and do not undermine the otherwise strongly predictable controller/service surface."
+    },
+    "authorization_consistency": {
+      "evidence": [
+        "Permission strings are fully centralized in the Roles static class (Domain/Enums.cs) and used everywhere: [Authorize(Roles = Roles.Admin)] (RoomsController.cs:27, ModerationController.cs:233), [Authorize(Roles = Roles.ModeratorOrAdmin)] (ModerationController.cs:13), and IsInRoleAsync(user, Roles.Admin/Moderator) (MessagesController.cs:76,122-123). No magic role literals exist in any auth check; the only raw 'user'/'admin' strings are username-fallback defaults, not authorization.",
+        "Consistent [Authorize] placement: every mutating endpoint is protected (MessagesController write actions lines 55,62,88,102,114,131; AuthController logout line 114; MeController class-level line 10; RoomsController.Create line 27). Read endpoints (room messages, threads, highlights, room list, presence) are intentionally public for a forum and pass User.GetUserId() through as a nullable caller id.",
+        "Ban enforcement is layered and consistent across the trust boundary: at token mint (AuthController.Login:99 returns 403 ACCOUNT_BANNED; ExternalCallback:227), at refresh rotation (TokenService.RotateRefreshTokenAsync:53 rejects banned users), and at write controllers (MessagesController:73,95,138). Banning also revokes all active refresh tokens (ModerationController.Ban:216-218) so sessions die immediately.",
+        "Authorization is cleanly delegated into the service layer: MessagesController.SoftDelete computes canModerate from roles and passes it to MessageService.SoftDeleteAsync, which enforces author-or-moderator (MessageService.cs:144) and returns an Authorized flag the controller maps to Forbid() (MessagesController.cs:126). The admin-only role-mutation endpoint is constrained to grant/revoke only the moderator role (ModerationController.cs:237) so the API cannot escalate to admin.",
+        "Ban-check asymmetry on write endpoints: PostMessage, Upvote, and Report all guard with `if (user.IsBanned) return Forbid()` (MessagesController.cs:73,95,138), but RemoveUpvote (line 105-112) and SoftDelete (line 117-129) deliberately omit the ban check. This is defensible (a banned user retracting a vote or deleting their own content is harmless), but a reviewer must reason about each endpoint individually rather than trusting one uniform rule.",
+        "ChatHub (Realtime/ChatHub.cs) has no [Authorize] attribute, so any client can JoinRoom/JoinThread over SignalR. The hub only manages presence and broadcasts content-free 'changed' pings (RealtimeNotifier sends no message bodies); clients re-fetch via REST. Since room reads are already public, this matches the public-read trust boundary rather than leaking protected data, but the JWT-from-query wiring (Program.cs:178-184) exists without the hub actually requiring auth.",
+        "No audit logging on privileged moderation/admin state changes: Ban/Unban (ModerationController.cs:205-231), UpdateRole (233-248), and report Resolve/Dismiss (197-203) mutate users and reports with no audit trail of who acted. Not a bypass, but privileged actions are untraceable."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Ban-check asymmetry across sibling write endpoints (RemoveUpvote/SoftDelete omit the IsBanned guard that PostMessage/Upvote/Report apply) forces per-endpoint reasoning; ChatHub lacks [Authorize] despite JWT-from-query wiring; and privileged moderation actions (ban/role/report mutations) have no audit logging."
+    },
+    "ai_generated_debt": {
+      "evidence": [
+        "Codebase comment ratio is 0.022 (very low); every comment sampled explains WHY, not WHAT \u2014 e.g. MessageService.cs:64-65 explains reparenting to bound tree depth, TokenService.cs:46-60 explains replay-detection and atomic revoke, ModerationController.cs:215 explains why a ban revokes refresh tokens.",
+        "Only 10 XML <summary> docs in the entire backend, all on genuinely non-obvious shared logic (HighlightsService single-flight cache, MessageReader.ResolveRootAsync cycle guarding, MessageEnricher's no-N+1 batch loading). No docstring bloat on trivial 2-line methods.",
+        "No nosy debug logging or object dumps. Logging is sparse and purposeful: LogWarning on email/SMTP failures (AuthController.cs:77, SmtpEmailSender.cs:19), LogInformation on cleanup pass results (RefreshTokenCleanupService.cs:42). Two frontend console.debug calls (App.tsx:37,168) are at non-critical failure boundaries with WHY comments above them.",
+        "No defensive overengineering: try-catch blocks wrap real I/O only \u2014 image storage (MessageService.cs:40-48), clipboard/localStorage (appSupport.ts:50-55,64-89,106-111), SMTP. Null checks guard genuine API boundaries (user input, DB lookups), not non-nullable typed values.",
+        "No pass-through wrappers: api.ts requestJson/requestNoContent add 204 handling and JSON parsing; dispatch/send add the refresh-and-retry; ModerationController Resolve/Dismiss parameterize SetReportStatus with distinct enum values. All add real behavior.",
+        "Domain-precise naming throughout (EnrichAsync, RotateRefreshTokenAsync, ResolveRootAsync, SoftDeleteAsync); no generic handleData/processItem/doOperation in domain code.",
+        "No placeholder/boilerplate residue: zero TODO/FIXME/HACK markers and no NotImplementedException across production source. 'placeholder=' hits are all legitimate JSX input placeholders.",
+        "Error handling uses a consistent Result-record pattern (MessageCreateResult/DeleteMessageResult/ReportMessageResult) rather than copy-pasted try-catch boilerplate across files."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "A handful of broad multi-arg helpers (HighlightsService.Score 8 params, though intentionally the single shared scoring formula) and the per-row role-fetch loop in ModerationController.Users are minor craft items rather than AI-debt; they keep the score just short of exemplary but reflect no actual generated-style noise."
+    },
+    "incomplete_migration": {
+      "evidence": [
+        "Frontend has a single HTTP client: one fetch wrapper in frontend/src/api.ts (dispatch/send), no axios+fetch coexistence; no moment/dayjs/date-fns dual date libs; all components functional (no class+functional mix); all source is .ts/.tsx (no mixed JS/TS for the same module).",
+        "No deprecated-but-called symbols: zero [Obsolete] attributes, zero @deprecated markers, no #pragma warning disable, no V1/V2 or _old/_new parallel code paths across server/Sheshi.Api and frontend/src.",
+        "No sync-over-async shims: zero .Result/.Wait()/GetAwaiter().GetResult() in the C# code; the sync vs async 'pattern pair' signal (26 sync / 19 async) is explained by appropriately-synchronous members (record factory methods like DeleteMessageResult.NotFound(), expression-bodied delegators returning Task without await, ClaimsPrincipalExtensions.GetUserId reading claims synchronously) \u2014 not an old sync API coexisting with a new async API.",
+        "The Supabase RLS design referenced in codebase_analysis.md:102 is a TEST PARITY target only ('authorization parity with a prior Supabase RLS design'); no Supabase/RLS/PostgREST references exist in production code, indicating the port off RLS is complete with no parallel old/new auth paths.",
+        "Program.cs migration references (lines 233-246) are EF Core database schema migrations (db.Database.MigrateAsync, AutoMigrate opt-in) \u2014 standard framework lifecycle, not a code/API migration shim.",
+        "appSupport.ts:68 'legacy selection copy path' is the document.execCommand('copy') fallback for non-secure contexts / browsers lacking navigator.clipboard \u2014 intentional, necessary browser backward-compat (rubric skip), not abandoned migration residue.",
+        "RootMessageId == Guid.Empty handling (MessageReader.cs:122, MessageService.cs:52-53, HighlightsService.cs:197-199) computes the effective thread root on the fly for pre-ThreadMetadata-migration rows; applied uniformly via one coherent convention and documented in ResolveRootAsync \u2014 a bounded, intentional backward-compat invariant, not dual-path confusion.",
+        "HighlightsService.cs:14 cache key 'highlights:snapshot:v1' is a cache-invalidation version string, not a code migration marker."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The RootMessageId == Guid.Empty backfill convention is repeated in 4 spots (MessageReader, MessageService, HighlightsService EffectiveRootId) rather than centralized; while consistent and intentional, it is the one bit of migration-era residue a developer must recognize as 'legacy-row handling' across files, keeping this just shy of a fully-bounded-and-documented 100."
+    },
+    "package_organization": {
+      "evidence": [
+        "Backend server/Sheshi.Api/ uses clean feature/concern folders (Auth/, Data/, Domain/, Email/, Features/{Messages,Moderation,Rooms}/, Realtime/, Storage/) where namespaces match directories one-to-one \u2014 a developer can predict placement from structure alone.",
+        "Domain/ is the correctly-placed core: directory_profiles shows avg_fan_in 21.0 and avg_fan_out 0.0 (pure, dependency-free), imported by every feature directory; this is a model high-fan-in package, not a straggler.",
+        "coupling_matrix is strictly unidirectional: Features\u2192Domain (54), Auth\u2192Domain (36), Features\u2192Data (12), Features\u2192Auth (16), Features\u2192Realtime (6), Features\u2192Storage (4). No reciprocal/bidirectional directory edges and no downstream\u2192upstream imports \u2014 boundary placement is sound.",
+        "No flat-directory overload: largest production directory is Auth/ at 8 cohesive auth files (563 LOC); Features/Messages/ has 7 message-domain files. All directories stay well under the >10-mixed-concern threshold.",
+        "Controllers are colocated with their feature slice (Features/Messages/MessagesController.cs, Auth/AuthController.cs, Realtime/PresenceController.cs) \u2014 a consistent vertical-slice convention applied uniformly.",
+        "Empty Controllers/ directory at server/Sheshi.Api/Controllers/ is a leftover scaffolding artifact (dotnet new webapi); its name implies a placement convention the codebase deliberately does NOT follow (controllers live in feature folders), creating a minor ambiguous-naming signal.",
+        "Domain/ mixes persistence entities (Message, Room, Vote, Report, RefreshToken, ApplicationUser) with two static string-normalization utilities (Slug.cs, Text.cs) \u2014 a slight cohesion blur, though both are broadly-imported value helpers operating on domain text.",
+        "Frontend frontend/src/ is a small SPA (17 files) with views/ and components/ subfolders plus root helper modules (api.ts fan-in ~7, types.ts ~9, appSupport.ts ~7) that are genuinely core and correctly flat per the small-project skip rule."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "An empty Controllers/ directory contradicts the feature-folder controller convention (ambiguous-naming straggler), and Domain/ co-locates static text utilities (Slug.cs, Text.cs) with persistence entities \u2014 minor cohesion blur. Both are trivial outliers that keep the score below the 95+ exemplary band."
+    },
+    "initialization_coupling": {
+      "evidence": [
+        "Program.cs is a clean ASP.NET Core minimal-host bootstrap: all cross-component wiring (TokenService, MessageService, RoomService, HighlightsService, IImageStorage, RealtimeNotifier, PresenceTracker) is registered in the DI container, so object creation order is owned by the framework's service provider, not by import order.",
+        "No import-time / class-scope side effects anywhere: every DB access, file write, and SignalR send happens inside instance methods invoked at request/runtime, never at module scope. Directory.CreateDirectory appears only inside methods (LocalFileImageStorage.SaveAsync line 21, Program.cs line 269 after Build()), not at construction.",
+        "Configuration is consumed via IConfiguration and IOptions<JwtOptions>/IOptions<StorageOptions> resolved at runtime (TokenService line 20, LocalFileImageStorage line 14, DbSeeder.SeedConfiguredAdminAsync line 48), not read at import/static-init time, so the wiring is test-friendly (ApiFactory can override config).",
+        "The only Environment.GetEnvironmentVariable read (DesignTimeDbContextFactory.cs line 14) is design-time-only EF tooling with a sensible localhost fallback and never participates in the running app's boot path.",
+        "All static fields are non-fragile: immutable lookup tables / constants (DbSeeder.SeedRooms, LocalFileImageStorage.Extensions, RefreshTokenCleanupService.Interval, HighlightsService.SeedWindow/CacheTtl) or synchronization primitives (HighlightsService.SnapshotGate SemaphoreSlim). None is mutable shared state with creation-order sensitivity; the SnapshotGate is initialized inline and is intentionally process-wide to single-flight the shared IMemoryCache recompute.",
+        "The single registered singleton (PresenceTracker) is fully self-contained: a lock-guarded pair of dictionaries with no construction-order dependency on any other singleton; migration/seed run once after Build() inside a created scope with a try/catch that logs and rethrows (DbSeeder.SeedAsync), which is the framework-blessed startup pattern, not import-time coupling."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Not a 100 because a couple of process-wide static synchronization/cache constructs (HighlightsService.SnapshotGate plus a Scoped service holding shared statics, and the singleton IMemoryCache-backed snapshot) require a developer to understand that the gate is deliberately shared across scoped instances; this is correct and documented but is a small piece of implicit global coordination a reader must recognize. No defect, just the one nuance keeping it short of exemplary."
+    },
+    "design_coherence": {
+      "evidence": [
+        "Backend uses one uniform per-feature shape: Controller (HTTP/auth mapping) + Service (commands) + Reader (queries) + DTOs, repeated across Messages, Rooms, Moderation, Auth without divergence.",
+        "Service operations consistently return small Result records with named factory methods (MessageCreateResult.Failed/Created, DeleteMessageResult.NotFound/Forbidden/Deleted, ReportMessageResult, CreateRoomResult), giving a predictable command-result idiom system-wide.",
+        "Read-side enrichment is consistently expressed as a single batch-loading pass with GetValueOrDefault lookups (MessageEnricher.EnrichAsync, RoomService.ToDtosAsync, ModerationController.LoadTopRoomsAsync) \u2014 no N+1, same structural recipe each time.",
+        "MessageReader cleanly splits command vs query (commands live in MessageService), with focused helpers (NormalizeLimit, DecodeCursor, ToCursorPageAsync, BuildReplyNodes) and recursion only where the reply tree genuinely requires it.",
+        "Frontend api.ts is exemplary: every endpoint is a one-line wrapper over requestJson/requestNoContent with a typed request record; one dispatch/send/refresh path handles transport, 401-retry, and error shaping once.",
+        "Moderation.tsx uses an action-dispatch pattern (actOnReport/actOnUser switch on a literal action) and data-driven rendering (statCards array, AdminDataTable rows, reusable AdminPanelHead/Meter) rather than copy-pasted blocks.",
+        "Flagged duplication in MessageEnricher.cs is a false positive: the detector compared the class declaration (line 13) to its single EnrichAsync method (line 15) at 97%; there is no real duplicated logic.",
+        "Minor wrinkle: MessagesController.CreateMessageAsync maps result.Error via a chain of magic string-literal if comparisons (\"ROOM_NOT_FOUND\", \"PARENT_NOT_FOUND\", \"PARENT_ROOM_MISMATCH\"), diverging slightly from the boolean Found/Authorized result-shape other endpoints use; localized and low impact.",
+        "App.tsx is large (~589 lines) but is the single root SPA orchestrator (state + effects + render composition) \u2014 a coherent single responsibility for an app this size, with logic already extracted into appHooks, appSupport, and view components."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "MessagesController.CreateMessageAsync maps service errors through a chain of magic string-literal comparisons instead of the structured boolean result-shape used by sibling endpoints; this string-keyed branch is the one spot where the otherwise-uniform command-result idiom is slightly inconsistent."
+    },
+    "contract_coherence": {
+      "evidence": [
+        "DTO/TS parity is exact and disciplined: every C# record DTO (MessageDto, RoomDto, UserDto, AuthResponse, ModReportDto, ModUserDto, ModAnalyticsDto tree, CursorPageDto<T>) maps field-for-field to the snake_case TS type in frontend/src/types.ts; Program.cs sets PropertyNamingPolicy/DictionaryKeyPolicy/JsonStringEnumConverter to SnakeCaseLower globally for the MVC pipeline.",
+        "Return-type contracts are honest across the controller/service layer: controllers return ActionResult<T> and map nullable reads to NotFound (MessagesController.GetMessage, RoomsController.GetBySlug), and service methods return discriminated Result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) whose named factories (Failed/NotFound/Forbidden/Created) make every failure path explicit rather than overloading null.",
+        "No getter-named mutators: methods named CreateUserDtoAsync/EnrichAsync are pure projections; CreateAuthResponseAsync persists a refresh token, which the 'Create...Response' name reasonably implies. ModerationController/MessageService side effects sit behind verb-named methods (CreateMessageAsync, SoftDeleteAsync, UpvoteAsync).",
+        "Enum-to-wire contracts are consistent: ModReportDto.Reason/Status are emitted as lowercase strings matching the TS union \"open\"|\"resolved\"|\"dismissed\"; ModelParityTests and CoreApiTests pin FK/index parity and snake_case JSON property names, reinforcing the contract.",
+        "DEFECT: SignalR transport casing diverges from REST for the same DTO. AddSignalR() in Program.cs has no AddJsonProtocol snake_case configuration, so ChatHub's \"presence\" event serializes PresenceDto(Guid RoomId, int Count) with SignalR's default (camelCase) serializer, whereas PresenceController returns the REST snake_case shape. frontend/src/realtime.ts and App.tsx onPresence defensively read `update.roomId || update.room_id`, confirming the wire contract for that channel is ambiguous and unpinned; RealtimeStorageModerationTests asserts the REST presence endpoint but never the SignalR payload casing."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The SignalR 'presence' (and 'message_changed') hub payloads bypass the global snake_case JSON policy, so the same PresenceDto has two wire shapes by transport; the frontend works around it by reading both casings instead of relying on one contract."
+    },
+    "logic_clarity": {
+      "evidence": [
+        "HighlightsService.LoadStatsAsync (server/Sheshi.Api/Features/Messages/HighlightsService.cs:175-191) walks parent chains with a `seen` HashSet cycle guard and bounded TryGetValue lookups; control flow is direct and self-documenting.",
+        "MessageReader.ResolveRootAsync (server/Sheshi.Api/Features/Messages/MessageReader.cs:119-135) returns early on stored RootMessageId, then guards the parent walk against cycles via `seen.Add(parentId)` in the loop condition; no redundant branches.",
+        "MessageReader.BuildReplyNodes (server/Sheshi.Api/Features/Messages/MessageReader.cs:149-164) is clean recursion with an empty-list early return; tree building is intention-revealing.",
+        "TokenService.RotateRefreshTokenAsync (server/Sheshi.Api/Auth/TokenService.cs:38-64) uses a row-count guard (`if (revoked == 0) return null;`) to make concurrent rotation safe; the conditional path for revoked-token replay is distinct and necessary.",
+        "MessageService.CreateMessageAsync depth logic (server/Sheshi.Api/Features/Messages/MessageService.cs:51-87) uses a three-way if/else-if/else where each branch is genuinely distinct (root, overflow-reparent, normal child).",
+        "ModerationController.TryParseStatus (server/Sheshi.Api/Features/Moderation/ModerationController.cs:290-300): the `out parsed` is assigned via a switch, but the boolean return is derived by re-running `status.ToLowerInvariant() is \"open\" or \"resolved\" or \"dismissed\"` instead of from the switch result, calling ToLowerInvariant() three times and duplicating the value list.",
+        "Frontend appSupport.ts findReplyNode/patchThread/sortHomeThreads (lines 142-198) are direct and free of dead paths or redundant conditionals.",
+        "LocalFileImageStorage.SaveAsync (server/Sheshi.Api/Storage/LocalFileImageStorage.cs:16-71) streams with a header-check-once flag and a final `if (!headerChecked)` guard for empty streams; edge handling is precise."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "ModerationController.TryParseStatus derives its boolean return by re-evaluating the same lowercased string-set comparison rather than reusing the switch it already computed, calling ToLowerInvariant() three times and duplicating the valid-value list."
+    },
+    "type_safety": {
+      "evidence": [
+        "C# project sets <Nullable>enable</Nullable> (Sheshi.Api.csproj:5) and frontend tsconfig.app.json sets strict:true \u2014 strong baseline enforced by the compiler, not convention.",
+        "Nullable return types honestly model runtime: TokenService.RotateRefreshTokenAsync -> Task<AuthResponse?> (returns null on not-found/inactive), MessageReader.GetThreadAsync -> Task<ThreadDto?>, RoomService.GetBySlugAsync -> Task<RoomDto?>; every caller (RoomsController:24, AuthController:111) checks for null.",
+        "DTOs precisely encode nullability: MessageDtos.cs AuthorDto(Guid Id, string? Username, ...), MessageDto(... Guid? ParentId ..., AuthorDto? Author ...) match the entity model exactly.",
+        "All m.ParentId!.Value suppressions are correctly preceded by Where(m => m.ParentId is not null) filters (HighlightsService.cs:122, MessageEnricher.cs:39-40, MessageReader.cs:103-104) \u2014 the ! compensates for flow-narrowing not crossing the lambda boundary, not an unsound cast.",
+        "EF navigation properties use the idiomatic = null! pattern (Message.cs:6/8, Report.cs:6/8, Vote.cs:5/7) \u2014 standard with nullable-enabled EF Core, not a defect.",
+        "Frontend has zero `any` usage; casts are all idiomatic \u2014 `as const`, `as CSSProperties` for CSS custom properties (messages.tsx:47), typed-fetch `response.json() as Promise<T>` (api.ts:63), and unavoidable localStorage deserialization (appSupport.ts:51, appHooks.ts:25).",
+        "Untyped JSON in loadSavedIds (appSupport.ts:107) is defensively narrowed with Array.isArray + a type-predicate filter ((id): id is string => typeof id === 'string').",
+        "chart.js typed precisely as ChartInstance<'line', number[], string> (Moderation.tsx:367); no loose object/dynamic typing anywhere in the C# (only `object` use is a lock gate in PresenceTracker.cs:7).",
+        "Minor: feeds.tsx uses redundant non-null assertions props.thread! (lines 192, 209) after an early-return guard at line 182 already narrows props.thread to non-null \u2014 inconsistent with adjacent unguarded accesses (lines 193-195).",
+        "Minor: ModerationController.TryParseStatus (lines 290-300) re-parses raw query strings into the ReportStatus enum with an awkward double ToLowerInvariant() switch plus a redundant boolean re-check; the enum exists but the HTTP boundary bypasses model binding for it."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "A few redundant non-null assertions in feeds.tsx that flow-analysis already proves unnecessary, and an awkward string->enum re-parse in ModerationController.TryParseStatus, are the only friction; both are isolated and cosmetic, not soundness defects."
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "dimension_character": "This is a small, deliberately layered codebase whose dependency direction is coherent and intentional end to end: the backend flows downward from controllers through feature services to a pure Domain leaf with no reciprocal directory edges, and the frontend is a strictly acyclic graph rooted at a single App.tsx composition root. Cross-module reuse (the shared Score formula, HighlightsCache key, RealtimeNotifier) is centralized in the correct owners rather than duplicated, and the cross-feature edge from Moderation into Messages' highlights is an intentional, downward reuse rather than a cycle. The only friction is cosmetic \u2014 the Domain hub folder blends entities with static text helpers \u2014 which does not create blast radius or boundary ambiguity for a new developer.",
+      "score_rationale": "A developer here can trust dependency direction and boundaries immediately, which is the hallmark of the 90+ band; there are no recurring boundary violations, cycles, hub modules with surprising ripple, import-time side effects, or compatibility shims. It falls short of exemplary only because the Domain hub mixes entity and utility roles, a minor single-folder blur, so I place it at 93.0 rather than higher. The lone mechanical near-duplicate signal on MessageEnricher.cs is a false positive (the detector matched the class name against its single same-file method), so it does not pull the score down."
+    },
+    "high_level_elegance": {
+      "dimension_character": "The codebase has genuinely strong, domain-aligned decomposition: backend feature folders and cross-cutting concerns (Domain/Data/Auth/Realtime/Storage/Email) map cleanly to capabilities, a small pattern set (thin controller -> feature service, result-object domain errors, CQRS-style Messages split) is applied consistently, and the frontend mirrors the same view/component/support discipline. The defects are isolated and cosmetic rather than structural: ModerationController skips the controller/service split its siblings use, an empty leftover Controllers/ directory lingers, and the otherwise-excellent codebase_analysis.md documents a frontend file layout (monolithic views.tsx/ui.tsx) that no longer exists. A new engineer could confidently explain why nearly every package exists and where to put new code.",
+      "score_rationale": "This sits in the strong band (around 90): ownership and change boundaries are predictable and the architectural pattern set is small and consistent, which a developer can trust. It is held just below 90 by uneven layering in one feature (Moderation has no service while Messages/Rooms do), a scaffolding straggler (empty Controllers/), and a reference doc whose structure section has drifted from reality \u2014 recurring-but-minor friction rather than the systemic decomposition problems that define the 80 band."
+    },
+    "convention_outlier": {
+      "dimension_character": "Conventions are strong and predictable across both stacks: the C# backend is rigorously uniform in controller shape, naming, DTO records, namespace-to-folder mapping, and Result-type protocols, and the TypeScript frontend consistently uses camelCase module files with named-only exports and thematic component grouping. The single genuine outlier is cosmetic and isolated: views/feeds.tsx breaks the PascalCase casing used by its three sibling view files. Structural differences between feature folders (Moderation lacking a service layer) are reasonable variation rather than convention drift.",
+      "score_rationale": "A developer can learn a pattern in one area and trust it holds nearly everywhere, which fits the 90 band (strong, only an isolated rough edge). The score is held just under 90 by the views/ casing island, which is real and visible in the import block but trivial in scope and impact; no pervasive naming drift, export-pattern mixing, or behavioral-protocol divergence exists to pull it lower."
+    },
+    "error_consistency": {
+      "dimension_character": "Error handling here is unusually disciplined and layered: services return typed Result records or null for expected domain outcomes, the Storage layer throws a typed ImageStorageException that the service catches and converts at a clean boundary, and controllers funnel everything into one `{ error = \"CODE\" }` HTTP envelope with stable SCREAMING_SNAKE codes mirrored on the frontend's single ApiError type. Every throw and catch in the codebase is intentional and either preserves the original exception (`throw;`), translates it to a domain code, or is a documented best-effort/top-level boundary (mail send, background cleanup, startup fail-fast). A developer can confidently predict how any failure propagates from service to controller to client.",
+      "score_rationale": "The per-directory 'mixed strategy' signal is the intentional layer separation the rubric explicitly tells reviewers to skip (Result in services, throw in Storage/startup), so it does not pull the score down; what I observed is a coherent, context-preserving model with no silent swallowing and no bare-string error types. This is well above the 80 'solid but uneven' anchor and near the 90+ 'a developer trusts what they see' band; it falls short of exemplary only because a couple of DB-write I/O boundaries rely on the generic 500 handler rather than a feature-local strategy and the error contracts are documented only as in-code string codes (no ProducesResponseType/OpenAPI enumeration)."
+    },
+    "naming_quality": {
+      "dimension_character": "Naming is a systemic strength: across a compact 2611-LOC codebase, function, type, and variable names reliably predict behavior, using domain vocabulary (Highlights, Enrich, Cursor pagination, Presence, RefreshToken rotation) consistently in both the C# API and the React/TS SPA. There are effectively no generic-verb names (no Process/Handle/Do/Manage in domain code), no Get* that mutate, and no Is*/Has* that return non-booleans. The only friction is a single slightly-generic private helper (dispatch in api.ts) and a couple of param names that could be sharper \u2014 isolated cosmetics against an otherwise precise whole.",
+      "score_rationale": "A developer can read names here and correctly anticipate what code does without opening implementations, which is the hallmark of the 90+ band; the command/read split, predicate honesty, and consistent casing across layers push it toward exemplary. It falls short of 100 only because of trivial, isolated rough edges (the generic dispatch helper, messageId-named thread ids) rather than any recurring or misleading pattern, landing solidly in the strong range."
+    },
+    "abstraction_fitness": {
+      "dimension_character": "Abstractions in this codebase are uniformly earned: the only two interfaces wrap genuine external boundaries (SMTP, filesystem) with concrete test-seam and volatility rationale, and every service/reader/enricher carries real validation, projection, caching, or security policy rather than forwarding calls. The two-tier feature shape (thin controller that translates domain Result records to HTTP -> cohesive service) keeps indirection cheap and honest, with no delegate-only layers, no cross-layer manager chains, and no broadly-plumbed option bags. The only blemish is a single trivial one-line wrapper (NormalizeSlug -> Slug.Normalize).",
+      "score_rationale": "This sits in the strong band (90+): a developer benefits from essentially every layer of indirection, with interface honesty and direct definitions throughout, anchoring near the 'generally strong with a few layers that feel overbuilt but don't slow the developer down' description. It is held just under exemplary by one trivial pass-through helper and by the fact that the abstraction surface is so thin there is little demonstrated substitution strategy beyond the two boundary adapters, so the score lands at 92.5 rather than higher."
+    },
+    "dependency_health": {
+      "dimension_character": "The dependency set is lean, cohesive, and entirely purposeful: 5 frontend production deps and 8 backend packages, with every single one verifiably exercised in the code and no overlapping-purpose libraries (one HTTP layer via native fetch, one charting library, no redundant date/util libs). Build-only tooling like the EF Core Design package is correctly scoped with PrivateAssets, and the lock file resolves cleanly to single versions. The only blemish is cosmetic patch-version drift within the backend's ASP.NET Core 10.0.x package family.",
+      "score_rationale": "This sits near the 100 exemplary anchor: zero unused dependencies, zero duplicate-purpose libraries, no heavy-dep-for-light-use, and a clean lock file all point to a dependency set a developer can trust. It falls just short of perfect because the backend pins a few packages at differing patch levels (10.0.0/10.0.2/10.0.7/10.0.8) on the same major line, a minor consistency nit that does not amount to a real conflict."
+    },
+    "low_level_elegance": {
+      "dimension_character": "Function and class internals across this codebase are consistently direct and proportionate: guard clauses and early returns make happy paths immediately visible, state mutation is explicit and bounded (locks in PresenceTracker, atomic DB updates in TokenService, temp-file+move in image storage), and edge-case handling is precise without defensive sprawl \u2014 try/catch appears only at genuine I/O boundaries. Helper extraction is balanced and stylistically uniform across MessageReader/MessageService/HighlightsService/RoomService, avoiding both monoliths and micro-fragmentation, and the same discipline carries into the frontend hooks and realtime teardown. The only blemish is one redundant branch construct in ModerationController.TryParseStatus and a little inline-expression repetition in a React tree component.",
+      "score_rationale": "The dimension is systemically strong: a developer reading any individual function can trace it without surprises, and the craft (cycle guards, single-flight caching, magic-byte validation, disposal guards) reflects genuine attention to local correctness \u2014 well into the 'strong' (90) band. It falls short of exemplary because of one concrete redundant-branch defect (TryParseStatus re-deriving its result instead of using the computed switch) plus trivial inline repetition, isolated rough edges that pull it to 91.5 rather than the 80-band reserved for codebases with recurring local complexity."
+    },
+    "mid_level_elegance": {
+      "dimension_character": "Handoffs across this codebase's layers are deliberate and consistent: services expose explicit result records, controllers translate them to HTTP in one obvious place, error propagation flows in a single predictable direction (storage throws a coded domain exception -> service folds it into a result -> controller maps it to status), and JSON/auth/realtime translation each live in a single centralized seam. The frictions are minor and isolated \u2014 error discriminators are bare strings rather than enums, one notifier overload is dead, and a scoring rule is duplicated across the C#/TS boundary \u2014 none of which obscure the orchestration. A developer making a cross-module change would find the contracts explicit and the seams easy to trace.",
+      "score_rationale": "This sits at the strong end of the scale (90 = trustworthy with only isolated rough edges): the seam patterns are systemic, the orchestration reads as composition rather than tangled back-and-forth, and translation happens in one obvious place per boundary. It falls short of the 90s because the service->controller error contract relies on literal string matching, a dead notifier overload lingers, and the highlights recency formula is silently duplicated across the language boundary \u2014 recurring-but-small frictions that keep it just below 'no material issues.'"
+    },
+    "test_strategy": {
+      "dimension_character": "The server test strategy is genuinely strong and well-architected: a clear pyramid of fast pure-logic unit tests plus full-stack integration tests against a real throwaway Postgres, covering every critical backend path (auth token lifecycle and theft detection, RBAC, message/thread/vote/report flows, cursor pagination, moderation, realtime, image validation) by asserting contracts rather than internals, with no snapshot overuse and isolated per-class containers. The defects are bounded and at the edges \u2014 the React/TS frontend has no tests whatsoever, and one integration test leans on a 5ms delay for ordering \u2014 so a developer changing server code would feel well-protected, while a developer changing frontend code has no safety net. Overall the strengths are systemic and the gaps are localized.",
+      "score_rationale": "This lands solidly in the strong band (90 = trustworthy with isolated rough edges) for the server, pulled toward 87 by the complete absence of frontend tests in a two-tier app and a minor timing reliance. It is well above 80 (solid-but-uneven) because the server coverage is broad, behavior-focused, low-coupling, and uses real infrastructure rather than fragile mocks; it falls short of the low-90s because one full client layer is unvalidated, which a careful reviewer would flag as a real strategic blind spot."
+    },
+    "api_surface_coherence": {
+      "dimension_character": "The public API surface is strongly coherent and predictable: controllers share one shape (DI primary constructors, ActionResult<T>, trailing CancellationToken, rate-limit partitions), services return a consistent family of sealed result records that controllers translate to HTTP codes uniformly, and pagination/DTO conventions hold across modules. The only real friction is a dead RealtimeNotifier.MessageChangedAsync overload with no callers and a wide 8-parameter Score overload; both are isolated rough edges rather than systemic inconsistency.",
+      "score_rationale": "A developer can reliably predict endpoint and service shapes from a single example, which places this near the 90 'strong' anchor. It falls short of exemplary because of one genuinely dead overload that muddies the notifier's surface and a primitive-heavy 8-param scoring overload, but these are local and do not force the developer to read each endpoint individually."
+    },
+    "authorization_consistency": {
+      "dimension_character": "Authorization is applied with strong, deliberate consistency: role strings are fully centralized in a single Roles constant set and used uniformly, [Authorize] gates every mutating endpoint while public reads are an intentional forum design, and ban enforcement is layered across token mint, refresh rotation, and write controllers with session revocation on ban. The few rough edges are minor and mostly intentional: a ban-check asymmetry where RemoveUpvote/SoftDelete omit the IsBanned guard that their write-endpoint siblings apply, an unauthenticated SignalR hub that only carries presence/pings (consistent with the public-read boundary), and the absence of audit logging on privileged moderation actions. A developer can largely trust that auth patterns hold across protected resources.",
+      "score_rationale": "This sits in the strong band (90): centralized permission constants, uniform [Authorize] coverage on writes, and multi-layer ban enforcement give a developer reliable, predictable auth patterns with no magic literals or missing guards on protected mutations. It falls short of exemplary because the per-endpoint ban-check asymmetry requires case-by-case reasoning, the ChatHub carries JWT-from-query wiring yet does not require auth, and privileged admin/moderation actions lack audit trails \u2014 friction points rather than coverage gaps."
+    },
+    "ai_generated_debt": {
+      "dimension_character": "This codebase reads as deliberately hand-crafted with respect to AI-generated debt: comments are rare (0.022 ratio) and uniformly explain non-obvious business rules and concurrency invariants rather than restating code, logging is sparse and purposeful, and there is no defensive sprawl, docstring bloat, pass-through indirection, or placeholder residue. Helpers consistently add real behavior (retry, parsing, parameterization, single-flight caching) and naming is domain-precise everywhere. A developer's attention lands squarely on the logic, never on ceremony.",
+      "score_rationale": "Against the global anchors this sits at the exemplary end (100 = attention spent on logic not noise): no restating comments, no nosy logging, no defensive overengineering, no boilerplate copy-paste, and no TODO/placeholder leftovers were found anywhere in production code. It falls just short of a perfect score only because a few methods carry wide parameter lists and a per-row loop that are ordinary craft nits, not generated-style noise, so the dimension is rated 95.5."
+    },
+    "incomplete_migration": {
+      "dimension_character": "This codebase shows essentially no incomplete-migration drift: a single HTTP client (fetch), single realtime transport (SignalR), all-functional all-TypeScript frontend, no deprecated/Obsolete symbols, no sync-over-async shims, and no V1/V2 dual code paths. The one prior architecture (Supabase RLS) survives only as a test-parity reference, meaning the port to C# authorization is complete; the only migration-era runtime residue is a consistently-applied RootMessageId==Guid.Empty backfill convention for legacy thread rows.",
+      "score_rationale": "A developer can trust which pattern to follow everywhere \u2014 there is no old/new coexistence creating ambiguity, which sits at the top of the scale (90+ = mostly complete with at most minor, non-confusing legacy residue). The score is held just below exemplary because the Guid.Empty legacy-row handling is duplicated across four call sites rather than centralized, a small recognizable bit of migration residue, but it is uniform, documented, and never produces dual-path confusion."
+    },
+    "package_organization": {
+      "dimension_character": "Package organization is a clear strength: the backend follows feature/concern folders with namespaces matching directories one-to-one, a pure dependency-free Domain/ core (fan_in 21, fan_out 0), strictly unidirectional cross-directory coupling, and no flat-directory overload. A developer can navigate by structure alone and reliably predict where to find or add code. The only friction is cosmetic \u2014 an empty leftover Controllers/ directory whose name contradicts the established vertical-slice convention, and Domain/ co-locating two static text utilities (Slug.cs, Text.cs) with persistence entities.",
+      "score_rationale": "This sits in the strong band (90): directory layout is coherent and predictable with clean boundaries and no coupling-direction failures, so a developer trusts the structure. It falls short of exemplary (95+) only because of two minor placement outliers \u2014 the empty, misleadingly-named Controllers/ scaffolding directory and the entity/utility mix in Domain/ \u2014 neither of which materially impedes navigation."
+    },
+    "initialization_coupling": {
+      "dimension_character": "Initialization is uniformly handled through the ASP.NET Core DI container, so a developer can add or reorder service registrations without worrying about import order or hidden boot-time side effects. There are no module-scope DB/file/network calls, no environment reads at import time in the running app, and the only static state is immutable constants, lookup tables, and a deliberately process-wide synchronization gate; the lone singleton (PresenceTracker) is self-contained and lock-guarded. Startup migration and seeding follow the canonical post-Build() scoped pattern with explicit error logging.",
+      "score_rationale": "This sits near the top anchor (100 = a developer can import any module without worrying about boot-order or side effects): wiring is framework-owned, config is runtime-resolved via IOptions/IConfiguration, and there is no fragile global ordering. It falls just short of exemplary only because a Scoped HighlightsService deliberately relies on a process-wide static SemaphoreSlim plus singleton IMemoryCache to coordinate a shared snapshot, a correct but implicitly-global piece of coordination a reader must recognize; no defects warrant a finding."
+    },
+    "design_coherence": {
+      "dimension_character": "Design decisions are notably consistent: a single per-feature controller/service/reader/DTO shape, a uniform Result-record command idiom, and a repeated batch-load-then-GetValueOrDefault enrichment recipe mean a developer who learns one feature can predict every other. Functions are focused with earned helpers, recursion appears only where the reply tree demands it, and the frontend mirrors this with a one-line-per-endpoint api layer and data-driven moderation UI. The only friction is a localized one: MessagesController maps service errors through magic string-literal branches rather than the structured result shape its siblings use.",
+      "score_rationale": "This sits in the strong band (90): patterns are systemic and uniform across both backend and frontend, the flagged duplication is a false positive, and no function mixes unrelated responsibilities. It is held just under exemplary by the string-literal error-mapping wrinkle in MessagesController.CreateMessageAsync, which is the single place the consistent command-result idiom frays \u2014 minor and isolated, not a structural drag."
+    },
+    "contract_coherence": {
+      "dimension_character": "Contract coherence is a systemic strength: REST DTOs are record types that mirror the frontend TS shapes field-for-field under a single global snake_case policy, return types honestly cover all paths via ActionResult<T> and discriminated Result records, and no getter name hides a mutation. The one crack is the SignalR boundary, where AddSignalR() is left unconfigured so hub payloads serialize in camelCase while the identical DTO over REST is snake_case, forcing the frontend to defensively read both casings for the presence event.",
+      "score_rationale": "The REST/DTO surface is exemplary and reinforced by parity tests, which would place it in the low-to-mid 90s; the isolated but real SignalR casing incoherence (one unconfigured serializer producing a dual wire shape, with the consumer working around it) pulls it off a 90+ 'trust everything' rating into the 'strong with an isolated rough edge' band. This is a single-edit fix (AddSignalR().AddJsonProtocol with the snake_case policy) affecting one boundary, not a pervasive contract problem."
+    },
+    "logic_clarity": {
+      "dimension_character": "Logic is consistently direct and intention-revealing across the most complex areas: cycle-guarded parent/tree walks (ResolveRootAsync, LoadStatsAsync, BuildReplyNodes), single-flight cache recompute with double-check, atomic refresh-token rotation gated on affected-row counts, and precise streaming/header validation. Branches are necessary and distinct, early returns keep happy paths visible, and there are no dead paths, identical branches, always-true conditions, or boolean expressions that collapse to a literal. The lone blemish is one helper (TryParseStatus) that re-derives its return value instead of using the switch it already evaluated.",
+      "score_rationale": "Control flow can be traced without surprises throughout both the C# backend and the React/TS frontend, with the logic-dense ranking and thread-tree code being the cleanest parts \u2014 well above the 80 anchor's 'regular redundant branches/dead paths'. It falls short of 100 because of the single TryParseStatus redundancy (a localized, cosmetic double-evaluation), which is the only avoidable complexity found and keeps this in the strong-but-not-exemplary range."
+    },
+    "type_safety": {
+      "dimension_character": "Type safety is a systemic strength: nullable reference types and TS strict mode are both enabled and genuinely respected, with nullable return types that honestly model not-found paths, DTOs whose nullability mirrors the domain, and every null-suppression operator (`!`, `null!`) either idiomatic EF boilerplate or correctly guarded by a preceding null filter. The frontend is free of `any` and uses only idiomatic casts. The only blemishes are a handful of redundant non-null assertions in feeds.tsx and a slightly awkward string-to-enum re-parse at the moderation query boundary \u2014 both cosmetic, not unsound.",
+      "score_rationale": "Annotations can be trusted as accurate documentation of runtime behavior throughout, which places this well into the strong band (90+). It falls short of exemplary because a developer would occasionally hit a redundant `!` that flow analysis already disproves (feeds.tsx:192/209) and a boundary enum re-parse that bypasses model binding \u2014 minor, isolated rough edges rather than recurring friction, so the score sits just above the 90 anchor."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "moderation_no_service_layer",
+      "summary": "ModerationController holds all analytics/aggregation logic inline while sibling features use a controller+service split",
+      "confidence": "medium",
+      "suggestion": "Extract the read/aggregation logic (analytics windowing, top-rooms/top-posts/trend queries) into a ModerationAnalyticsService (or ModerationReader) registered in DI, mirroring MessageReader/HighlightsService, leaving the controller to translate requests and results. Keep it a single straightforward service; do not over-fragment.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+      ],
+      "evidence": [
+        "ModerationController.cs is 379 LOC and contains private aggregation helpers LoadTrendAsync, LoadTopRoomsAsync, LoadTopPostsAsync, CountRoleMembersAsync, plus direct AppDbContext/UserManager access for analytics, report triage, bans, and role grants.",
+        "By contrast MessagesController delegates to MessageService/MessageReader and RoomsController delegates to RoomService, so Moderation is the only feature whose controller owns substantial domain logic \u2014 a developer expecting the established per-feature service split will be surprised here."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "stale_structure_doc",
+      "summary": "codebase_analysis.md Directory Structure and Gaps sections no longer match runtime reality",
+      "confidence": "high",
+      "suggestion": "Update the Directory Structure section to reflect frontend/src/views/ and frontend/src/components/, refresh the line counts, and prune the now-resolved Gaps items (git, Dockerfile, README path) so the document remains a trustworthy reference for the structure.",
+      "related_files": [
+        "codebase_analysis.md",
+        "frontend/src/views/feeds.tsx",
+        "frontend/src/components/messages.tsx",
+        "server/Dockerfile"
+      ],
+      "evidence": [
+        "Doc documents the frontend as single files views.tsx (861 lines) and ui.tsx (532 lines), but those files do not exist; the code is split into views/ (Auth, Moderation, Profile, feeds) and components/ (chrome, messages, overlays).",
+        "Doc lists App.tsx as 536 lines (actual 589) and its Gaps section still asserts 'Not a git repository', 'No Dockerfiles for the API', and a README referencing a stale alb_sheshi/ path \u2014 all contradicted by the current tree (a .git dir, server/Dockerfile, and a server/README.md that points at server/Sheshi.Api)."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "empty_controllers_dir_straggler",
+      "summary": "Empty leftover Controllers/ directory implies a flat-controllers layout the codebase abandoned for feature folders",
+      "confidence": "high",
+      "suggestion": "Delete the empty server/Sheshi.Api/Controllers directory so the feature-foldered layout is the single, unambiguous controller organization.",
+      "related_files": [
+        "server/Sheshi.Api/Controllers"
+      ],
+      "evidence": [
+        "server/Sheshi.Api/Controllers/ exists but contains no files; all controllers actually live under Features/*, Auth/, and Realtime/, so the directory is a scaffolding remnant that briefly suggests a second, unused organizational convention."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "views_filename_casing_island",
+      "summary": "views/feeds.tsx is lowercase while sibling view files Auth.tsx/Moderation.tsx/Profile.tsx are PascalCase",
+      "confidence": "medium",
+      "suggestion": "Rename feeds.tsx to Feeds.tsx (and update the import at App.tsx:26) so all files in views/ share one PascalCase file-naming convention.",
+      "related_files": [
+        "frontend/src/views/feeds.tsx",
+        "frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "frontend/src/views/ contains Auth.tsx, Moderation.tsx, Profile.tsx (PascalCase) and feeds.tsx (lowercase).",
+        "feeds.tsx exports Home, RoomView, ThreadView \u2014 top-level routed views with the same role as the components in the PascalCase view files (App.tsx:26 imports them alongside the others; App.tsx:466-556 routes them identically).",
+        "No comment or structural reason differentiates feeds.tsx from its siblings; the casing is the only difference."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "e433643d6506ad2a",
+      "reasoning": "Self-comparison of a one-method class against its sole method; no real duplication and nothing convention-related to fix."
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "e433643d6506ad2a",
+      "reasoning": "Detector compared the class declaration line against its only method body, yielding a 97% match; there is no real duplicated code to extract."
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "backend_patch_version_drift",
+      "summary": "Backend ASP.NET Core 10.0.x packages pinned at inconsistent patch levels (10.0.0/10.0.2/10.0.7/10.0.8)",
+      "confidence": "medium",
+      "suggestion": "Bump the Microsoft.AspNetCore.OpenApi reference (and other Microsoft.AspNetCore.* entries) to the same 10.0.8 patch where available so the in-house Microsoft package family pins uniformly; leave third-party packages (Apple OAuth, Npgsql) at their own latest patch.",
+      "related_files": [
+        "server/Sheshi.Api/Sheshi.Api.csproj"
+      ],
+      "evidence": [
+        "AspNet.Security.OAuth.Apple is 10.0.0, Microsoft.AspNetCore.OpenApi is 10.0.7, Npgsql.EntityFrameworkCore.PostgreSQL is 10.0.2, while the Microsoft.AspNetCore.* auth/identity packages are 10.0.8.",
+        "Not a true version conflict (different vendors version independently), but the spread is easy to drift further and harder to audit at a glance."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "tryparsestatus_redundant_branches",
+      "summary": "TryParseStatus computes parsed via switch then re-derives success from a parallel three-literal check, evaluating ToLowerInvariant three times",
+      "confidence": "high",
+      "suggestion": "Make the switch the single source of truth: switch to `string?` or use a value-tuple, e.g. `return (parsed, ok) = status.ToLowerInvariant() switch { \"open\" => (ReportStatus.Open, true), ... , _ => (default, false) }` \u2014 or simply compute `var ok = ...switch{...=> true, _ => false}` alongside `parsed` so ToLowerInvariant runs once and the branch set is not duplicated.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+      ],
+      "evidence": [
+        "Lines 290-300: the switch on status.ToLowerInvariant() sets `parsed`, then `return status.ToLowerInvariant() is \"open\" or \"resolved\" or \"dismissed\";` re-lowercases and re-lists the same three literals, ignoring the switch result.",
+        "The `_ => default` arm makes the out value indistinguishable for an invalid input (default == ReportStatus.Open), so the separate boolean check exists only to compensate for the discarded switch outcome."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "stringly_typed_error_seam",
+      "summary": "Service result error codes cross the service->controller seam as bare strings matched by literal comparison",
+      "confidence": "medium",
+      "suggestion": "Replace the free-string Error field on the result records with a small enum (e.g. MessageCreateError { RoomNotFound, ParentNotFound, ParentRoomMismatch, ... }) so the producer and the controller's switch share a compiler-checked discriminator; keep the HTTP-status mapping in the controller as-is. This adds no indirection \u2014 it swaps a stringly-typed field for an enum field on the same record.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Messages/MessageService.cs",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+        "server/Sheshi.Api/Features/Rooms/RoomService.cs"
+      ],
+      "evidence": [
+        "MessageService.CreateMessageAsync returns MessageCreateResult.Failed(\"ROOM_NOT_FOUND\" / \"PARENT_NOT_FOUND\" / \"PARENT_ROOM_MISMATCH\"); the controller re-discriminates with result.Error == \"ROOM_NOT_FOUND\" etc. (MessagesController.cs lines 80-85).",
+        "RoomsController.Create switches on the literal \"ROOM_EXISTS\" string (lines 33-38). The producer and consumer share an implicit string contract with no compiler enforcement, so a code rename or typo on one side silently degrades to the generic BadRequest branch."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "dead_notifier_overload",
+      "summary": "RealtimeNotifier.MessageChangedAsync(Guid, Guid?, ...) overload has no callers",
+      "confidence": "high",
+      "suggestion": "Delete the unused MessageChangedAsync(Guid roomId, Guid? threadId = null, ...) overload so the realtime seam exposes exactly the one notification shape callers actually use.",
+      "related_files": [
+        "server/Sheshi.Api/Realtime/RealtimeNotifier.cs"
+      ],
+      "evidence": [
+        "RealtimeNotifier exposes two MessageChangedAsync overloads (lines 7 and 14). A grep of the API project shows all four call sites in MessageService use the MessageChangeDto overload; the (Guid roomId, Guid? threadId) overload is unreferenced.",
+        "A vestigial overload on the realtime seam widens the boundary surface and invites future callers to use the lower-fidelity notification path (no message_changed payload)."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "cross_runtime_score_duplication",
+      "summary": "Frontend hotScore duplicates backend HighlightsService recency constants across the C#/TS boundary",
+      "confidence": "low",
+      "suggestion": "Add a short comment on both formulas cross-referencing each other (e.g. '// keep in sync with HighlightsService.Score recency decay') so the deliberate duplication across the language boundary is visible to whoever edits either side. Do not extract a shared abstraction \u2014 the runtimes cannot share code and the client copy is intentionally a lightweight approximation.",
+      "related_files": [
+        "frontend/src/appSupport.ts",
+        "server/Sheshi.Api/Features/Messages/HighlightsService.cs"
+      ],
+      "evidence": [
+        "appSupport.ts hotScore uses 42 / pow(ageHours+1, 0.95) + 14 / pow(ageHours+1, 0.45) plus reply_count*30 and upvotes*12 (lines 191-198), the same magic constants as HighlightsService.Score (lines 84-89).",
+        "The two implementations are unlinked; a tweak to the server ranking formula would silently desync from the client-side 'hot' re-sort with nothing flagging the drift."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "frontend_zero_tests",
+      "summary": "React/TS frontend SPA has no automated tests and no configured test runner",
+      "confidence": "high",
+      "suggestion": "Add a lightweight Vitest setup and cover the highest-value pure modules first: api.ts request/response mapping, roles.ts gating, and realtime.ts connection/event handling with a mocked hub. This validates the client contract without needing a full browser harness.",
+      "related_files": [
+        "frontend/src/api.ts",
+        "frontend/src/realtime.ts",
+        "frontend/src/appHooks.ts",
+        "frontend/package.json"
+      ],
+      "evidence": [
+        "No *.test.* or *.spec.* files exist under frontend/src; package.json scripts contain only dev/build/preview \u2014 no test runner (vitest/jest) is wired up.",
+        "frontend/src contains the API client (api.ts), SignalR realtime layer (realtime.ts), role logic (roles.ts), hooks (appHooks.ts), and feature views/components \u2014 none are exercised by any test, so client-side regressions (request shaping, optimistic vote/report handling, realtime reconnection, role gating) are caught only manually."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "delay_ordering_reliance",
+      "summary": "Pagination ordering test depends on a 5ms Task.Delay to separate CreatedAt timestamps",
+      "confidence": "medium",
+      "suggestion": "Remove the Task.Delay and make ordering deterministic by asserting against the index's full ordering (CreatedAt desc, Id desc) or by controlling CreatedAt directly so the test does not depend on timing resolution.",
+      "related_files": [
+        "server/Sheshi.Api.Tests/CoreApiTests.cs"
+      ],
+      "evidence": [
+        "Threads_store_root_depth_and_feeds_page_by_cursor posts two messages separated by `await Task.Delay(5)` (line 215), then asserts which post appears on page one \u2014 correctness hinges on the 5ms gap producing distinct CreatedAt values under the DB/clock resolution.",
+        "The keyset index includes Id as a tiebreaker, so the test could be made deterministic without relying on wall-clock spacing."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "dead_messagechanged_overload",
+      "summary": "RealtimeNotifier.MessageChangedAsync(Guid roomId, Guid? threadId, ct) overload has zero callers",
+      "confidence": "high",
+      "suggestion": "Delete the unused MessageChangedAsync(Guid roomId, Guid? threadId = null, ct) overload so the notifier exposes a single MessageChangeDto-based method.",
+      "related_files": [
+        "server/Sheshi.Api/Realtime/RealtimeNotifier.cs"
+      ],
+      "evidence": [
+        "RealtimeNotifier.cs:7 declares MessageChangedAsync(Guid roomId, Guid? threadId = null, CancellationToken ct = default).",
+        "All four call sites (MessageService.cs:93, 111, 133, 155) invoke the MessageChangeDto overload (RealtimeNotifier.cs:14); the (Guid roomId, ...) overload is unreferenced across the project and tests.",
+        "Two same-named public methods with different parameter shapes, one unused, makes the notifier surface ambiguous about the intended call form."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "ban_check_asymmetry_write_endpoints",
+      "summary": "Sibling write endpoints inconsistently apply the IsBanned guard",
+      "confidence": "medium",
+      "suggestion": "If the omission is intentional (banned users may retract votes / delete their own content), add a one-line comment on RemoveUpvote and SoftDelete stating why the ban guard is skipped, so the asymmetry is self-documenting rather than something each reviewer must re-derive.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs"
+      ],
+      "evidence": [
+        "PostMessage (CreateMessageAsync line 73), Upvote (line 95), and Report (line 138) all enforce `if (user.IsBanned) return Forbid();`.",
+        "RemoveUpvote (lines 105-112) and SoftDelete (lines 117-129) deliberately omit the IsBanned check, so the rule a reviewer learns from the other handlers does not hold uniformly across siblings."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "chathub_no_authorize",
+      "summary": "ChatHub has no [Authorize] despite JWT-from-query wiring for /hub",
+      "confidence": "medium",
+      "suggestion": "Either drop the unused access_token-from-query wiring if the hub is meant to be public, or add [Authorize] to ChatHub so the wiring and the trust boundary agree; document the chosen stance so the intent is explicit.",
+      "related_files": [
+        "server/Sheshi.Api/Realtime/ChatHub.cs",
+        "server/Sheshi.Api/Program.cs"
+      ],
+      "evidence": [
+        "ChatHub (ChatHub.cs:5) defines JoinRoom/JoinThread with no [Authorize] attribute, so any anonymous client can join any room/thread group.",
+        "Program.cs:178-184 wires access_token-from-query handling specifically for /hub, implying tokens are expected, yet the hub never requires authentication.",
+        "Mitigating factor: the hub only broadcasts presence counts and content-free 'changed' pings (RealtimeNotifier.cs); no message bodies traverse the hub and room reads are already public."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "moderation_actions_no_audit_log",
+      "summary": "Privileged moderation/admin actions leave no audit trail",
+      "confidence": "low",
+      "suggestion": "Log the acting user id (User.GetUserId()) and target id for ban/unban/role-change/report-resolution via the existing ILogger so privileged actions are traceable; avoid introducing a new audit subsystem unless retention requirements demand it.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+      ],
+      "evidence": [
+        "Ban (lines 205-220), Unban (222-231), UpdateRole (233-248), and report Resolve/Dismiss (197-203, SetReportStatus 280-288) mutate user state and report status without recording which moderator/admin performed the action.",
+        "The look_for list calls out 'service role / admin bypass without audit logging'; these are not bypasses but they are unauditable privileged operations."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "empty_controllers_dir",
+      "summary": "Empty Controllers/ directory contradicts the feature-folder controller convention",
+      "confidence": "high",
+      "suggestion": "Delete the empty server/Sheshi.Api/Controllers/ directory. No move/import updates needed since it holds no files; run `dotnet build server/Sheshi.Api` afterward to confirm nothing referenced it.",
+      "related_files": [
+        "server/Sheshi.Api/Controllers/"
+      ],
+      "evidence": [
+        "server/Sheshi.Api/Controllers/ exists but contains zero files (leftover from `dotnet new webapi` scaffolding).",
+        "Controllers actually live in feature folders: Features/Messages/MessagesController.cs, Features/Moderation/ModerationController.cs, Features/Rooms/RoomsController.cs, Auth/AuthController.cs, Auth/MeController.cs, Realtime/PresenceController.cs.",
+        "The folder name implies a flat-by-MVC-role placement convention that the codebase deliberately does not use, sending a contradictory navigation signal."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "domain_entity_utility_mix",
+      "summary": "Domain/ co-locates static text utilities (Slug.cs, Text.cs) with persistence entities",
+      "confidence": "low",
+      "suggestion": "Optional, low priority: if the team wants stricter cohesion, group the two static text helpers under a Domain/Text/ (or Domain/Normalization/) subfolder \u2014 staged as: 1) create Domain/Text/, 2) move Slug.cs and Text.cs in, 3) namespaces can stay Sheshi.Api.Domain so no import changes are required, 4) run `dotnet build`. Given both are tiny and already correctly in Domain by namespace, leaving them in place is also defensible.",
+      "related_files": [
+        "server/Sheshi.Api/Domain/Slug.cs",
+        "server/Sheshi.Api/Domain/Text.cs"
+      ],
+      "evidence": [
+        "Domain/ contains persistence entities (Message.cs, Room.cs, Vote.cs, Report.cs, RefreshToken.cs, ApplicationUser.cs) plus Enums.cs, alongside two static helper classes Slug.cs (URL slug normalization) and Text.cs (text clipping).",
+        "Slug and Text are static utility surfaces, a different concern than the EF-mapped entities the folder otherwise holds, though both are broadly imported (fan_in 21) and operate on domain text values."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "signalr_presence_casing_mismatch",
+      "summary": "SignalR hub payloads use camelCase while REST uses snake_case for the same DTOs; frontend reads both casings defensively",
+      "confidence": "high",
+      "suggestion": "Configure SignalR to use the same naming policy as MVC: builder.Services.AddSignalR().AddJsonProtocol(o => o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower); then drop the dual-casing fallback in App.tsx/realtime.ts so the presence event has one stable snake_case contract.",
+      "related_files": [
+        "server/Sheshi.Api/Program.cs",
+        "server/Sheshi.Api/Realtime/ChatHub.cs",
+        "server/Sheshi.Api/Realtime/PresenceDto.cs",
+        "frontend/src/realtime.ts",
+        "frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "Program.cs:57 calls builder.Services.AddSignalR() with no AddJsonProtocol configuration, so SignalR uses its default serializer (camelCase) rather than the MVC SnakeCaseLower policy set at Program.cs:32-34.",
+        "ChatHub.JoinRoom/LeaveRoom send PresenceDto(Guid RoomId, int Count) over the 'presence' event, which therefore arrives as {roomId,count}; the same DTO over the REST presence path uses the snake_case pipeline.",
+        "frontend/src/App.tsx:292-295 and realtime.ts type RealtimePresenceUpdate read `update.roomId || update.room_id`, defending against both casings instead of relying on one contract.",
+        "RealtimeStorageModerationTests asserts the REST /api/rooms/presence shape but does not pin the SignalR 'presence' payload casing, so the ambiguity is untested."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "tryparsestatus_redundant_eval",
+      "summary": "TryParseStatus re-runs the lowercased string-set check for its return instead of using the switch it computed",
+      "confidence": "high",
+      "suggestion": "Compute the lowercased value once and let the switch signal validity, e.g. `var normalized = status.ToLowerInvariant(); switch return a value/flag` \u2014 set `parsed` and return true for the three cases, return false in the default arm, so the valid set is declared in exactly one place.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+      ],
+      "evidence": [
+        "Line 292: `parsed = status.ToLowerInvariant() switch { \"open\" => ..., \"resolved\" => ..., \"dismissed\" => ..., _ => default };` assigns the out parameter.",
+        "Line 299: `return status.ToLowerInvariant() is \"open\" or \"resolved\" or \"dismissed\";` re-evaluates ToLowerInvariant() a second/third time and re-lists the same valid values, so the return is not derived from the switch result and the valid-value list is duplicated."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "redundant_nonnull_assertions_feeds",
+      "summary": "Redundant non-null assertions on props.thread after an early-return guard already narrows it",
+      "confidence": "high",
+      "suggestion": "Drop the `!` on feeds.tsx:192 and :209 (use props.thread.root.room_id / props.thread.root.id); TS already proves non-null after the line 182 guard, matching the adjacent unguarded accesses.",
+      "related_files": [
+        "frontend/src/views/feeds.tsx"
+      ],
+      "evidence": [
+        "Line 182 guards `if (!props.thread) { return ... }`, narrowing props.thread to non-null for the rest of the component.",
+        "Lines 192 and 209 still use `props.thread!.root....` while the immediately adjacent lines 193-195 access `props.thread.root...` without `!` \u2014 the assertions are unnecessary and inconsistent."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "mod_status_string_enum_reparse",
+      "summary": "ReportStatus enum re-parsed from raw query string with an awkward double-lowercase switch and redundant boolean check",
+      "confidence": "medium",
+      "suggestion": "Bind [FromQuery] ReportStatus? status directly (ASP.NET parses enum names case-insensitively) and treat null/invalid as a BadRequest, or have TryParseStatus compute the lowercased value once and use Enum.TryParse, removing the duplicated literal set and double ToLowerInvariant().",
+      "related_files": [
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+      ],
+      "evidence": [
+        "TryParseStatus (lines 290-300) maps raw strings to ReportStatus via a switch that falls to `default` (=Open) on no match, then re-evaluates `status.ToLowerInvariant() is 'open' or 'resolved' or 'dismissed'` to derive the success flag \u2014 computing ToLowerInvariant twice and duplicating the literal set.",
+        "The ReportStatus enum exists but the [FromQuery] string parameter bypasses model binding, hand-rolling the enum parse instead."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "review_quality": {
+    "batch_count": 20,
+    "dimension_coverage": 0.05,
+    "evidence_density": 6.217,
+    "high_score_missing_issue_note": 0
+  },
+  "context_updates": {
+    "cross_module_architecture": {
+      "add": [
+        {
+          "header": "Strictly downward layered backend with pure Domain leaf",
+          "description": "Every directory edge flows downward to a fan-out-0 Domain layer with no reciprocal edges, so common changes have a predictable, bounded blast radius and a new developer can trust dependency direction on sight.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Shared logic centralized in correct owners, not duplicated",
+          "description": "The single HighlightsService.Score formula, HighlightsCache.Key, and RealtimeNotifier are owned by one module and consumed downward (including Moderation reusing the highlights snapshot), avoiding cross-package duplication and missing-boundary debt.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Acyclic, composition-rooted frontend module graph",
+          "description": "types -> api -> appSupport -> hooks/components/views -> App forms a clean DAG with no view-to-view or base-to-higher back-edges, so frontend changes stay local to their layer.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Domain hub folder blends entities with static utilities",
+          "description": "Slug.cs and Text.cs sit alongside persistence entities in the most-imported Domain folder; benign at this size but the dependency hub owns two distinct roles rather than one.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "high_level_elegance": {
+      "add": [
+        {
+          "header": "Domain-aligned feature-folder decomposition",
+          "description": "Backend splits cleanly into Domain/Data/Auth/Email/Realtime/Storage cross-cutting folders plus Features/{Messages,Rooms,Moderation}; each top-level package maps to a capability so ownership and where-to-put-new-code are predictable for a new engineer.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Small consistent pattern set across features",
+          "description": "Thin controllers delegate to feature services and translate result-object records (MessageCreateResult/RoomCreateResult/etc.) into HTTP, and the Messages feature applies a deliberate CQRS-style split (Service=writes, Reader=reads, Enricher=projection, HighlightsService=cached ranking) with role-documenting XML comments. The same patterns recur rather than each area inventing its own.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend mirrors backend ownership discipline",
+          "description": "frontend/src separates views/ (pages), components/ (reusable UI), and single-responsibility support modules (api, realtime, appHooks, appSupport, roles, types); App.tsx is a large but genuine top-level state/composition root rather than a concern-mixing dumping ground.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Moderation feature lacks the controller/service split",
+          "description": "ModerationController owns analytics aggregation, triage, and mutations inline (no ModerationService) while Messages/Rooms split controller from service, making the layering pattern uneven across features even though Moderation is admin/read-mostly with a single consumer.",
+          "settled": false,
+          "positive": false
+        },
+        {
+          "header": "codebase_analysis.md structure section has drifted",
+          "description": "The otherwise-excellent reference doc still describes a monolithic frontend (views.tsx/ui.tsx) and stale gaps (no git, no Dockerfile, stale README path) that no longer match the actual views/ + components/ split and current project state, slightly weakening the trustworthiness of the structure docs.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "convention_outlier": {
+      "add": [
+        {
+          "header": "Uniform C# controller and DTO conventions",
+          "description": "All controllers use primary constructors, [ApiController]/[Route]/[EnableRateLimiting], Async-suffixed methods, and folder-mirroring namespaces; DTOs are positional records in per-feature *Dtos.cs files with *Dto/*Request suffixes. A developer can predict the shape of any new endpoint from one example.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Consistent frontend module and export conventions",
+          "description": "Non-component frontend files use camelCase names with named-only exports (no default exports anywhere) and group components thematically; this makes import sites and module roles predictable across the SPA.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "views/ filename casing island (feeds.tsx)",
+          "description": "feeds.tsx is lowercase while its sibling routed-view files (Auth.tsx, Moderation.tsx, Profile.tsx) are PascalCase, with no differentiating rationale \u2014 a minor, isolated style outlier visible in the App.tsx import block.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Moderation feature omits a service layer by design",
+          "description": "Messages and Rooms split controller+service, but read-heavy Moderation keeps analytics logic in its controller; this is reasonable per-feature variation, not convention drift, and should not be forced into a unifying abstraction.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "error_consistency": {
+      "add": [
+        {
+          "header": "Layered Result + typed-exception error model",
+          "description": "Services return typed Result records (Created/Failed/NotFound/Forbidden factories) or null for expected outcomes while the Storage layer throws a typed ImageStorageException carrying a code; the service catches it and converts to Result at the boundary. The strategy varies by layer on purpose, giving predictable, context-preserving propagation.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Single HTTP error envelope with stable codes",
+          "description": "Controllers translate every Result/null/exception into one `{ error = \"CODE\" }` JSON shape using SCREAMING_SNAKE codes, and the frontend's single ApiError type (status + code) parses that envelope at one send() boundary. Failure shape is uniform end to end.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Only intentional swallows; all top-level/best-effort",
+          "description": "Every catch in the codebase is deliberate: temp-file cleanup with re-throw in image storage, log-and-retry in the background cleanup service, documented best-effort mail send, fail-fast startup rethrow, and frontend localStorage/clipboard fallbacks. No silent swallowing of unexpected failures.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "DB-write boundaries lean on the generic 500 handler",
+          "description": "Token issuance, report, and vote SaveChanges paths have no feature-local transient-failure strategy and rely on app.UseExceptionHandler's INTERNAL_ERROR, and public error contracts exist only as in-code string codes (no ProducesResponseType/OpenAPI enumeration). Consistent with the deliberate fail-to-500 posture but the only soft spot in an otherwise exemplary model.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "naming_quality": {
+      "add": [
+        {
+          "header": "Read/write split encoded in class names",
+          "description": "MessageReader (queries) vs MessageService (commands) and HighlightsService/MessageEnricher make responsibility predictable from the type name alone, so a developer knows where a behavior lives without reading bodies.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Predicate and getter names are behaviorally honest",
+          "description": "Every Is*/Has*/Can* (IsBanned, IsActive, HasValidSignature, canModerate) returns a bool and no Get* mutates state, so names can be trusted as contracts across both C# and TS.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Domain-aligned verbs, no generic-verb noise",
+          "description": "Action methods use specific domain verbs (RotateRefreshTokenAsync, EnrichAsync, ResolveRootAsync, buildShareTarget, requireAuth); there are no Process/Handle/Do/Manage placeholders in domain code.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Intentional localized route vocabulary",
+          "description": "Route literals dhoma/tema/profili/moderim are deliberate Albanian URL segments, not naming drift; treat as a convention rather than an outlier.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "abstraction_fitness": {
+      "add": [
+        {
+          "header": "Interfaces reserved for real external boundaries",
+          "description": "The only two I* interfaces (IImageStorage, IEmailSender) wrap volatile external resources (filesystem, SMTP) and are substituted in tests; internal services are registered as concrete types, avoiding ceremonial single-impl interfaces.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Thin controllers translate domain results to HTTP",
+          "description": "Controllers add value by mapping service Result records to status codes and enforcing auth/role/ban policy rather than delegating; no controller-service-manager-repository pass-through chains exist.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Read/write split into cohesive collaborators",
+          "description": "MessageService (commands), MessageReader (queries), MessageEnricher (projection/N+1 avoidance), and HighlightsService (cached scoring) each hold a distinct, documented responsibility, so layers pay for themselves with real behavior.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "EF/LINQ fluent chains inflate indirection metrics",
+          "description": "Mechanical indirection_hotspots count LINQ query-builder chains, not abstraction layers; these should not be read as delegate stacking.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "dependency_health": {
+      "add": [
+        {
+          "header": "Lean fully-utilized dependency set",
+          "description": "All 5 frontend and 8 backend production dependencies are verifiably used in code with no unused or duplicate-purpose libraries, keeping the supply-chain surface minimal and auditable.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Single library per concern",
+          "description": "One HTTP layer (native fetch in api.ts, no axios), one charting library (chart.js), and no date/util libraries means a developer never has to pick between competing tools for the same job.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Build-only tooling correctly scoped",
+          "description": "Microsoft.EntityFrameworkCore.Design uses PrivateAssets=all and build-only IncludeAssets so the design-time package does not leak into runtime, showing deliberate dependency scoping.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Backend patch-version drift on 10.0.x line",
+          "description": "Backend ASP.NET Core packages mix 10.0.0/10.0.2/10.0.7/10.0.8 pins; harmless (separately versioned vendors) but a minor consistency/audit nit on the in-house Microsoft package family.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "low_level_elegance": {
+      "add": [
+        {
+          "header": "Guard-clause + early-return happy path everywhere",
+          "description": "Services and controllers (MessageService, MessageReader, TokenService, AuthController, MessagesController) uniformly validate with early returns so the success path is linear and visible, and try/catch appears only at real I/O boundaries (image storage, email send). This keeps individual function internals direct and intention-revealing.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Bounded, explicit state mutation with cycle guards",
+          "description": "Local mutation is consistently bounded: PresenceTracker mutates only under one lock with uniform empty-cleanup, TokenService uses atomic row-count-checked DB updates, and tree walks (ResolveRootAsync, HighlightsService.LoadStatsAsync) carry HashSet seen-set guards against cycles. Side effects are local and proportionate, not sprawling.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Balanced helper extraction, no micro-fragmentation",
+          "description": "Read/command splits and private helpers (NormalizeLimit, EncodeCursor, EffectiveRootId, ToDtosAsync) are sized to one clear job and the style is consistent across sibling feature modules, avoiding both god-functions and over-extracted one-liners.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "MessageEnricher near-dupe flag is a detector artifact",
+          "description": "The mechanical 'near-duplicate' on MessageEnricher.cs matches the class name against its single EnrichAsync method name (97%); the file contains one cohesive batch-loading projection with no internal duplication. Not a low_level_elegance defect.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "mid_level_elegance": {
+      "add": [
+        {
+          "header": "Result-record seam with single-point HTTP translation",
+          "description": "Services return small result records (MessageCreateResult, DeleteMessageResult, CreateRoomResult) carrying entity/dto/error, and each controller maps the error in one obvious switch/if-chain. Inputs and outputs across the service boundary are explicit and minimal, and translation lives in exactly one place per endpoint.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Coded-exception error propagation is one-directional and predictable",
+          "description": "Storage throws ImageStorageException(code) -> MessageService catches and folds the code into a result -> controller maps to HTTP. Error and lifecycle propagation across the storage/service/controller seam follows one predictable pattern rather than ad-hoc try/catch sprawl.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Centralized JSON and HTTP-client seams",
+          "description": "Backend snake_case wire contract is configured once in Program.cs (naming policy + enum converter); frontend funnels every call through one send()/ApiError seam with transparent refresh-retry. The cross-runtime contract has a single source of truth on each side, so boundary translation is not scattered.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Service-to-controller error codes are stringly typed",
+          "description": "Result records expose a free-string Error field that controllers re-discriminate by literal comparison (== \"ROOM_NOT_FOUND\"). The producer/consumer share an implicit, compiler-unchecked string contract at the seam; consistent today but fragile to renames.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "test_strategy": {
+      "add": [
+        {
+          "header": "Real-Postgres integration suite via Testcontainers + WAF",
+          "description": "Integration tests boot the full app (migrations + seeding) against a throwaway Postgres container instead of mocking the data layer, so they validate true runtime behavior and stay resilient to internal refactors. This is the primary reason backend confidence is high.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Behavior/contract assertions over implementation coupling",
+          "description": "Tests assert HTTP status codes and JSON DTO shapes (locally redeclared records with [JsonPropertyName]) plus observable invariants, not internal call sequences, keeping test-production coupling low. There is zero snapshot/Verify usage.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Balanced unit layer for pure logic",
+          "description": "UnitTests.cs isolates pure, dependency-free logic (slug/text normalization, highlight scoring, presence tracking, claim parsing, image storage validation) with Theory-driven edge cases, complementing the slower integration suite rather than duplicating it.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend SPA has no automated tests",
+          "description": "The React/TS client (api client, realtime, hooks, views) has no test files and no configured runner, so client-side regressions are caught only manually \u2014 the main strategic blind spot in an otherwise strong portfolio.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Per-class isolated containers with GUID-based data isolation",
+          "description": "Each test class owns its own ApiFactory/container and isolates data with GUID-unique emails/labels rather than shared mutable global state, with the one shared-fixture caveat documented inline \u2014 a managed tradeoff, not fragile cross-test coupling.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    },
+    "api_surface_coherence": {
+      "add": [
+        {
+          "header": "Uniform controller shape across all features",
+          "description": "Every controller uses primary-constructor DI, [ApiController]+[Route(\"api/...\")], ActionResult<T> returns, a trailing CancellationToken, and read/write/auth rate-limit partitions, so a developer can predict any new endpoint's shape from one example.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Consistent sealed-result error contracts in services",
+          "description": "Command services return small sealed result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) with Created/Failed/NotFound factories that controllers translate to HTTP codes the same way; reads return nullable DTOs mapped to NotFound(). The failure surface is uniform and self-documenting.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Dead overload on RealtimeNotifier surface",
+          "description": "MessageChangedAsync(Guid roomId, Guid? threadId, ct) has no callers while the MessageChangeDto overload is used everywhere, leaving an ambiguous unused second shape on the notifier's public API.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "authorization_consistency": {
+      "add": [
+        {
+          "header": "Role strings centralized in Roles constants",
+          "description": "All authorization checks reference the Roles static class (Domain/Enums.cs) \u2014 [Authorize(Roles = Roles.Admin)], Roles.ModeratorOrAdmin, IsInRoleAsync(user, Roles.X) \u2014 with zero magic role literals in auth decisions, so role vocabulary cannot drift across controllers.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Layered ban enforcement with session revocation",
+          "description": "Bans are enforced at token mint (login/external), at refresh rotation (TokenService), and at write controllers, and a ban revokes all active refresh tokens (ModerationController.Ban) so a banned session cannot survive on a still-valid token.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Authorization delegated cleanly into service layer",
+          "description": "SoftDelete computes canModerate from roles in the controller and passes it to MessageService.SoftDeleteAsync, which enforces author-or-moderator and returns an Authorized flag the controller maps to Forbid() \u2014 auth logic lives with the data operation rather than scattered conditionals.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Public reads are an intentional forum boundary",
+          "description": "Read endpoints (room messages, threads, highlights, room list, presence) are deliberately unauthenticated and thread the nullable User.GetUserId() through for per-user enrichment; every mutating endpoint carries [Authorize]. The split is consistent, not accidental.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Ban-check asymmetry across write siblings",
+          "description": "PostMessage/Upvote/Report guard on user.IsBanned but RemoveUpvote/SoftDelete do not; the omission is defensible but undocumented, forcing per-endpoint reasoning instead of a single trusted rule.",
+          "settled": false,
+          "positive": false
+        },
+        {
+          "header": "ChatHub unauthenticated despite JWT-from-query wiring",
+          "description": "The SignalR hub has no [Authorize] yet Program.cs adds access_token-from-query handling for /hub; safe today because the hub only carries presence and content-free change pings, but the wiring and the boundary disagree.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "incomplete_migration": {
+      "add": [
+        {
+          "header": "No old/new API coexistence in frontend or backend",
+          "description": "Single fetch HTTP client, single SignalR realtime transport, all functional + all-TypeScript frontend, no axios/moment dual libs, no [Obsolete] symbols, no sync-over-async (.Result/.Wait) shims, and no V1/V2 parallel paths \u2014 a developer is never left guessing which pattern to extend.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Supabase RLS survives only as test-parity reference",
+          "description": "The prior Supabase RLS authorization design is referenced solely as an integration-test parity target; no RLS/Supabase code remains in production, so the port to C# authorization is complete rather than half-finished.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "RootMessageId==Guid.Empty legacy-row backfill convention",
+          "description": "Pre-ThreadMetadata-migration rows have an empty RootMessageId, so MessageReader/MessageService/HighlightsService compute the effective root on the fly via one consistent convention (documented in ResolveRootAsync); intentional bounded backward-compat, but the logic is repeated across four call sites instead of being centralized.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "package_organization": {
+      "add": [
+        {
+          "header": "Feature-folder layout with namespace-directory parity",
+          "description": "Backend organizes by concern (Auth/, Data/, Domain/, Email/, Features/{Messages,Moderation,Rooms}/, Realtime/, Storage/) with namespaces matching folders one-to-one, so placement is predictable from structure alone.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Pure dependency-free Domain/ core",
+          "description": "Domain/ has avg_fan_in 21 and avg_fan_out 0 and is imported by every feature directory \u2014 a correctly-placed high-fan-in core that anchors the dependency graph rather than a straggler.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Strictly unidirectional cross-directory coupling",
+          "description": "coupling_matrix shows only downstream\u2192upstream-free, non-reciprocal edges (Features\u2192Domain/Data/Auth/Realtime/Storage), so boundary placement creates no cyclic or backward-dependency hazards.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Controllers colocated in feature slices",
+          "description": "Controllers live beside their feature service/DTOs (Features/Messages/, Auth/, Realtime/) as a uniform vertical-slice convention rather than a flat MVC Controllers/ folder.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Empty Controllers/ scaffolding straggler",
+          "description": "server/Sheshi.Api/Controllers/ is an empty leftover from the webapi template whose name contradicts the feature-folder controller convention the codebase actually follows.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Domain/ mixes entities with static text utilities",
+          "description": "Slug.cs and Text.cs are static normalization helpers sharing the Domain/ folder with EF persistence entities \u2014 a minor cohesion blur, mitigated by both being broadly-imported domain-text helpers.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "initialization_coupling": {
+      "add": [
+        {
+          "header": "All wiring via DI container, no import-time side effects",
+          "description": "Program.cs registers every cross-component dependency in the service provider and runs migration/seed after Build() in a created scope, so object creation order is framework-owned rather than import-order dependent. No class-scope DB/file/network calls exist anywhere in the app's boot path.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Config read at runtime via IOptions/IConfiguration, not at import time",
+          "description": "Services consume JwtOptions/StorageOptions through IOptions<T> and seeding reads SeedAdmin/* via IConfiguration at runtime, keeping startup test-overridable (ApiFactory) and free of fragile module-scope environment reads. The single Environment.GetEnvironmentVariable call is design-time-only EF tooling with a localhost fallback.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Static state limited to immutable constants and sync primitives",
+          "description": "Every static field is either an immutable constant/lookup table (SeedRooms, Extensions, Interval, CacheTtl) or a synchronization primitive (HighlightsService.SnapshotGate). There is no mutable shared static state whose creation order matters across modules, and the lone singleton PresenceTracker is lock-guarded and self-contained.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    },
+    "design_coherence": {
+      "add": [
+        {
+          "header": "Uniform per-feature controller/service/reader/DTO shape",
+          "description": "Every backend feature (Messages, Rooms, Moderation, Auth) follows the same controller-maps-HTTP, service-runs-commands, reader-runs-queries, DTO-records layout, so learning one feature predicts the rest.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Consistent Result-record command idiom",
+          "description": "Service write operations return small sealed Result records with named factory methods (Failed/Created/NotFound/Forbidden), giving callers a predictable, self-documenting success/failure contract across the codebase.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Batch-load-then-GetValueOrDefault enrichment recipe",
+          "description": "DTO projection consistently pre-loads related counts/authors in a few grouped queries and resolves them with GetValueOrDefault, avoiding N+1 and keeping enrichment code structurally identical across MessageEnricher, RoomService, and Moderation analytics.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Data-driven frontend api and admin UI",
+          "description": "api.ts expresses each endpoint as a one-line typed wrapper over a single dispatch/refresh/error path, and Moderation.tsx renders from arrays (statCards, AdminDataTable rows) with an action-dispatch handler rather than duplicated blocks.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "String-literal error mapping in MessagesController",
+          "description": "CreateMessageAsync branches on magic error strings (ROOM_NOT_FOUND, PARENT_NOT_FOUND, PARENT_ROOM_MISMATCH) instead of the structured boolean result shape its sibling endpoints use, the one spot where the command-result idiom is slightly inconsistent.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    },
+    "contract_coherence": {
+      "add": [
+        {
+          "header": "Exact DTO/TS parity under one global JSON policy",
+          "description": "Every REST DTO record maps field-for-field to its frontend/src/types.ts counterpart, and Program.cs applies SnakeCaseLower property/dictionary/enum policies once for the whole MVC pipeline, so consumers can trust a single, uniform wire contract. ModelParityTests and CoreApiTests pin FK/index and JSON-name parity.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Honest discriminated Result records over null overloading",
+          "description": "Service commands return named Result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) with explicit Failed/NotFound/Forbidden/Created factories, and controllers translate them to precise HTTP statuses, so every failure mode is part of the stated contract rather than a hidden null.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "SignalR boundary bypasses the global snake_case contract",
+          "description": "AddSignalR() is left unconfigured, so hub events (presence, message_changed) serialize PresenceDto/MessageChangeDto in SignalR's default camelCase while the identical DTOs over REST are snake_case; the frontend masks this by reading both casings, signalling the realtime wire contract is ambiguous and untested.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "logic_clarity": {
+      "add": [
+        {
+          "header": "Cycle-guarded parent/tree traversals",
+          "description": "ResolveRootAsync, HighlightsService.LoadStatsAsync, and BuildReplyNodes all walk parent chains or trees with explicit `seen` HashSet guards or bounded recursion, so malformed/cyclic data cannot loop forever \u2014 the most logic-dense code is also the most carefully bounded.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Concurrency-safe write paths via row-count guards",
+          "description": "Token rotation (TokenService) and vote insertion (MessageService) use ExecuteUpdate/ON CONFLICT with affected-row checks instead of read-then-write, making concurrent access deterministic without obscuring the happy path.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "TryParseStatus re-derives its return value",
+          "description": "ModerationController.TryParseStatus assigns `parsed` from a switch but computes its boolean return by re-running the same lowercased string-set comparison, duplicating the valid-value list and the ToLowerInvariant() call; cosmetic but the only avoidable redundancy in the dimension.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "type_safety": {
+      "add": [
+        {
+          "header": "Nullable RT and TS strict both enabled and respected",
+          "description": "Backend compiles with <Nullable>enable</Nullable> and the SPA with strict:true; nullability is enforced by the compiler rather than convention, so annotations can be trusted as runtime documentation.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Nullable return types honestly model not-found paths",
+          "description": "Service/reader methods return T? (AuthResponse?, MessageDto?, ThreadDto?, RoomDto?) on miss and every caller null-checks \u2014 return types never lie about the null path.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Null-suppression operators are guarded or idiomatic",
+          "description": "Every ParentId!.Value is preceded by a `ParentId is not null` filter and EF navigation `= null!` is the framework-standard pattern; the suppressions compensate for lambda flow-narrowing limits, not for unsound assumptions.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend free of any; casts are idiomatic",
+          "description": "No `any` in the SPA; the only casts are `as const`, `as CSSProperties` for CSS custom properties, typed-fetch `as Promise<T>`, and unavoidable localStorage deserialization (the latter guarded with Array.isArray + type predicate in loadSavedIds).",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Redundant non-null assertions in feeds.tsx",
+          "description": "props.thread! on feeds.tsx:192/209 follows an early-return guard that already narrows the value, and sits beside unguarded accesses \u2014 leftover assertions that flow analysis disproves.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    }
+  },
+  "review_scope": {
+    "reviewed_files_count": 0,
+    "successful_batch_count": 20,
+    "full_sweep_included": false,
+    "total_files": 44,
+    "imported_dimensions": [
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "contract_coherence",
+      "convention_outlier",
+      "cross_module_architecture",
+      "dependency_health",
+      "design_coherence",
+      "error_consistency",
+      "high_level_elegance",
+      "incomplete_migration",
+      "initialization_coupling",
+      "logic_clarity",
+      "low_level_elegance",
+      "mid_level_elegance",
+      "naming_quality",
+      "package_organization",
+      "test_strategy",
+      "type_safety"
+    ]
+  },
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "dry-run",
+    "run_stamp": "20260611_014107",
+    "created_at": "2026-06-11T01:53:03+00:00",
+    "batch_count": 20,
+    "batch_indexes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "packet_path": "/Users/albiidrizi/Desktop/sheshi/.desloppify/review_packet_blind.json",
+    "packet_sha256": "7367d27f68134797b09acddcb3406690b4d648422fe9c98f10fd1a317c33929b"
+  },
+  "assessment_coverage": {
+    "scored_dimensions": [
+      "naming_quality",
+      "logic_clarity",
+      "type_safety",
+      "contract_coherence",
+      "error_consistency",
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "high_level_elegance",
+      "mid_level_elegance",
+      "low_level_elegance",
+      "cross_module_architecture",
+      "initialization_coupling",
+      "convention_outlier",
+      "dependency_health",
+      "test_strategy",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "incomplete_migration",
+      "package_organization",
+      "design_coherence"
+    ],
+    "selected_dimensions": [
+      "naming_quality",
+      "logic_clarity",
+      "type_safety",
+      "contract_coherence",
+      "error_consistency",
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "high_level_elegance",
+      "mid_level_elegance",
+      "low_level_elegance",
+      "cross_module_architecture",
+      "initialization_coupling",
+      "convention_outlier",
+      "dependency_health",
+      "test_strategy",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "incomplete_migration",
+      "package_organization",
+      "design_coherence"
+    ],
+    "imported_dimensions": [
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "contract_coherence",
+      "convention_outlier",
+      "cross_module_architecture",
+      "dependency_health",
+      "design_coherence",
+      "error_consistency",
+      "high_level_elegance",
+      "incomplete_migration",
+      "initialization_coupling",
+      "logic_clarity",
+      "low_level_elegance",
+      "mid_level_elegance",
+      "naming_quality",
+      "package_organization",
+      "test_strategy",
+      "type_safety"
+    ],
+    "missing_dimensions": []
+  }
+}

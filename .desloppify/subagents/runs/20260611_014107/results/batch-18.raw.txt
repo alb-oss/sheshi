@@ -1,0 +1,74 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 18,
+  "assessments": {"contract_coherence": 91.5},
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "DTO/TS parity is exact and disciplined: every C# record DTO (MessageDto, RoomDto, UserDto, AuthResponse, ModReportDto, ModUserDto, ModAnalyticsDto tree, CursorPageDto<T>) maps field-for-field to the snake_case TS type in frontend/src/types.ts; Program.cs sets PropertyNamingPolicy/DictionaryKeyPolicy/JsonStringEnumConverter to SnakeCaseLower globally for the MVC pipeline.",
+        "Return-type contracts are honest across the controller/service layer: controllers return ActionResult<T> and map nullable reads to NotFound (MessagesController.GetMessage, RoomsController.GetBySlug), and service methods return discriminated Result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) whose named factories (Failed/NotFound/Forbidden/Created) make every failure path explicit rather than overloading null.",
+        "No getter-named mutators: methods named CreateUserDtoAsync/EnrichAsync are pure projections; CreateAuthResponseAsync persists a refresh token, which the 'Create...Response' name reasonably implies. ModerationController/MessageService side effects sit behind verb-named methods (CreateMessageAsync, SoftDeleteAsync, UpvoteAsync).",
+        "Enum-to-wire contracts are consistent: ModReportDto.Reason/Status are emitted as lowercase strings matching the TS union \"open\"|\"resolved\"|\"dismissed\"; ModelParityTests and CoreApiTests pin FK/index parity and snake_case JSON property names, reinforcing the contract.",
+        "DEFECT: SignalR transport casing diverges from REST for the same DTO. AddSignalR() in Program.cs has no AddJsonProtocol snake_case configuration, so ChatHub's \"presence\" event serializes PresenceDto(Guid RoomId, int Count) with SignalR's default (camelCase) serializer, whereas PresenceController returns the REST snake_case shape. frontend/src/realtime.ts and App.tsx onPresence defensively read `update.roomId || update.room_id`, confirming the wire contract for that channel is ambiguous and unpinned; RealtimeStorageModerationTests asserts the REST presence endpoint but never the SignalR payload casing."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The SignalR 'presence' (and 'message_changed') hub payloads bypass the global snake_case JSON policy, so the same PresenceDto has two wire shapes by transport; the frontend works around it by reading both casings instead of relying on one contract."
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "dimension_character": "Contract coherence is a systemic strength: REST DTOs are record types that mirror the frontend TS shapes field-for-field under a single global snake_case policy, return types honestly cover all paths via ActionResult<T> and discriminated Result records, and no getter name hides a mutation. The one crack is the SignalR boundary, where AddSignalR() is left unconfigured so hub payloads serialize in camelCase while the identical DTO over REST is snake_case, forcing the frontend to defensively read both casings for the presence event.",
+      "score_rationale": "The REST/DTO surface is exemplary and reinforced by parity tests, which would place it in the low-to-mid 90s; the isolated but real SignalR casing incoherence (one unconfigured serializer producing a dual wire shape, with the consumer working around it) pulls it off a 90+ 'trust everything' rating into the 'strong with an isolated rough edge' band. This is a single-edit fix (AddSignalR().AddJsonProtocol with the snake_case policy) affecting one boundary, not a pervasive contract problem."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "signalr_presence_casing_mismatch",
+      "summary": "SignalR hub payloads use camelCase while REST uses snake_case for the same DTOs; frontend reads both casings defensively",
+      "related_files": [
+        "server/Sheshi.Api/Program.cs",
+        "server/Sheshi.Api/Realtime/ChatHub.cs",
+        "server/Sheshi.Api/Realtime/PresenceDto.cs",
+        "frontend/src/realtime.ts",
+        "frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "Program.cs:57 calls builder.Services.AddSignalR() with no AddJsonProtocol configuration, so SignalR uses its default serializer (camelCase) rather than the MVC SnakeCaseLower policy set at Program.cs:32-34.",
+        "ChatHub.JoinRoom/LeaveRoom send PresenceDto(Guid RoomId, int Count) over the 'presence' event, which therefore arrives as {roomId,count}; the same DTO over the REST presence path uses the snake_case pipeline.",
+        "frontend/src/App.tsx:292-295 and realtime.ts type RealtimePresenceUpdate read `update.roomId || update.room_id`, defending against both casings instead of relying on one contract.",
+        "RealtimeStorageModerationTests asserts the REST /api/rooms/presence shape but does not pin the SignalR 'presence' payload casing, so the ambiguity is untested."
+      ],
+      "suggestion": "Configure SignalR to use the same naming policy as MVC: builder.Services.AddSignalR().AddJsonProtocol(o => o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower); then drop the dual-casing fallback in App.tsx/realtime.ts so the presence event has one stable snake_case contract.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "context_updates": {
+    "contract_coherence": {
+      "add": [
+        {
+          "header": "Exact DTO/TS parity under one global JSON policy",
+          "description": "Every REST DTO record maps field-for-field to its frontend/src/types.ts counterpart, and Program.cs applies SnakeCaseLower property/dictionary/enum policies once for the whole MVC pipeline, so consumers can trust a single, uniform wire contract. ModelParityTests and CoreApiTests pin FK/index and JSON-name parity.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Honest discriminated Result records over null overloading",
+          "description": "Service commands return named Result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) with explicit Failed/NotFound/Forbidden/Created factories, and controllers translate them to precise HTTP statuses, so every failure mode is part of the stated contract rather than a hidden null.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "SignalR boundary bypasses the global snake_case contract",
+          "description": "AddSignalR() is left unconfigured, so hub events (presence, message_changed) serialize PresenceDto/MessageChangeDto in SignalR's default camelCase while the identical DTOs over REST are snake_case; the frontend masks this by reading both casings, signalling the realtime wire contract is ambiguous and untested.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

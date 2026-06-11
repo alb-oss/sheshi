@@ -1,28 +1,37 @@
 {
   "version": 3,
   "created": "2026-06-11T01:26:13+00:00",
-  "last_scan": "2026-06-11T01:40:43+00:00",
-  "scan_count": 7,
-  "overall_score": 25.0,
+  "last_scan": "2026-06-11T01:53:03+00:00",
+  "scan_count": 8,
+  "overall_score": 92.8,
   "objective_score": 100.0,
-  "strict_score": 16.9,
+  "strict_score": 84.7,
   "verified_strict_score": 93.9,
   "stats": {
-    "total": 106,
+    "total": 131,
     "auto_resolved": 94,
     "deferred": 0,
     "false_positive": 0,
-    "fixed": 3,
-    "open": 2,
+    "fixed": 10,
+    "open": 19,
     "triaged_out": 0,
-    "wontfix": 7,
+    "wontfix": 8,
     "by_tier": {
+      "1": {
+        "auto_resolved": 0,
+        "deferred": 0,
+        "false_positive": 0,
+        "fixed": 2,
+        "open": 7,
+        "triaged_out": 0,
+        "wontfix": 1
+      },
       "2": {
         "auto_resolved": 27,
         "deferred": 0,
         "false_positive": 0,
-        "fixed": 0,
-        "open": 0,
+        "fixed": 4,
+        "open": 4,
         "triaged_out": 0,
         "wontfix": 0
       },
@@ -30,8 +39,8 @@
         "auto_resolved": 61,
         "deferred": 0,
         "false_positive": 0,
-        "fixed": 3,
-        "open": 1,
+        "fixed": 4,
+        "open": 3,
         "triaged_out": 0,
         "wontfix": 7
       },
@@ -40,7 +49,7 @@
         "deferred": 0,
         "false_positive": 0,
         "fixed": 0,
-        "open": 1,
+        "open": 5,
         "triaged_out": 0,
         "wontfix": 0
       }
@@ -126,7 +135,7 @@
         "import_count": 19
       },
       "status": "wontfix",
-      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:26:13+00:00",
       "last_seen": "2026-06-11T01:40:43+00:00",
       "resolved_at": "2026-06-11T01:40:32+00:00",
@@ -143,7 +152,9 @@
         "kind": "manual",
         "text": "I have actually reviewed this finding: it is an ASP.NET controller instantiated by the framework via routing/DI (no C# importers by design, it IS an entry point) and is exercised by HTTP integration tests. The orphaned/test-coverage detectors model JS/TS import graphs and cannot recognize C# entry points or HTTP-level coverage. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:32+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
       "wontfix_snapshot": {
@@ -241,7 +252,7 @@
         "import_count": 0
       },
       "status": "wontfix",
-      "note": "DTO record: no behavior to unit-test",
+      "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:26:13+00:00",
       "last_seen": "2026-06-11T01:40:43+00:00",
       "resolved_at": "2026-06-11T01:40:33+00:00",
@@ -258,7 +269,9 @@
         "kind": "manual",
         "text": "I have actually reviewed this finding: it is a pure DTO record with no behavior, referenced by its feature controller and serialized in every integration test, so there is nothing to unit-test. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:33+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
       "wontfix_snapshot": {
@@ -2610,7 +2623,7 @@
         "loc_weight": 8.831760866327848
       },
       "status": "wontfix",
-      "note": "DTO record: no behavior to unit-test",
+      "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
       "last_seen": "2026-06-11T01:40:43+00:00",
       "resolved_at": "2026-06-11T01:40:33+00:00",
@@ -2627,7 +2640,9 @@
         "kind": "manual",
         "text": "I have actually reviewed this finding: it is a pure DTO record with no behavior, referenced by its feature controller and serialized in every integration test, so there is nothing to unit-test. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:33+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
       "wontfix_snapshot": {
@@ -2713,7 +2728,7 @@
         "loc_weight": 6.324555320336759
       },
       "status": "wontfix",
-      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
       "last_seen": "2026-06-11T01:40:43+00:00",
       "resolved_at": "2026-06-11T01:40:32+00:00",
@@ -2730,7 +2745,9 @@
         "kind": "manual",
         "text": "I have actually reviewed this finding: it is an ASP.NET controller instantiated by the framework via routing/DI (no C# importers by design, it IS an entry point) and is exercised by HTTP integration tests. The orphaned/test-coverage detectors model JS/TS import graphs and cannot recognize C# entry points or HTTP-level coverage. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:32+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
       "wontfix_snapshot": {
@@ -2760,7 +2777,7 @@
         "loc_weight": 9.797958971132712
       },
       "status": "wontfix",
-      "note": "integration-tested; logic extracted to Slug + unit-tested",
+      "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
       "last_seen": "2026-06-11T01:40:43+00:00",
       "resolved_at": "2026-06-11T01:40:34+00:00",
@@ -2777,7 +2794,9 @@
         "kind": "manual",
         "text": "I have actually reviewed this finding: RoomService is covered by the room-creation/listing HTTP integration tests and its slug logic was extracted to Slug and directly unit-tested. The detector only recognizes direct C# references, not HTTP-level coverage. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:34+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
       "wontfix_snapshot": {
@@ -2947,7 +2966,7 @@
         "loc_weight": 3.3166247903554
       },
       "status": "wontfix",
-      "note": "DTO record: no behavior to unit-test",
+      "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
       "last_seen": "2026-06-11T01:40:43+00:00",
       "resolved_at": "2026-06-11T01:40:33+00:00",
@@ -2964,7 +2983,9 @@
         "kind": "manual",
         "text": "I have actually reviewed this finding: it is a pure DTO record with no behavior, referenced by its feature controller and serialized in every integration test, so there is nothing to unit-test. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:33+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
       "wontfix_snapshot": {
@@ -3078,7 +3099,7 @@
         "loc_weight": 17.349351572897472
       },
       "status": "wontfix",
-      "note": "ASP.NET controller: framework entry point + integration-tested",
+      "note": "Still absent from scan after manual wontfix",
       "first_seen": "2026-06-11T01:28:08+00:00",
       "last_seen": "2026-06-11T01:40:43+00:00",
       "resolved_at": "2026-06-11T01:40:32+00:00",
@@ -3095,7 +3116,9 @@
         "kind": "manual",
         "text": "I have actually reviewed this finding: it is an ASP.NET controller instantiated by the framework via routing/DI (no C# importers by design, it IS an entry point) and is exercised by HTTP integration tests. The orphaned/test-coverage detectors model JS/TS import graphs and cannot recognize C# entry points or HTTP-level coverage. I am not gaming the score; this is a documented detector false positive.",
         "attested_at": "2026-06-11T01:40:32+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       },
       "wontfix_scan_count": 6,
       "wontfix_snapshot": {
@@ -3234,7 +3257,7 @@
         "loc": 516
       },
       "status": "fixed",
-      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "note": "Still absent from scan after manual resolution",
       "first_seen": "2026-06-11T01:36:18+00:00",
       "last_seen": "2026-06-11T01:36:18+00:00",
       "resolved_at": "2026-06-11T01:40:00+00:00",
@@ -3251,7 +3274,9 @@
         "kind": "manual",
         "text": "I have actually EF Core generated file; zoned generated and excluded from scanning and I am not gaming the score.",
         "attested_at": "2026-06-11T01:40:00+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       }
     },
     "structural::server/Sheshi.Api/Migrations/AppDbContextModelSnapshot.cs": {
@@ -3265,7 +3290,7 @@
         "loc": 513
       },
       "status": "fixed",
-      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "note": "Still absent from scan after manual resolution",
       "first_seen": "2026-06-11T01:36:18+00:00",
       "last_seen": "2026-06-11T01:36:18+00:00",
       "resolved_at": "2026-06-11T01:40:00+00:00",
@@ -3282,7 +3307,9 @@
         "kind": "manual",
         "text": "I have actually EF Core generated file; zoned generated and excluded from scanning and I am not gaming the score.",
         "attested_at": "2026-06-11T01:40:00+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       }
     },
     "structural::server/Sheshi.Api/Migrations/20260608110408_InitialSchema.Designer.cs": {
@@ -3296,7 +3323,7 @@
         "loc": 508
       },
       "status": "fixed",
-      "note": "EF Core generated file; zoned generated and excluded from scanning",
+      "note": "Still absent from scan after manual resolution",
       "first_seen": "2026-06-11T01:36:18+00:00",
       "last_seen": "2026-06-11T01:36:18+00:00",
       "resolved_at": "2026-06-11T01:39:59+00:00",
@@ -3313,7 +3340,9 @@
         "kind": "manual",
         "text": "I have actually EF Core generated file; zoned generated and excluded from scanning and I am not gaming the score.",
         "attested_at": "2026-06-11T01:39:59+00:00",
-        "scan_verified": false
+        "scan_verified": true,
+        "scan_verified_at": "2026-06-11T01:53:03+00:00",
+        "scan_verification_text": "Absent from detector output in latest scan"
       }
     },
     "dupes::server/Sheshi.Api/Features/Messages/MessageEnricher.cs::EnrichAsync::server/Sheshi.Api/Features/Messages/MessageEnricher.cs::MessageEnricher": {
@@ -3368,6 +3397,831 @@
       "suppressed": false,
       "suppressed_at": null,
       "suppression_pattern": null
+    },
+    "review::.::holistic::high_level_elegance::moderation_no_service_layer": {
+      "id": "review::.::holistic::high_level_elegance::moderation_no_service_layer",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "ModerationController holds all analytics/aggregation logic inline while sibling features use a controller+service split",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+        ],
+        "evidence": [
+          "ModerationController.cs is 379 LOC and contains private aggregation helpers LoadTrendAsync, LoadTopRoomsAsync, LoadTopPostsAsync, CountRoleMembersAsync, plus direct AppDbContext/UserManager access for analytics, report triage, bans, and role grants.",
+          "By contrast MessagesController delegates to MessageService/MessageReader and RoomsController delegates to RoomService, so Moderation is the only feature whose controller owns substantial domain logic \u2014 a developer expecting the established per-feature service split will be surprised here."
+        ],
+        "suggestion": "Extract the read/aggregation logic (analytics windowing, top-rooms/top-posts/trend queries) into a ModerationAnalyticsService (or ModerationReader) registered in DI, mirroring MessageReader/HighlightsService, leaving the controller to translate requests and results. Keep it a single straightforward service; do not over-fragment.",
+        "reasoning": "",
+        "summary_hash": "5d45e7f0"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::high_level_elegance::stale_structure_doc": {
+      "id": "review::.::holistic::high_level_elegance::stale_structure_doc",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "codebase_analysis.md Directory Structure and Gaps sections no longer match runtime reality",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "codebase_analysis.md",
+          "frontend/src/views/feeds.tsx",
+          "frontend/src/components/messages.tsx",
+          "server/Dockerfile"
+        ],
+        "evidence": [
+          "Doc documents the frontend as single files views.tsx (861 lines) and ui.tsx (532 lines), but those files do not exist; the code is split into views/ (Auth, Moderation, Profile, feeds) and components/ (chrome, messages, overlays).",
+          "Doc lists App.tsx as 536 lines (actual 589) and its Gaps section still asserts 'Not a git repository', 'No Dockerfiles for the API', and a README referencing a stale alb_sheshi/ path \u2014 all contradicted by the current tree (a .git dir, server/Dockerfile, and a server/README.md that points at server/Sheshi.Api)."
+        ],
+        "suggestion": "Update the Directory Structure section to reflect frontend/src/views/ and frontend/src/components/, refresh the line counts, and prune the now-resolved Gaps items (git, Dockerfile, README path) so the document remains a trustworthy reference for the structure.",
+        "reasoning": "",
+        "summary_hash": "4d3d5cc4"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::high_level_elegance::empty_controllers_dir_straggler": {
+      "id": "review::.::holistic::high_level_elegance::empty_controllers_dir_straggler",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Empty leftover Controllers/ directory implies a flat-controllers layout the codebase abandoned for feature folders",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "server/Sheshi.Api/Controllers"
+        ],
+        "evidence": [
+          "server/Sheshi.Api/Controllers/ exists but contains no files; all controllers actually live under Features/*, Auth/, and Realtime/, so the directory is a scaffolding remnant that briefly suggests a second, unused organizational convention."
+        ],
+        "suggestion": "Delete the empty server/Sheshi.Api/Controllers directory so the feature-foldered layout is the single, unambiguous controller organization.",
+        "reasoning": "",
+        "summary_hash": "bede22ab"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::convention_outlier::views_filename_casing_island": {
+      "id": "review::.::holistic::convention_outlier::views_filename_casing_island",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "views/feeds.tsx is lowercase while sibling view files Auth.tsx/Moderation.tsx/Profile.tsx are PascalCase",
+      "detail": {
+        "holistic": true,
+        "dimension": "convention_outlier",
+        "related_files": [
+          "frontend/src/views/feeds.tsx",
+          "frontend/src/App.tsx"
+        ],
+        "evidence": [
+          "frontend/src/views/ contains Auth.tsx, Moderation.tsx, Profile.tsx (PascalCase) and feeds.tsx (lowercase).",
+          "feeds.tsx exports Home, RoomView, ThreadView \u2014 top-level routed views with the same role as the components in the PascalCase view files (App.tsx:26 imports them alongside the others; App.tsx:466-556 routes them identically).",
+          "No comment or structural reason differentiates feeds.tsx from its siblings; the casing is the only difference."
+        ],
+        "suggestion": "Rename feeds.tsx to Feeds.tsx (and update the import at App.tsx:26) so all files in views/ share one PascalCase file-naming convention.",
+        "reasoning": "",
+        "summary_hash": "b6fe07e5"
+      },
+      "status": "fixed",
+      "note": "Renamed feeds.tsx -> Feeds.tsx; updated App import",
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": "2026-06-11T02:04:21+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Renamed feeds.tsx -> Feeds.tsx; updated App import and I am not gaming the score.",
+        "attested_at": "2026-06-11T02:04:21+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::dependency_health::backend_patch_version_drift": {
+      "id": "review::.::holistic::dependency_health::backend_patch_version_drift",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Backend ASP.NET Core 10.0.x packages pinned at inconsistent patch levels (10.0.0/10.0.2/10.0.7/10.0.8)",
+      "detail": {
+        "holistic": true,
+        "dimension": "dependency_health",
+        "related_files": [
+          "server/Sheshi.Api/Sheshi.Api.csproj"
+        ],
+        "evidence": [
+          "AspNet.Security.OAuth.Apple is 10.0.0, Microsoft.AspNetCore.OpenApi is 10.0.7, Npgsql.EntityFrameworkCore.PostgreSQL is 10.0.2, while the Microsoft.AspNetCore.* auth/identity packages are 10.0.8.",
+          "Not a true version conflict (different vendors version independently), but the spread is easy to drift further and harder to audit at a glance."
+        ],
+        "suggestion": "Bump the Microsoft.AspNetCore.OpenApi reference (and other Microsoft.AspNetCore.* entries) to the same 10.0.8 patch where available so the in-house Microsoft package family pins uniformly; leave third-party packages (Apple OAuth, Npgsql) at their own latest patch.",
+        "reasoning": "",
+        "summary_hash": "3331ab46"
+      },
+      "status": "fixed",
+      "note": "Bumped Microsoft.AspNetCore.OpenApi 10.0.7 -> 10.0.8 to align the AspNetCore package family",
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": "2026-06-11T02:04:22+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Bumped Microsoft.AspNetCore.OpenApi 10.0.7 -> 10.0.8 to align the AspNetCore package family and I am not gaming the score.",
+        "attested_at": "2026-06-11T02:04:22+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::low_level_elegance::tryparsestatus_redundant_branches": {
+      "id": "review::.::holistic::low_level_elegance::tryparsestatus_redundant_branches",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "TryParseStatus computes parsed via switch then re-derives success from a parallel three-literal check, evaluating ToLowerInvariant three times",
+      "detail": {
+        "holistic": true,
+        "dimension": "low_level_elegance",
+        "related_files": [
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+        ],
+        "evidence": [
+          "Lines 290-300: the switch on status.ToLowerInvariant() sets `parsed`, then `return status.ToLowerInvariant() is \"open\" or \"resolved\" or \"dismissed\";` re-lowercases and re-lists the same three literals, ignoring the switch result.",
+          "The `_ => default` arm makes the out value indistinguishable for an invalid input (default == ReportStatus.Open), so the separate boolean check exists only to compensate for the discarded switch outcome."
+        ],
+        "suggestion": "Make the switch the single source of truth: switch to `string?` or use a value-tuple, e.g. `return (parsed, ok) = status.ToLowerInvariant() switch { \"open\" => (ReportStatus.Open, true), ... , _ => (default, false) }` \u2014 or simply compute `var ok = ...switch{...=> true, _ => false}` alongside `parsed` so ToLowerInvariant runs once and the branch set is not duplicated.",
+        "reasoning": "",
+        "summary_hash": "fc6f56b6"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::mid_level_elegance::stringly_typed_error_seam": {
+      "id": "review::.::holistic::mid_level_elegance::stringly_typed_error_seam",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Service result error codes cross the service->controller seam as bare strings matched by literal comparison",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "server/Sheshi.Api/Features/Messages/MessageService.cs",
+          "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+          "server/Sheshi.Api/Features/Rooms/RoomService.cs"
+        ],
+        "evidence": [
+          "MessageService.CreateMessageAsync returns MessageCreateResult.Failed(\"ROOM_NOT_FOUND\" / \"PARENT_NOT_FOUND\" / \"PARENT_ROOM_MISMATCH\"); the controller re-discriminates with result.Error == \"ROOM_NOT_FOUND\" etc. (MessagesController.cs lines 80-85).",
+          "RoomsController.Create switches on the literal \"ROOM_EXISTS\" string (lines 33-38). The producer and consumer share an implicit string contract with no compiler enforcement, so a code rename or typo on one side silently degrades to the generic BadRequest branch."
+        ],
+        "suggestion": "Replace the free-string Error field on the result records with a small enum (e.g. MessageCreateError { RoomNotFound, ParentNotFound, ParentRoomMismatch, ... }) so the producer and the controller's switch share a compiler-checked discriminator; keep the HTTP-status mapping in the controller as-is. This adds no indirection \u2014 it swaps a stringly-typed field for an enum field on the same record.",
+        "reasoning": "",
+        "summary_hash": "83bf802b"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::mid_level_elegance::dead_notifier_overload": {
+      "id": "review::.::holistic::mid_level_elegance::dead_notifier_overload",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "RealtimeNotifier.MessageChangedAsync(Guid, Guid?, ...) overload has no callers",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "server/Sheshi.Api/Realtime/RealtimeNotifier.cs"
+        ],
+        "evidence": [
+          "RealtimeNotifier exposes two MessageChangedAsync overloads (lines 7 and 14). A grep of the API project shows all four call sites in MessageService use the MessageChangeDto overload; the (Guid roomId, Guid? threadId) overload is unreferenced.",
+          "A vestigial overload on the realtime seam widens the boundary surface and invites future callers to use the lower-fidelity notification path (no message_changed payload)."
+        ],
+        "suggestion": "Delete the unused MessageChangedAsync(Guid roomId, Guid? threadId = null, ...) overload so the realtime seam exposes exactly the one notification shape callers actually use.",
+        "reasoning": "",
+        "summary_hash": "9f292581"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::mid_level_elegance::cross_runtime_score_duplication": {
+      "id": "review::.::holistic::mid_level_elegance::cross_runtime_score_duplication",
+      "detector": "review",
+      "file": ".",
+      "tier": 3,
+      "confidence": "low",
+      "summary": "Frontend hotScore duplicates backend HighlightsService recency constants across the C#/TS boundary",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "frontend/src/appSupport.ts",
+          "server/Sheshi.Api/Features/Messages/HighlightsService.cs"
+        ],
+        "evidence": [
+          "appSupport.ts hotScore uses 42 / pow(ageHours+1, 0.95) + 14 / pow(ageHours+1, 0.45) plus reply_count*30 and upvotes*12 (lines 191-198), the same magic constants as HighlightsService.Score (lines 84-89).",
+          "The two implementations are unlinked; a tweak to the server ranking formula would silently desync from the client-side 'hot' re-sort with nothing flagging the drift."
+        ],
+        "suggestion": "Add a short comment on both formulas cross-referencing each other (e.g. '// keep in sync with HighlightsService.Score recency decay') so the deliberate duplication across the language boundary is visible to whoever edits either side. Do not extract a shared abstraction \u2014 the runtimes cannot share code and the client copy is intentionally a lightweight approximation.",
+        "reasoning": "",
+        "summary_hash": "823b9d4e"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::test_strategy::frontend_zero_tests": {
+      "id": "review::.::holistic::test_strategy::frontend_zero_tests",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "React/TS frontend SPA has no automated tests and no configured test runner",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "frontend/src/api.ts",
+          "frontend/src/realtime.ts",
+          "frontend/src/appHooks.ts",
+          "frontend/package.json"
+        ],
+        "evidence": [
+          "No *.test.* or *.spec.* files exist under frontend/src; package.json scripts contain only dev/build/preview \u2014 no test runner (vitest/jest) is wired up.",
+          "frontend/src contains the API client (api.ts), SignalR realtime layer (realtime.ts), role logic (roles.ts), hooks (appHooks.ts), and feature views/components \u2014 none are exercised by any test, so client-side regressions (request shaping, optimistic vote/report handling, realtime reconnection, role gating) are caught only manually."
+        ],
+        "suggestion": "Add a lightweight Vitest setup and cover the highest-value pure modules first: api.ts request/response mapping, roles.ts gating, and realtime.ts connection/event handling with a mocked hub. This validates the client contract without needing a full browser harness.",
+        "reasoning": "",
+        "summary_hash": "9ddd2fad"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::test_strategy::delay_ordering_reliance": {
+      "id": "review::.::holistic::test_strategy::delay_ordering_reliance",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Pagination ordering test depends on a 5ms Task.Delay to separate CreatedAt timestamps",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "server/Sheshi.Api.Tests/CoreApiTests.cs"
+        ],
+        "evidence": [
+          "Threads_store_root_depth_and_feeds_page_by_cursor posts two messages separated by `await Task.Delay(5)` (line 215), then asserts which post appears on page one \u2014 correctness hinges on the 5ms gap producing distinct CreatedAt values under the DB/clock resolution.",
+          "The keyset index includes Id as a tiebreaker, so the test could be made deterministic without relying on wall-clock spacing."
+        ],
+        "suggestion": "Remove the Task.Delay and make ordering deterministic by asserting against the index's full ordering (CreatedAt desc, Id desc) or by controlling CreatedAt directly so the test does not depend on timing resolution.",
+        "reasoning": "",
+        "summary_hash": "454eeb44"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::api_surface_coherence::dead_messagechanged_overload": {
+      "id": "review::.::holistic::api_surface_coherence::dead_messagechanged_overload",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "RealtimeNotifier.MessageChangedAsync(Guid roomId, Guid? threadId, ct) overload has zero callers",
+      "detail": {
+        "holistic": true,
+        "dimension": "api_surface_coherence",
+        "related_files": [
+          "server/Sheshi.Api/Realtime/RealtimeNotifier.cs"
+        ],
+        "evidence": [
+          "RealtimeNotifier.cs:7 declares MessageChangedAsync(Guid roomId, Guid? threadId = null, CancellationToken ct = default).",
+          "All four call sites (MessageService.cs:93, 111, 133, 155) invoke the MessageChangeDto overload (RealtimeNotifier.cs:14); the (Guid roomId, ...) overload is unreferenced across the project and tests.",
+          "Two same-named public methods with different parameter shapes, one unused, makes the notifier surface ambiguous about the intended call form."
+        ],
+        "suggestion": "Delete the unused MessageChangedAsync(Guid roomId, Guid? threadId = null, ct) overload so the notifier exposes a single MessageChangeDto-based method.",
+        "reasoning": "",
+        "summary_hash": "783c8d81"
+      },
+      "status": "fixed",
+      "note": "Deleted the unused MessageChangedAsync(Guid,Guid?,ct) overload; notifier now exposes only the MessageChangeDto method",
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": "2026-06-11T01:57:03+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Deleted the unused MessageChangedAsync(Guid,Guid?,ct) overload; notifier now exposes only the MessageChangeDto method and I am not gaming the score.",
+        "attested_at": "2026-06-11T01:57:03+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::authorization_consistency::ban_check_asymmetry_write_endpoints": {
+      "id": "review::.::holistic::authorization_consistency::ban_check_asymmetry_write_endpoints",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Sibling write endpoints inconsistently apply the IsBanned guard",
+      "detail": {
+        "holistic": true,
+        "dimension": "authorization_consistency",
+        "related_files": [
+          "server/Sheshi.Api/Features/Messages/MessagesController.cs"
+        ],
+        "evidence": [
+          "PostMessage (CreateMessageAsync line 73), Upvote (line 95), and Report (line 138) all enforce `if (user.IsBanned) return Forbid();`.",
+          "RemoveUpvote (lines 105-112) and SoftDelete (lines 117-129) deliberately omit the IsBanned check, so the rule a reviewer learns from the other handlers does not hold uniformly across siblings."
+        ],
+        "suggestion": "If the omission is intentional (banned users may retract votes / delete their own content), add a one-line comment on RemoveUpvote and SoftDelete stating why the ban guard is skipped, so the asymmetry is self-documenting rather than something each reviewer must re-derive.",
+        "reasoning": "",
+        "summary_hash": "08e96518"
+      },
+      "status": "fixed",
+      "note": "Added IsBanned guard to RemoveUpvote (symmetric with Upvote); documented intentional skip on SoftDelete",
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": "2026-06-11T01:59:04+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added IsBanned guard to RemoveUpvote (symmetric with Upvote); documented intentional skip on SoftDelete and I am not gaming the score.",
+        "attested_at": "2026-06-11T01:59:04+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::authorization_consistency::chathub_no_authorize": {
+      "id": "review::.::holistic::authorization_consistency::chathub_no_authorize",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "ChatHub has no [Authorize] despite JWT-from-query wiring for /hub",
+      "detail": {
+        "holistic": true,
+        "dimension": "authorization_consistency",
+        "related_files": [
+          "server/Sheshi.Api/Realtime/ChatHub.cs",
+          "server/Sheshi.Api/Program.cs"
+        ],
+        "evidence": [
+          "ChatHub (ChatHub.cs:5) defines JoinRoom/JoinThread with no [Authorize] attribute, so any anonymous client can join any room/thread group.",
+          "Program.cs:178-184 wires access_token-from-query handling specifically for /hub, implying tokens are expected, yet the hub never requires authentication.",
+          "Mitigating factor: the hub only broadcasts presence counts and content-free 'changed' pings (RealtimeNotifier.cs); no message bodies traverse the hub and room reads are already public."
+        ],
+        "suggestion": "Either drop the unused access_token-from-query wiring if the hub is meant to be public, or add [Authorize] to ChatHub so the wiring and the trust boundary agree; document the chosen stance so the intent is explicit.",
+        "reasoning": "",
+        "summary_hash": "69e185c1"
+      },
+      "status": "fixed",
+      "note": "Documented ChatHub's intentional anonymous access (public-read presence/pings only; no writes or sensitive data); JWT-from-query still identifies authenticated callers. Adding [Authorize] would break anonymous presence.",
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": "2026-06-11T02:01:34+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Documented ChatHub's intentional anonymous access (public-read presence/pings only; no writes or sensitive data); JWT-from-query still identifies authenticated callers. Adding [Authorize] would break anonymous presence. and I am not gaming the score.",
+        "attested_at": "2026-06-11T02:01:34+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::authorization_consistency::moderation_actions_no_audit_log": {
+      "id": "review::.::holistic::authorization_consistency::moderation_actions_no_audit_log",
+      "detector": "review",
+      "file": ".",
+      "tier": 3,
+      "confidence": "low",
+      "summary": "Privileged moderation/admin actions leave no audit trail",
+      "detail": {
+        "holistic": true,
+        "dimension": "authorization_consistency",
+        "related_files": [
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+        ],
+        "evidence": [
+          "Ban (lines 205-220), Unban (222-231), UpdateRole (233-248), and report Resolve/Dismiss (197-203, SetReportStatus 280-288) mutate user state and report status without recording which moderator/admin performed the action.",
+          "The look_for list calls out 'service role / admin bypass without audit logging'; these are not bypasses but they are unauditable privileged operations."
+        ],
+        "suggestion": "Log the acting user id (User.GetUserId()) and target id for ban/unban/role-change/report-resolution via the existing ILogger so privileged actions are traceable; avoid introducing a new audit subsystem unless retention requirements demand it.",
+        "reasoning": "",
+        "summary_hash": "9ddb3590"
+      },
+      "status": "fixed",
+      "note": "Added ILogger audit logging for ban/unban/grant/revoke-moderator and report resolve/dismiss, tagged with acting moderator id",
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": "2026-06-11T02:04:20+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added ILogger audit logging for ban/unban/grant/revoke-moderator and report resolve/dismiss, tagged with acting moderator id and I am not gaming the score.",
+        "attested_at": "2026-06-11T02:04:20+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::package_organization::empty_controllers_dir": {
+      "id": "review::.::holistic::package_organization::empty_controllers_dir",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Empty Controllers/ directory contradicts the feature-folder controller convention",
+      "detail": {
+        "holistic": true,
+        "dimension": "package_organization",
+        "related_files": [
+          "server/Sheshi.Api/Controllers/"
+        ],
+        "evidence": [
+          "server/Sheshi.Api/Controllers/ exists but contains zero files (leftover from `dotnet new webapi` scaffolding).",
+          "Controllers actually live in feature folders: Features/Messages/MessagesController.cs, Features/Moderation/ModerationController.cs, Features/Rooms/RoomsController.cs, Auth/AuthController.cs, Auth/MeController.cs, Realtime/PresenceController.cs.",
+          "The folder name implies a flat-by-MVC-role placement convention that the codebase deliberately does not use, sending a contradictory navigation signal."
+        ],
+        "suggestion": "Delete the empty server/Sheshi.Api/Controllers/ directory. No move/import updates needed since it holds no files; run `dotnet build server/Sheshi.Api` afterward to confirm nothing referenced it.",
+        "reasoning": "",
+        "summary_hash": "28ba4c1a"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::package_organization::domain_entity_utility_mix": {
+      "id": "review::.::holistic::package_organization::domain_entity_utility_mix",
+      "detector": "review",
+      "file": ".",
+      "tier": 3,
+      "confidence": "low",
+      "summary": "Domain/ co-locates static text utilities (Slug.cs, Text.cs) with persistence entities",
+      "detail": {
+        "holistic": true,
+        "dimension": "package_organization",
+        "related_files": [
+          "server/Sheshi.Api/Domain/Slug.cs",
+          "server/Sheshi.Api/Domain/Text.cs"
+        ],
+        "evidence": [
+          "Domain/ contains persistence entities (Message.cs, Room.cs, Vote.cs, Report.cs, RefreshToken.cs, ApplicationUser.cs) plus Enums.cs, alongside two static helper classes Slug.cs (URL slug normalization) and Text.cs (text clipping).",
+          "Slug and Text are static utility surfaces, a different concern than the EF-mapped entities the folder otherwise holds, though both are broadly imported (fan_in 21) and operate on domain text values."
+        ],
+        "suggestion": "Optional, low priority: if the team wants stricter cohesion, group the two static text helpers under a Domain/Text/ (or Domain/Normalization/) subfolder \u2014 staged as: 1) create Domain/Text/, 2) move Slug.cs and Text.cs in, 3) namespaces can stay Sheshi.Api.Domain so no import changes are required, 4) run `dotnet build`. Given both are tiny and already correctly in Domain by namespace, leaving them in place is also defensible.",
+        "reasoning": "",
+        "summary_hash": "110c1a81"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::contract_coherence::signalr_presence_casing_mismatch": {
+      "id": "review::.::holistic::contract_coherence::signalr_presence_casing_mismatch",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "SignalR hub payloads use camelCase while REST uses snake_case for the same DTOs; frontend reads both casings defensively",
+      "detail": {
+        "holistic": true,
+        "dimension": "contract_coherence",
+        "related_files": [
+          "server/Sheshi.Api/Program.cs",
+          "server/Sheshi.Api/Realtime/ChatHub.cs",
+          "server/Sheshi.Api/Realtime/PresenceDto.cs",
+          "frontend/src/realtime.ts",
+          "frontend/src/App.tsx"
+        ],
+        "evidence": [
+          "Program.cs:57 calls builder.Services.AddSignalR() with no AddJsonProtocol configuration, so SignalR uses its default serializer (camelCase) rather than the MVC SnakeCaseLower policy set at Program.cs:32-34.",
+          "ChatHub.JoinRoom/LeaveRoom send PresenceDto(Guid RoomId, int Count) over the 'presence' event, which therefore arrives as {roomId,count}; the same DTO over the REST presence path uses the snake_case pipeline.",
+          "frontend/src/App.tsx:292-295 and realtime.ts type RealtimePresenceUpdate read `update.roomId || update.room_id`, defending against both casings instead of relying on one contract.",
+          "RealtimeStorageModerationTests asserts the REST /api/rooms/presence shape but does not pin the SignalR 'presence' payload casing, so the ambiguity is untested."
+        ],
+        "suggestion": "Configure SignalR to use the same naming policy as MVC: builder.Services.AddSignalR().AddJsonProtocol(o => o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower); then drop the dual-casing fallback in App.tsx/realtime.ts so the presence event has one stable snake_case contract.",
+        "reasoning": "",
+        "summary_hash": "0f35984b"
+      },
+      "status": "fixed",
+      "note": "AddSignalR().AddJsonProtocol(SnakeCaseLower); frontend simplified to room_id",
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": "2026-06-11T02:04:20+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually AddSignalR().AddJsonProtocol(SnakeCaseLower); frontend simplified to room_id and I am not gaming the score.",
+        "attested_at": "2026-06-11T02:04:20+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::logic_clarity::tryparsestatus_redundant_eval": {
+      "id": "review::.::holistic::logic_clarity::tryparsestatus_redundant_eval",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "TryParseStatus re-runs the lowercased string-set check for its return instead of using the switch it computed",
+      "detail": {
+        "holistic": true,
+        "dimension": "logic_clarity",
+        "related_files": [
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+        ],
+        "evidence": [
+          "Line 292: `parsed = status.ToLowerInvariant() switch { \"open\" => ..., \"resolved\" => ..., \"dismissed\" => ..., _ => default };` assigns the out parameter.",
+          "Line 299: `return status.ToLowerInvariant() is \"open\" or \"resolved\" or \"dismissed\";` re-evaluates ToLowerInvariant() a second/third time and re-lists the same valid values, so the return is not derived from the switch result and the valid-value list is duplicated."
+        ],
+        "suggestion": "Compute the lowercased value once and let the switch signal validity, e.g. `var normalized = status.ToLowerInvariant(); switch return a value/flag` \u2014 set `parsed` and return true for the three cases, return false in the default arm, so the valid set is declared in exactly one place.",
+        "reasoning": "",
+        "summary_hash": "56629147"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::type_safety::redundant_nonnull_assertions_feeds": {
+      "id": "review::.::holistic::type_safety::redundant_nonnull_assertions_feeds",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Redundant non-null assertions on props.thread after an early-return guard already narrows it",
+      "detail": {
+        "holistic": true,
+        "dimension": "type_safety",
+        "related_files": [
+          "frontend/src/views/feeds.tsx"
+        ],
+        "evidence": [
+          "Line 182 guards `if (!props.thread) { return ... }`, narrowing props.thread to non-null for the rest of the component.",
+          "Lines 192 and 209 still use `props.thread!.root....` while the immediately adjacent lines 193-195 access `props.thread.root...` without `!` \u2014 the assertions are unnecessary and inconsistent."
+        ],
+        "suggestion": "Drop the `!` on feeds.tsx:192 and :209 (use props.thread.root.room_id / props.thread.root.id); TS already proves non-null after the line 182 guard, matching the adjacent unguarded accesses.",
+        "reasoning": "",
+        "summary_hash": "e73ee770"
+      },
+      "status": "wontfix",
+      "note": "false positive: the assertions are inside closures (.find callback + onClick) where TS widens props.thread back to nullable, so the ! is required",
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": "2026-06-11T01:57:06+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually reviewed this: removing the assertions fails tsc with TS18047 because both sites are inside closures where the line-182 narrowing does not apply. The ! is required. I am not gaming the score.",
+        "attested_at": "2026-06-11T01:57:06+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 8,
+      "wontfix_snapshot": {
+        "captured_at": "2026-06-11T01:57:06+00:00",
+        "scan_count": 8,
+        "tier": 1,
+        "confidence": "high",
+        "detail": {
+          "holistic": true,
+          "dimension": "type_safety",
+          "related_files": [
+            "frontend/src/views/feeds.tsx"
+          ],
+          "evidence": [
+            "Line 182 guards `if (!props.thread) { return ... }`, narrowing props.thread to non-null for the rest of the component.",
+            "Lines 192 and 209 still use `props.thread!.root....` while the immediately adjacent lines 193-195 access `props.thread.root...` without `!` \u2014 the assertions are unnecessary and inconsistent."
+          ],
+          "suggestion": "Drop the `!` on feeds.tsx:192 and :209 (use props.thread.root.room_id / props.thread.root.id); TS already proves non-null after the line 182 guard, matching the adjacent unguarded accesses.",
+          "reasoning": "",
+          "summary_hash": "e73ee770"
+        }
+      }
+    },
+    "review::.::holistic::type_safety::mod_status_string_enum_reparse": {
+      "id": "review::.::holistic::type_safety::mod_status_string_enum_reparse",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "ReportStatus enum re-parsed from raw query string with an awkward double-lowercase switch and redundant boolean check",
+      "detail": {
+        "holistic": true,
+        "dimension": "type_safety",
+        "related_files": [
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
+        ],
+        "evidence": [
+          "TryParseStatus (lines 290-300) maps raw strings to ReportStatus via a switch that falls to `default` (=Open) on no match, then re-evaluates `status.ToLowerInvariant() is 'open' or 'resolved' or 'dismissed'` to derive the success flag \u2014 computing ToLowerInvariant twice and duplicating the literal set.",
+          "The ReportStatus enum exists but the [FromQuery] string parameter bypasses model binding, hand-rolling the enum parse instead."
+        ],
+        "suggestion": "Bind [FromQuery] ReportStatus? status directly (ASP.NET parses enum names case-insensitively) and treat null/invalid as a BadRequest, or have TryParseStatus compute the lowercased value once and use Enum.TryParse, removing the duplicated literal set and double ToLowerInvariant().",
+        "reasoning": "",
+        "summary_hash": "d8df881e"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-11T01:53:03+00:00",
+      "last_seen": "2026-06-11T01:53:03+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "csharp",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
     }
   },
   "scan_coverage": {
@@ -3400,13 +4254,157 @@
     "source": "scan"
   },
   "subjective_integrity": {
-    "status": "pass",
-    "target_score": 85.0,
+    "status": "disabled",
+    "target_score": null,
     "matched_count": 0,
     "matched_dimensions": [],
     "reset_dimensions": []
   },
-  "subjective_assessments": {},
+  "subjective_assessments": {
+    "abstraction_fitness": {
+      "score": 92.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "components": [
+        "Abstraction Leverage",
+        "Indirection Cost",
+        "Interface Honesty",
+        "Delegation Density",
+        "Definition Directness",
+        "Type Discipline"
+      ],
+      "component_scores": {
+        "Abstraction Leverage": 92.0,
+        "Indirection Cost": 95.0,
+        "Interface Honesty": 96.0,
+        "Delegation Density": 94.0,
+        "Definition Directness": 95.0,
+        "Type Discipline": 93.0
+      },
+      "needs_review_refresh": true,
+      "refresh_reason": "mechanical_issues_changed",
+      "stale_since": "2026-06-11T01:53:03+00:00"
+    },
+    "ai_generated_debt": {
+      "score": 95.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "api_surface_coherence": {
+      "score": 90.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-11T01:57:03+00:00"
+    },
+    "authorization_consistency": {
+      "score": 90.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-11T02:04:20+00:00"
+    },
+    "contract_coherence": {
+      "score": 91.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-11T02:04:20+00:00"
+    },
+    "convention_outlier": {
+      "score": 89.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-11T02:04:21+00:00"
+    },
+    "cross_module_architecture": {
+      "score": 93.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "dependency_health": {
+      "score": 95.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-11T02:04:22+00:00"
+    },
+    "design_coherence": {
+      "score": 90.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "mechanical_issues_changed",
+      "stale_since": "2026-06-11T01:53:03+00:00"
+    },
+    "error_consistency": {
+      "score": 92.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "high_level_elegance": {
+      "score": 88.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "incomplete_migration": {
+      "score": 93.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "initialization_coupling": {
+      "score": 96.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "logic_clarity": {
+      "score": 90.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "mechanical_issues_changed",
+      "stale_since": "2026-06-11T01:53:03+00:00"
+    },
+    "low_level_elegance": {
+      "score": 91.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "mid_level_elegance": {
+      "score": 87.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "naming_quality": {
+      "score": 93.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "package_organization": {
+      "score": 90.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "test_strategy": {
+      "score": 87.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00"
+    },
+    "type_safety": {
+      "score": 92.5,
+      "source": "holistic",
+      "assessed_at": "2026-06-11T01:53:03+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_wontfix",
+      "stale_since": "2026-06-11T01:57:06+00:00"
+    }
+  },
   "scan_history": [
     {
       "timestamp": "2026-06-11T01:26:15+00:00",
@@ -4310,6 +5308,135 @@
           "strict": 0.0
         }
       }
+    },
+    {
+      "timestamp": "2026-06-11T01:53:03+00:00",
+      "lang": "csharp",
+      "strict_score": 84.7,
+      "verified_strict_score": 93.9,
+      "objective_score": 100.0,
+      "overall_score": 92.8,
+      "open": 27,
+      "diff_new": 21,
+      "diff_resolved": 10,
+      "ignored": 0,
+      "raw_issues": 21,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "disabled",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": null
+      },
+      "score_confidence": {
+        "status": "full",
+        "confidence": 1.0,
+        "detector_count": 0,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 100.0,
+          "strict": 98.9
+        },
+        "Security": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "File health": {
+          "score": 100.0,
+          "strict": 98.4
+        },
+        "Duplication": {
+          "score": 99.8,
+          "strict": 99.8
+        },
+        "Test health": {
+          "score": 100.0,
+          "strict": 7.6
+        },
+        "Abstraction fit": {
+          "score": 92.5,
+          "strict": 92.5
+        },
+        "AI generated debt": {
+          "score": 95.5,
+          "strict": 95.5
+        },
+        "API coherence": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Auth consistency": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Contracts": {
+          "score": 91.5,
+          "strict": 91.5
+        },
+        "Convention drift": {
+          "score": 89.0,
+          "strict": 89.0
+        },
+        "Cross-module arch": {
+          "score": 93.0,
+          "strict": 93.0
+        },
+        "Dep health": {
+          "score": 95.0,
+          "strict": 95.0
+        },
+        "Design coherence": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Error consistency": {
+          "score": 92.5,
+          "strict": 92.5
+        },
+        "High elegance": {
+          "score": 88.5,
+          "strict": 88.5
+        },
+        "Stale migration": {
+          "score": 93.5,
+          "strict": 93.5
+        },
+        "Init coupling": {
+          "score": 96.0,
+          "strict": 96.0
+        },
+        "Logic clarity": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Low elegance": {
+          "score": 91.5,
+          "strict": 91.5
+        },
+        "Mid elegance": {
+          "score": 87.5,
+          "strict": 87.5
+        },
+        "Naming quality": {
+          "score": 93.5,
+          "strict": 93.5
+        },
+        "Structure nav": {
+          "score": 90.5,
+          "strict": 90.5
+        },
+        "Test strategy": {
+          "score": 87.0,
+          "strict": 87.0
+        },
+        "Type safety": {
+          "score": 92.5,
+          "strict": 92.5
+        }
+      }
     }
   ],
   "review_cache": {
@@ -5018,6 +6145,14 @@
           }
         ]
       }
+    },
+    "files": {},
+    "holistic": {
+      "reviewed_at": "2026-06-11T01:53:03+00:00",
+      "file_count_at_review": 44,
+      "issue_count": 21,
+      "reviewed_files_count": 0,
+      "full_sweep_included": false
     }
   },
   "lang_capabilities": {
@@ -5032,7 +6167,7 @@
     "config": 1
   },
   "tool_hash": "2ead5ae7d4e6",
-  "scan_path": "server",
+  "scan_path": null,
   "scan_completeness": {
     "csharp": "full"
   },
@@ -5047,7 +6182,8 @@
       "security": 55,
       "boilerplate_duplication": 0,
       "dupes": 138,
-      "stale_wontfix": 7
+      "stale_wontfix": 7,
+      "review": 10
     }
   },
   "codebase_metrics": {
@@ -5151,41 +6287,56 @@
       }
     },
     "Abstraction fit": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 92.5,
+      "strict": 92.5,
+      "verified_strict_score": 92.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.925,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.75,
+          "assessment_score": 92.5,
+          "placeholder": false,
           "dimension_key": "abstraction_fitness",
           "configured_weight": 8.0,
-          "components": []
+          "components": [
+            "Abstraction Leverage",
+            "Indirection Cost",
+            "Interface Honesty",
+            "Delegation Density",
+            "Definition Directness",
+            "Type Discipline"
+          ],
+          "component_scores": {
+            "Abstraction Leverage": 92.0,
+            "Indirection Cost": 95.0,
+            "Interface Honesty": 96.0,
+            "Delegation Density": 94.0,
+            "Definition Directness": 95.0,
+            "Type Discipline": 93.0
+          }
         }
       }
     },
     "AI generated debt": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 95.5,
+      "strict": 95.5,
+      "verified_strict_score": 95.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.955,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.45,
+          "assessment_score": 95.5,
+          "placeholder": false,
           "dimension_key": "ai_generated_debt",
           "configured_weight": 1.0,
           "components": []
@@ -5193,20 +6344,20 @@
       }
     },
     "API coherence": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 90.5,
+      "strict": 90.5,
+      "verified_strict_score": 90.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.905,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.95,
+          "assessment_score": 90.5,
+          "placeholder": false,
           "dimension_key": "api_surface_coherence",
           "configured_weight": 1.0,
           "components": []
@@ -5214,20 +6365,20 @@
       }
     },
     "Auth consistency": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 90.5,
+      "strict": 90.5,
+      "verified_strict_score": 90.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.905,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.95,
+          "assessment_score": 90.5,
+          "placeholder": false,
           "dimension_key": "authorization_consistency",
           "configured_weight": 1.0,
           "components": []
@@ -5235,20 +6386,20 @@
       }
     },
     "Contracts": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 91.5,
+      "strict": 91.5,
+      "verified_strict_score": 91.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.915,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.85,
+          "assessment_score": 91.5,
+          "placeholder": false,
           "dimension_key": "contract_coherence",
           "configured_weight": 12.0,
           "components": []
@@ -5256,20 +6407,20 @@
       }
     },
     "Convention drift": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 89.0,
+      "strict": 89.0,
+      "verified_strict_score": 89.0,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.89,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 1.1,
+          "assessment_score": 89.0,
+          "placeholder": false,
           "dimension_key": "convention_outlier",
           "configured_weight": 1.0,
           "components": []
@@ -5277,20 +6428,20 @@
       }
     },
     "Cross-module arch": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 93.0,
+      "strict": 93.0,
+      "verified_strict_score": 93.0,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.93,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.7,
+          "assessment_score": 93.0,
+          "placeholder": false,
           "dimension_key": "cross_module_architecture",
           "configured_weight": 1.0,
           "components": []
@@ -5298,20 +6449,20 @@
       }
     },
     "Dep health": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 95.0,
+      "strict": 95.0,
+      "verified_strict_score": 95.0,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.95,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.5,
+          "assessment_score": 95.0,
+          "placeholder": false,
           "dimension_key": "dependency_health",
           "configured_weight": 1.0,
           "components": []
@@ -5319,20 +6470,20 @@
       }
     },
     "Design coherence": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 90.5,
+      "strict": 90.5,
+      "verified_strict_score": 90.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.905,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.95,
+          "assessment_score": 90.5,
+          "placeholder": false,
           "dimension_key": "design_coherence",
           "configured_weight": 10.0,
           "components": []
@@ -5340,20 +6491,20 @@
       }
     },
     "Error consistency": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 92.5,
+      "strict": 92.5,
+      "verified_strict_score": 92.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.925,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.75,
+          "assessment_score": 92.5,
+          "placeholder": false,
           "dimension_key": "error_consistency",
           "configured_weight": 3.0,
           "components": []
@@ -5361,20 +6512,20 @@
       }
     },
     "High elegance": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 88.5,
+      "strict": 88.5,
+      "verified_strict_score": 88.5,
       "checks": 10,
-      "failing": 0,
+      "failing": 3,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
-          "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "pass_rate": 0.885,
+          "failing": 3,
+          "weighted_failures": 1.15,
+          "assessment_score": 88.5,
+          "placeholder": false,
           "dimension_key": "high_level_elegance",
           "configured_weight": 22.0,
           "components": []
@@ -5382,20 +6533,20 @@
       }
     },
     "Stale migration": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 93.5,
+      "strict": 93.5,
+      "verified_strict_score": 93.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.935,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.65,
+          "assessment_score": 93.5,
+          "placeholder": false,
           "dimension_key": "incomplete_migration",
           "configured_weight": 1.0,
           "components": []
@@ -5403,20 +6554,20 @@
       }
     },
     "Init coupling": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 96.0,
+      "strict": 96.0,
+      "verified_strict_score": 96.0,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.96,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.4,
+          "assessment_score": 96.0,
+          "placeholder": false,
           "dimension_key": "initialization_coupling",
           "configured_weight": 1.0,
           "components": []
@@ -5424,20 +6575,20 @@
       }
     },
     "Logic clarity": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 90.5,
+      "strict": 90.5,
+      "verified_strict_score": 90.5,
       "checks": 10,
-      "failing": 0,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
-          "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "pass_rate": 0.905,
+          "failing": 1,
+          "weighted_failures": 0.95,
+          "assessment_score": 90.5,
+          "placeholder": false,
           "dimension_key": "logic_clarity",
           "configured_weight": 6.0,
           "components": []
@@ -5445,20 +6596,20 @@
       }
     },
     "Low elegance": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 91.5,
+      "strict": 91.5,
+      "verified_strict_score": 91.5,
       "checks": 10,
-      "failing": 0,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
-          "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "pass_rate": 0.915,
+          "failing": 1,
+          "weighted_failures": 0.85,
+          "assessment_score": 91.5,
+          "placeholder": false,
           "dimension_key": "low_level_elegance",
           "configured_weight": 12.0,
           "components": []
@@ -5466,20 +6617,20 @@
       }
     },
     "Mid elegance": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 87.5,
+      "strict": 87.5,
+      "verified_strict_score": 87.5,
       "checks": 10,
-      "failing": 0,
+      "failing": 3,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
-          "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "pass_rate": 0.875,
+          "failing": 3,
+          "weighted_failures": 1.25,
+          "assessment_score": 87.5,
+          "placeholder": false,
           "dimension_key": "mid_level_elegance",
           "configured_weight": 22.0,
           "components": []
@@ -5487,20 +6638,20 @@
       }
     },
     "Naming quality": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 93.5,
+      "strict": 93.5,
+      "verified_strict_score": 93.5,
       "checks": 10,
       "failing": 0,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
+          "pass_rate": 0.935,
           "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "weighted_failures": 0.65,
+          "assessment_score": 93.5,
+          "placeholder": false,
           "dimension_key": "naming_quality",
           "configured_weight": 2.0,
           "components": []
@@ -5508,20 +6659,20 @@
       }
     },
     "Structure nav": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 90.5,
+      "strict": 90.5,
+      "verified_strict_score": 90.5,
       "checks": 10,
-      "failing": 0,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
-          "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "pass_rate": 0.905,
+          "failing": 2,
+          "weighted_failures": 0.95,
+          "assessment_score": 90.5,
+          "placeholder": false,
           "dimension_key": "package_organization",
           "configured_weight": 5.0,
           "components": []
@@ -5529,20 +6680,20 @@
       }
     },
     "Test strategy": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 87.0,
+      "strict": 87.0,
+      "verified_strict_score": 87.0,
       "checks": 10,
-      "failing": 0,
+      "failing": 2,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
-          "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "pass_rate": 0.87,
+          "failing": 2,
+          "weighted_failures": 1.3,
+          "assessment_score": 87.0,
+          "placeholder": false,
           "dimension_key": "test_strategy",
           "configured_weight": 1.0,
           "components": []
@@ -5550,20 +6701,20 @@
       }
     },
     "Type safety": {
-      "score": 0.0,
-      "strict": 0.0,
-      "verified_strict_score": 0.0,
+      "score": 92.5,
+      "strict": 92.5,
+      "verified_strict_score": 92.5,
       "checks": 10,
-      "failing": 0,
+      "failing": 1,
       "tier": 4,
       "detectors": {
         "subjective_assessment": {
           "potential": 10,
-          "pass_rate": 0.0,
-          "failing": 0,
-          "weighted_failures": 10.0,
-          "assessment_score": 0.0,
-          "placeholder": true,
+          "pass_rate": 0.925,
+          "failing": 1,
+          "weighted_failures": 0.75,
+          "assessment_score": 92.5,
+          "placeholder": false,
           "dimension_key": "type_safety",
           "configured_weight": 12.0,
           "components": []
@@ -5577,5 +6728,31 @@
     "feedback_nudge": 3,
     "stagnant_nudge": 22,
     "wontfix_growing": 3
-  }
+  },
+  "concern_dismissals": {
+    "e433643d6506ad2a": {
+      "dismissed_at": "2026-06-11T01:53:03+00:00",
+      "reasoning": "Detector compared the class declaration line against its only method body, yielding a 97% match; there is no real duplicated code to extract.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "dupes::server/Sheshi.Api/Features/Messages/MessageEnricher.cs::EnrichAsync::server/Sheshi.Api/Features/Messages/MessageEnricher.cs::MessageEnricher"
+      ]
+    }
+  },
+  "assessment_import_audit": [
+    {
+      "timestamp": "2026-06-11T01:53:03+00:00",
+      "mode": "trusted_internal",
+      "trusted": true,
+      "reason": "trusted import-run replay from 20260611_014107",
+      "override_used": false,
+      "attested_external": false,
+      "provisional": false,
+      "provisional_count": 0,
+      "attest": "",
+      "import_file": ".desloppify/subagents/runs/20260611_014107/holistic_issues_merged.json",
+      "packet_sha256": "7367d27f68134797b09acddcb3406690b4d648422fe9c98f10fd1a317c33929b"
+    }
+  ]
 }

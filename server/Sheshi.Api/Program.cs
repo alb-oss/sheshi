@@ -54,7 +54,8 @@ builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddScoped<RealtimeNotifier>();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(o => o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower);
 var authPermitLimit = GetConfiguredLimit(builder.Configuration, "RateLimits:AuthPerMinute", builder.Environment.IsDevelopment() ? 1000 : 20);
 var readPermitLimit = GetConfiguredLimit(builder.Configuration, "RateLimits:ReadsPerMinute", builder.Environment.IsDevelopment() ? 5000 : 600);
 var writePermitLimit = GetConfiguredLimit(builder.Configuration, "RateLimits:WritesPerMinute", builder.Environment.IsDevelopment() ? 1000 : 90);

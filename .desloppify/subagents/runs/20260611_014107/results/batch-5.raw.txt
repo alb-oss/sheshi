@@ -1,0 +1,64 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 5,
+  "assessments": {"naming_quality": 93.5},
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "Backend service/reader split is named by intent: MessageService holds commands (CreateMessageAsync, UpvoteAsync, SoftDeleteAsync, ReportAsync), MessageReader holds reads (ListRoomMessagesAsync, ListRepliesAsync, GetThreadAsync); a developer can predict responsibility from the class name.",
+        "Domain helpers read as verbs that match behavior: TokenService.RotateRefreshTokenAsync, RevokeAllForUserAsync, HashRefreshToken; HighlightsService.GetSnapshotAsync/Score/FreshTieBreakScore; MessageEnricher.EnrichAsync; ResolveRootAsync.",
+        "Boolean/predicate names are honest: IsBanned, IsActive, HasValidSignature, HasClientSecret, canModerate/canAdmin/hasRole — every Is*/Has*/Can* returns a bool and no Get* method mutates state (verified by grep across server/).",
+        "Frontend names communicate intent without ceremony: subscribeToRealtime, useRealtimeRefresh, buildShareTarget, copyShareTarget, requireAuth, patchThread, findReplyNode, hotScore, authorAccent, timeAgo.",
+        "Consistent C# casing (PascalCase public members/types, camelCase locals/params) and consistent camelCase in TS; no convention drift between layers.",
+        "Minor: api.ts private helper dispatch() is a slightly generic verb for 'fetch with auth headers' (the public wrapper is the clearer send()) — isolated, 2-use, low impact.",
+        "Intentional Albanian route literals (dhoma/tema/profili/moderim) in parseRoute/roomPath are a deliberate localized URL vocabulary, not naming drift."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "A private fetch helper named dispatch() in api.ts uses a slightly generic verb where the codebase otherwise favors precise names, and a few realtime params use messageId where the value is conceptually a thread/root id; both are trivial and isolated but keep naming just short of fully exemplary."
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "dimension_character": "Naming is a systemic strength: across a compact 2611-LOC codebase, function, type, and variable names reliably predict behavior, using domain vocabulary (Highlights, Enrich, Cursor pagination, Presence, RefreshToken rotation) consistently in both the C# API and the React/TS SPA. There are effectively no generic-verb names (no Process/Handle/Do/Manage in domain code), no Get* that mutate, and no Is*/Has* that return non-booleans. The only friction is a single slightly-generic private helper (dispatch in api.ts) and a couple of param names that could be sharper — isolated cosmetics against an otherwise precise whole.",
+      "score_rationale": "A developer can read names here and correctly anticipate what code does without opening implementations, which is the hallmark of the 90+ band; the command/read split, predicate honesty, and consistent casing across layers push it toward exemplary. It falls short of 100 only because of trivial, isolated rough edges (the generic dispatch helper, messageId-named thread ids) rather than any recurring or misleading pattern, landing solidly in the strong range."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "possible_false_positives": [
+      "Albanian route literals (dhoma/tema/profili) could be mistaken for naming drift but are an intentional localized URL vocabulary."
+    ]
+  },
+  "context_updates": {
+    "naming_quality": {
+      "add": [
+        {
+          "header": "Read/write split encoded in class names",
+          "description": "MessageReader (queries) vs MessageService (commands) and HighlightsService/MessageEnricher make responsibility predictable from the type name alone, so a developer knows where a behavior lives without reading bodies.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Predicate and getter names are behaviorally honest",
+          "description": "Every Is*/Has*/Can* (IsBanned, IsActive, HasValidSignature, canModerate) returns a bool and no Get* mutates state, so names can be trusted as contracts across both C# and TS.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Domain-aligned verbs, no generic-verb noise",
+          "description": "Action methods use specific domain verbs (RotateRefreshTokenAsync, EnrichAsync, ResolveRootAsync, buildShareTarget, requireAuth); there are no Process/Handle/Do/Manage placeholders in domain code.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Intentional localized route vocabulary",
+          "description": "Route literals dhoma/tema/profili/moderim are deliberate Albanian URL segments, not naming drift; treat as a convention rather than an outlier.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

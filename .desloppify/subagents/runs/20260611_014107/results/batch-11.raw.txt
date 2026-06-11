@@ -1,0 +1,74 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 11,
+  "assessments": {"api_surface_coherence": 90.5},
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "Controllers are highly uniform: every controller uses primary-constructor DI, [ApiController]+[Route(\"api/...\")], ActionResult<T> return types, a trailing CancellationToken ct parameter, and [EnableRateLimiting] partitioned read/write/auth/moderation. A developer can predict the next endpoint's shape from any example.",
+        "Service-layer error contracts are consistent: command methods return small sealed result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) with static factory methods (Created/Failed/NotFound/Forbidden), and controllers translate them to HTTP codes the same way; read methods return nullable DTOs mapped to NotFound().",
+        "Pagination is uniform: CursorPageDto<T> plus (limit, cursor, ct) ordering in both MessageReader.ListRoomMessagesAsync and ListRepliesAsync.",
+        "RealtimeNotifier exposes two public overloads of MessageChangedAsync; the (Guid roomId, Guid? threadId = null, ct) overload has zero callers (all four call sites in MessageService.cs use the MessageChangeDto overload) -- a dead, inconsistent-shape overload on the notifier surface.",
+        "HighlightsService.Score has an 8-parameter public static overload (upvotes, branchVotes, directReplies, descendants, isReply, createdAt, activityAt, now) alongside a Score(HighlightStats, now) convenience overload; the wide primitive list exceeds the >5-param guideline though it is a pure single-purpose scoring function.",
+        "The two [HttpPost(\"messages\")] actions distinguished by [Consumes] JSON vs multipart are an intentional, framework-supported content-negotiation overload that normalizes into one CreateMessageAsync -- not a defect.",
+        "The sync/async-mix signal reflects sync helpers (Score, EncodeCursor/DecodeCursor, TryParseStatus, Snapshot) coexisting with async public methods, which is normal; no genuinely blocking sync call sits on an otherwise-async public API."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "One dead public overload (RealtimeNotifier.MessageChangedAsync(Guid roomId,...)) leaves an unused, inconsistent shape on the notifier surface; HighlightsService.Score's 8-parameter primitive overload is a mild width rough edge. Both are isolated and do not undermine the otherwise strongly predictable controller/service surface."
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "dimension_character": "The public API surface is strongly coherent and predictable: controllers share one shape (DI primary constructors, ActionResult<T>, trailing CancellationToken, rate-limit partitions), services return a consistent family of sealed result records that controllers translate to HTTP codes uniformly, and pagination/DTO conventions hold across modules. The only real friction is a dead RealtimeNotifier.MessageChangedAsync overload with no callers and a wide 8-parameter Score overload; both are isolated rough edges rather than systemic inconsistency.",
+      "score_rationale": "A developer can reliably predict endpoint and service shapes from a single example, which places this near the 90 'strong' anchor. It falls short of exemplary because of one genuinely dead overload that muddies the notifier's surface and a primitive-heavy 8-param scoring overload, but these are local and do not force the developer to read each endpoint individually."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "dead_messagechanged_overload",
+      "summary": "RealtimeNotifier.MessageChangedAsync(Guid roomId, Guid? threadId, ct) overload has zero callers",
+      "related_files": ["server/Sheshi.Api/Realtime/RealtimeNotifier.cs"],
+      "evidence": [
+        "RealtimeNotifier.cs:7 declares MessageChangedAsync(Guid roomId, Guid? threadId = null, CancellationToken ct = default).",
+        "All four call sites (MessageService.cs:93, 111, 133, 155) invoke the MessageChangeDto overload (RealtimeNotifier.cs:14); the (Guid roomId, ...) overload is unreferenced across the project and tests.",
+        "Two same-named public methods with different parameter shapes, one unused, makes the notifier surface ambiguous about the intended call form."
+      ],
+      "suggestion": "Delete the unused MessageChangedAsync(Guid roomId, Guid? threadId = null, ct) overload so the notifier exposes a single MessageChangeDto-based method.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "api_surface_coherence": {
+      "add": [
+        {
+          "header": "Uniform controller shape across all features",
+          "description": "Every controller uses primary-constructor DI, [ApiController]+[Route(\"api/...\")], ActionResult<T> returns, a trailing CancellationToken, and read/write/auth rate-limit partitions, so a developer can predict any new endpoint's shape from one example.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Consistent sealed-result error contracts in services",
+          "description": "Command services return small sealed result records (MessageCreateResult, DeleteMessageResult, ReportMessageResult, CreateRoomResult) with Created/Failed/NotFound factories that controllers translate to HTTP codes the same way; reads return nullable DTOs mapped to NotFound(). The failure surface is uniform and self-documenting.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Dead overload on RealtimeNotifier surface",
+          "description": "MessageChangedAsync(Guid roomId, Guid? threadId, ct) has no callers while the MessageChangeDto overload is used everywhere, leaving an ambiguous unused second shape on the notifier's public API.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

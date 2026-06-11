@@ -1,0 +1,33 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 13,
+  "assessments": {"ai_generated_debt": 95.5},
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "Codebase comment ratio is 0.022 (very low); every comment sampled explains WHY, not WHAT — e.g. MessageService.cs:64-65 explains reparenting to bound tree depth, TokenService.cs:46-60 explains replay-detection and atomic revoke, ModerationController.cs:215 explains why a ban revokes refresh tokens.",
+        "Only 10 XML <summary> docs in the entire backend, all on genuinely non-obvious shared logic (HighlightsService single-flight cache, MessageReader.ResolveRootAsync cycle guarding, MessageEnricher's no-N+1 batch loading). No docstring bloat on trivial 2-line methods.",
+        "No nosy debug logging or object dumps. Logging is sparse and purposeful: LogWarning on email/SMTP failures (AuthController.cs:77, SmtpEmailSender.cs:19), LogInformation on cleanup pass results (RefreshTokenCleanupService.cs:42). Two frontend console.debug calls (App.tsx:37,168) are at non-critical failure boundaries with WHY comments above them.",
+        "No defensive overengineering: try-catch blocks wrap real I/O only — image storage (MessageService.cs:40-48), clipboard/localStorage (appSupport.ts:50-55,64-89,106-111), SMTP. Null checks guard genuine API boundaries (user input, DB lookups), not non-nullable typed values.",
+        "No pass-through wrappers: api.ts requestJson/requestNoContent add 204 handling and JSON parsing; dispatch/send add the refresh-and-retry; ModerationController Resolve/Dismiss parameterize SetReportStatus with distinct enum values. All add real behavior.",
+        "Domain-precise naming throughout (EnrichAsync, RotateRefreshTokenAsync, ResolveRootAsync, SoftDeleteAsync); no generic handleData/processItem/doOperation in domain code.",
+        "No placeholder/boilerplate residue: zero TODO/FIXME/HACK markers and no NotImplementedException across production source. 'placeholder=' hits are all legitimate JSX input placeholders.",
+        "Error handling uses a consistent Result-record pattern (MessageCreateResult/DeleteMessageResult/ReportMessageResult) rather than copy-pasted try-catch boilerplate across files."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "A handful of broad multi-arg helpers (HighlightsService.Score 8 params, though intentionally the single shared scoring formula) and the per-row role-fetch loop in ModerationController.Users are minor craft items rather than AI-debt; they keep the score just short of exemplary but reflect no actual generated-style noise."
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "dimension_character": "This codebase reads as deliberately hand-crafted with respect to AI-generated debt: comments are rare (0.022 ratio) and uniformly explain non-obvious business rules and concurrency invariants rather than restating code, logging is sparse and purposeful, and there is no defensive sprawl, docstring bloat, pass-through indirection, or placeholder residue. Helpers consistently add real behavior (retry, parsing, parameterization, single-flight caching) and naming is domain-precise everywhere. A developer's attention lands squarely on the logic, never on ceremony.",
+      "score_rationale": "Against the global anchors this sits at the exemplary end (100 = attention spent on logic not noise): no restating comments, no nosy logging, no defensive overengineering, no boilerplate copy-paste, and no TODO/placeholder leftovers were found anywhere in production code. It falls just short of a perfect score only because a few methods carry wide parameter lists and a per-row loop that are ordinary craft nits, not generated-style noise, so the dimension is rated 95.5."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "possible_false_positives": []
+  }
+}

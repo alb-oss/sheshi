@@ -1,0 +1,57 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 16,
+  "assessments": {"initialization_coupling": 96.0},
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "Program.cs is a clean ASP.NET Core minimal-host bootstrap: all cross-component wiring (TokenService, MessageService, RoomService, HighlightsService, IImageStorage, RealtimeNotifier, PresenceTracker) is registered in the DI container, so object creation order is owned by the framework's service provider, not by import order.",
+        "No import-time / class-scope side effects anywhere: every DB access, file write, and SignalR send happens inside instance methods invoked at request/runtime, never at module scope. Directory.CreateDirectory appears only inside methods (LocalFileImageStorage.SaveAsync line 21, Program.cs line 269 after Build()), not at construction.",
+        "Configuration is consumed via IConfiguration and IOptions<JwtOptions>/IOptions<StorageOptions> resolved at runtime (TokenService line 20, LocalFileImageStorage line 14, DbSeeder.SeedConfiguredAdminAsync line 48), not read at import/static-init time, so the wiring is test-friendly (ApiFactory can override config).",
+        "The only Environment.GetEnvironmentVariable read (DesignTimeDbContextFactory.cs line 14) is design-time-only EF tooling with a sensible localhost fallback and never participates in the running app's boot path.",
+        "All static fields are non-fragile: immutable lookup tables / constants (DbSeeder.SeedRooms, LocalFileImageStorage.Extensions, RefreshTokenCleanupService.Interval, HighlightsService.SeedWindow/CacheTtl) or synchronization primitives (HighlightsService.SnapshotGate SemaphoreSlim). None is mutable shared state with creation-order sensitivity; the SnapshotGate is initialized inline and is intentionally process-wide to single-flight the shared IMemoryCache recompute.",
+        "The single registered singleton (PresenceTracker) is fully self-contained: a lock-guarded pair of dictionaries with no construction-order dependency on any other singleton; migration/seed run once after Build() inside a created scope with a try/catch that logs and rethrows (DbSeeder.SeedAsync), which is the framework-blessed startup pattern, not import-time coupling."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Not a 100 because a couple of process-wide static synchronization/cache constructs (HighlightsService.SnapshotGate plus a Scoped service holding shared statics, and the singleton IMemoryCache-backed snapshot) require a developer to understand that the gate is deliberately shared across scoped instances; this is correct and documented but is a small piece of implicit global coordination a reader must recognize. No defect, just the one nuance keeping it short of exemplary."
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "dimension_character": "Initialization is uniformly handled through the ASP.NET Core DI container, so a developer can add or reorder service registrations without worrying about import order or hidden boot-time side effects. There are no module-scope DB/file/network calls, no environment reads at import time in the running app, and the only static state is immutable constants, lookup tables, and a deliberately process-wide synchronization gate; the lone singleton (PresenceTracker) is self-contained and lock-guarded. Startup migration and seeding follow the canonical post-Build() scoped pattern with explicit error logging.",
+      "score_rationale": "This sits near the top anchor (100 = a developer can import any module without worrying about boot-order or side effects): wiring is framework-owned, config is runtime-resolved via IOptions/IConfiguration, and there is no fragile global ordering. It falls just short of exemplary only because a Scoped HighlightsService deliberately relies on a process-wide static SemaphoreSlim plus singleton IMemoryCache to coordinate a shared snapshot, a correct but implicitly-global piece of coordination a reader must recognize; no defects warrant a finding."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "root_causes": [],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "initialization_coupling": {
+      "add": [
+        {
+          "header": "All wiring via DI container, no import-time side effects",
+          "description": "Program.cs registers every cross-component dependency in the service provider and runs migration/seed after Build() in a created scope, so object creation order is framework-owned rather than import-order dependent. No class-scope DB/file/network calls exist anywhere in the app's boot path.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Config read at runtime via IOptions/IConfiguration, not at import time",
+          "description": "Services consume JwtOptions/StorageOptions through IOptions<T> and seeding reads SeedAdmin/* via IConfiguration at runtime, keeping startup test-overridable (ApiFactory) and free of fragile module-scope environment reads. The single Environment.GetEnvironmentVariable call is design-time-only EF tooling with a localhost fallback.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Static state limited to immutable constants and sync primitives",
+          "description": "Every static field is either an immutable constant/lookup table (SeedRooms, Extensions, Interval, CacheTtl) or a synchronization primitive (HighlightsService.SnapshotGate). There is no mutable shared static state whose creation order matters across modules, and the lone singleton PresenceTracker is lock-guarded and self-contained.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    }
+  }
+}

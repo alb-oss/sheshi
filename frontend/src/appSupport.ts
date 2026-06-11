@@ -14,7 +14,7 @@ export type Theme = "light" | "dark";
 export type AuthState = { token: string; refreshToken: string; user: User } | null;
 export type HomeSort = "hot" | "new" | "top" | "replied";
 export type RoomRailMode = "active" | "all";
-export type PresenceUpdate = { roomId?: string; room_id?: string; count: number };
+export type PresenceUpdate = { room_id: string; count: number };
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 export type LoadState<T> = {
   status: LoadStatus;

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Sheshi.Api.Auth;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Features.Messages;
@@ -16,8 +17,14 @@ namespace Sheshi.Api.Features.Moderation;
 public class ModerationController(
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
-    HighlightsService highlights) : ControllerBase
+    HighlightsService highlights,
+    ILogger<ModerationController> logger) : ControllerBase
 {
+    // Privileged moderation actions are audit-logged with the acting moderator's id.
+    private void Audit(string action, object target) =>
+        logger.LogInformation("Moderation action {Action} on {Target} by {ModeratorId}",
+            action, target, User.GetUserId());
+
     [HttpGet("analytics")]
     public async Task<ActionResult<ModAnalyticsDto>> Analytics(CancellationToken ct = default)
     {
@@ -216,6 +223,7 @@ public class ModerationController(
         await db.RefreshTokens
             .Where(t => t.UserId == user.Id && t.RevokedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, DateTimeOffset.UtcNow), ct);
+        Audit("ban", user.Id);
         return NoContent();
     }
 
@@ -227,7 +235,9 @@ public class ModerationController(
 
         user.BannedAt = null;
         var result = await userManager.UpdateAsync(user);
-        return result.Succeeded ? NoContent() : BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+        if (!result.Succeeded) return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+        Audit("unban", user.Id);
+        return NoContent();
     }
 
     [Authorize(Roles = Roles.Admin)]
@@ -243,8 +253,10 @@ public class ModerationController(
         var result = request.Grant
             ? await userManager.AddToRoleAsync(user, Roles.Moderator)
             : await userManager.RemoveFromRoleAsync(user, Roles.Moderator);
+        if (!result.Succeeded) return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
 
-        return result.Succeeded ? NoContent() : BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+        Audit(request.Grant ? "grant_moderator" : "revoke_moderator", user.Id);
+        return NoContent();
     }
 
     [HttpGet("users")]
@@ -284,18 +296,19 @@ public class ModerationController(
 
         report.Status = status;
         await db.SaveChangesAsync(ct);
+        Audit($"report_{status.ToString().ToLowerInvariant()}", id);
         return NoContent();
     }
 
     private static bool TryParseStatus(string status, out ReportStatus parsed)
     {
-        parsed = status.ToLowerInvariant() switch
+        (parsed, var ok) = status.ToLowerInvariant() switch
         {
-            "open" => ReportStatus.Open,
-            "resolved" => ReportStatus.Resolved,
-            "dismissed" => ReportStatus.Dismissed,
-            _ => default
+            "open" => (ReportStatus.Open, true),
+            "resolved" => (ReportStatus.Resolved, true),
+            "dismissed" => (ReportStatus.Dismissed, true),
+            _ => (default, false)
         };
-        return status.ToLowerInvariant() is "open" or "resolved" or "dismissed";
+        return ok;
     }
 }

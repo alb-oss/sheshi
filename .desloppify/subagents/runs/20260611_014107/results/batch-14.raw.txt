@@ -1,0 +1,60 @@
+{
+  "batch": "incomplete_migration",
+  "batch_index": 14,
+  "assessments": {"incomplete_migration": 93.5},
+  "dimension_notes": {
+    "incomplete_migration": {
+      "evidence": [
+        "Frontend has a single HTTP client: one fetch wrapper in frontend/src/api.ts (dispatch/send), no axios+fetch coexistence; no moment/dayjs/date-fns dual date libs; all components functional (no class+functional mix); all source is .ts/.tsx (no mixed JS/TS for the same module).",
+        "No deprecated-but-called symbols: zero [Obsolete] attributes, zero @deprecated markers, no #pragma warning disable, no V1/V2 or _old/_new parallel code paths across server/Sheshi.Api and frontend/src.",
+        "No sync-over-async shims: zero .Result/.Wait()/GetAwaiter().GetResult() in the C# code; the sync vs async 'pattern pair' signal (26 sync / 19 async) is explained by appropriately-synchronous members (record factory methods like DeleteMessageResult.NotFound(), expression-bodied delegators returning Task without await, ClaimsPrincipalExtensions.GetUserId reading claims synchronously) — not an old sync API coexisting with a new async API.",
+        "The Supabase RLS design referenced in codebase_analysis.md:102 is a TEST PARITY target only ('authorization parity with a prior Supabase RLS design'); no Supabase/RLS/PostgREST references exist in production code, indicating the port off RLS is complete with no parallel old/new auth paths.",
+        "Program.cs migration references (lines 233-246) are EF Core database schema migrations (db.Database.MigrateAsync, AutoMigrate opt-in) — standard framework lifecycle, not a code/API migration shim.",
+        "appSupport.ts:68 'legacy selection copy path' is the document.execCommand('copy') fallback for non-secure contexts / browsers lacking navigator.clipboard — intentional, necessary browser backward-compat (rubric skip), not abandoned migration residue.",
+        "RootMessageId == Guid.Empty handling (MessageReader.cs:122, MessageService.cs:52-53, HighlightsService.cs:197-199) computes the effective thread root on the fly for pre-ThreadMetadata-migration rows; applied uniformly via one coherent convention and documented in ResolveRootAsync — a bounded, intentional backward-compat invariant, not dual-path confusion.",
+        "HighlightsService.cs:14 cache key 'highlights:snapshot:v1' is a cache-invalidation version string, not a code migration marker."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The RootMessageId == Guid.Empty backfill convention is repeated in 4 spots (MessageReader, MessageService, HighlightsService EffectiveRootId) rather than centralized; while consistent and intentional, it is the one bit of migration-era residue a developer must recognize as 'legacy-row handling' across files, keeping this just shy of a fully-bounded-and-documented 100."
+    }
+  },
+  "dimension_judgment": {
+    "incomplete_migration": {
+      "dimension_character": "This codebase shows essentially no incomplete-migration drift: a single HTTP client (fetch), single realtime transport (SignalR), all-functional all-TypeScript frontend, no deprecated/Obsolete symbols, no sync-over-async shims, and no V1/V2 dual code paths. The one prior architecture (Supabase RLS) survives only as a test-parity reference, meaning the port to C# authorization is complete; the only migration-era runtime residue is a consistently-applied RootMessageId==Guid.Empty backfill convention for legacy thread rows.",
+      "score_rationale": "A developer can trust which pattern to follow everywhere — there is no old/new coexistence creating ambiguity, which sits at the top of the scale (90+ = mostly complete with at most minor, non-confusing legacy residue). The score is held just below exemplary because the Guid.Empty legacy-row handling is duplicated across four call sites rather than centralized, a small recognizable bit of migration residue, but it is uniform, documented, and never produces dual-path confusion."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "possible_false_positives": [
+      "sync→async pattern pair signal (26 sync / 19 async) — the sync members are correctly synchronous (record factories, expression-bodied Task delegators, sync claim reads), not an old API coexisting with a new one.",
+      "MessageEnricher near-duplicate cluster — a detector self-match between the class declaration and its single EnrichAsync method, not real duplication and unrelated to migration."
+    ]
+  },
+  "context_updates": {
+    "incomplete_migration": {
+      "add": [
+        {
+          "header": "No old/new API coexistence in frontend or backend",
+          "description": "Single fetch HTTP client, single SignalR realtime transport, all functional + all-TypeScript frontend, no axios/moment dual libs, no [Obsolete] symbols, no sync-over-async (.Result/.Wait) shims, and no V1/V2 parallel paths — a developer is never left guessing which pattern to extend.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Supabase RLS survives only as test-parity reference",
+          "description": "The prior Supabase RLS authorization design is referenced solely as an integration-test parity target; no RLS/Supabase code remains in production, so the port to C# authorization is complete rather than half-finished.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "RootMessageId==Guid.Empty legacy-row backfill convention",
+          "description": "Pre-ThreadMetadata-migration rows have an empty RootMessageId, so MessageReader/MessageService/HighlightsService compute the effective root on the fly via one consistent convention (documented in ResolveRootAsync); intentional bounded backward-compat, but the logic is repeated across four call sites instead of being centralized.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

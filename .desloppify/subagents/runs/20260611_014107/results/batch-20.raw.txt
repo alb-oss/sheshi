@@ -1,0 +1,98 @@
+{
+  "batch": "type_safety",
+  "batch_index": 20,
+  "assessments": {"type_safety": 92.5},
+  "dimension_notes": {
+    "type_safety": {
+      "evidence": [
+        "C# project sets <Nullable>enable</Nullable> (Sheshi.Api.csproj:5) and frontend tsconfig.app.json sets strict:true — strong baseline enforced by the compiler, not convention.",
+        "Nullable return types honestly model runtime: TokenService.RotateRefreshTokenAsync -> Task<AuthResponse?> (returns null on not-found/inactive), MessageReader.GetThreadAsync -> Task<ThreadDto?>, RoomService.GetBySlugAsync -> Task<RoomDto?>; every caller (RoomsController:24, AuthController:111) checks for null.",
+        "DTOs precisely encode nullability: MessageDtos.cs AuthorDto(Guid Id, string? Username, ...), MessageDto(... Guid? ParentId ..., AuthorDto? Author ...) match the entity model exactly.",
+        "All m.ParentId!.Value suppressions are correctly preceded by Where(m => m.ParentId is not null) filters (HighlightsService.cs:122, MessageEnricher.cs:39-40, MessageReader.cs:103-104) — the ! compensates for flow-narrowing not crossing the lambda boundary, not an unsound cast.",
+        "EF navigation properties use the idiomatic = null! pattern (Message.cs:6/8, Report.cs:6/8, Vote.cs:5/7) — standard with nullable-enabled EF Core, not a defect.",
+        "Frontend has zero `any` usage; casts are all idiomatic — `as const`, `as CSSProperties` for CSS custom properties (messages.tsx:47), typed-fetch `response.json() as Promise<T>` (api.ts:63), and unavoidable localStorage deserialization (appSupport.ts:51, appHooks.ts:25).",
+        "Untyped JSON in loadSavedIds (appSupport.ts:107) is defensively narrowed with Array.isArray + a type-predicate filter ((id): id is string => typeof id === 'string').",
+        "chart.js typed precisely as ChartInstance<'line', number[], string> (Moderation.tsx:367); no loose object/dynamic typing anywhere in the C# (only `object` use is a lock gate in PresenceTracker.cs:7).",
+        "Minor: feeds.tsx uses redundant non-null assertions props.thread! (lines 192, 209) after an early-return guard at line 182 already narrows props.thread to non-null — inconsistent with adjacent unguarded accesses (lines 193-195).",
+        "Minor: ModerationController.TryParseStatus (lines 290-300) re-parses raw query strings into the ReportStatus enum with an awkward double ToLowerInvariant() switch plus a redundant boolean re-check; the enum exists but the HTTP boundary bypasses model binding for it."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "A few redundant non-null assertions in feeds.tsx that flow-analysis already proves unnecessary, and an awkward string->enum re-parse in ModerationController.TryParseStatus, are the only friction; both are isolated and cosmetic, not soundness defects.",
+      "sub_axes": {"type_discipline": 92.5}
+    }
+  },
+  "dimension_judgment": {
+    "type_safety": {
+      "dimension_character": "Type safety is a systemic strength: nullable reference types and TS strict mode are both enabled and genuinely respected, with nullable return types that honestly model not-found paths, DTOs whose nullability mirrors the domain, and every null-suppression operator (`!`, `null!`) either idiomatic EF boilerplate or correctly guarded by a preceding null filter. The frontend is free of `any` and uses only idiomatic casts. The only blemishes are a handful of redundant non-null assertions in feeds.tsx and a slightly awkward string-to-enum re-parse at the moderation query boundary — both cosmetic, not unsound.",
+      "score_rationale": "Annotations can be trusted as accurate documentation of runtime behavior throughout, which places this well into the strong band (90+). It falls short of exemplary because a developer would occasionally hit a redundant `!` that flow analysis already disproves (feeds.tsx:192/209) and a boundary enum re-parse that bypasses model binding — minor, isolated rough edges rather than recurring friction, so the score sits just above the 90 anchor."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "type_safety",
+      "identifier": "redundant_nonnull_assertions_feeds",
+      "summary": "Redundant non-null assertions on props.thread after an early-return guard already narrows it",
+      "related_files": ["frontend/src/views/feeds.tsx"],
+      "evidence": [
+        "Line 182 guards `if (!props.thread) { return ... }`, narrowing props.thread to non-null for the rest of the component.",
+        "Lines 192 and 209 still use `props.thread!.root....` while the immediately adjacent lines 193-195 access `props.thread.root...` without `!` — the assertions are unnecessary and inconsistent."
+      ],
+      "suggestion": "Drop the `!` on feeds.tsx:192 and :209 (use props.thread.root.room_id / props.thread.root.id); TS already proves non-null after the line 182 guard, matching the adjacent unguarded accesses.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "mod_status_string_enum_reparse",
+      "summary": "ReportStatus enum re-parsed from raw query string with an awkward double-lowercase switch and redundant boolean check",
+      "related_files": ["server/Sheshi.Api/Features/Moderation/ModerationController.cs"],
+      "evidence": [
+        "TryParseStatus (lines 290-300) maps raw strings to ReportStatus via a switch that falls to `default` (=Open) on no match, then re-evaluates `status.ToLowerInvariant() is 'open' or 'resolved' or 'dismissed'` to derive the success flag — computing ToLowerInvariant twice and duplicating the literal set.",
+        "The ReportStatus enum exists but the [FromQuery] string parameter bypasses model binding, hand-rolling the enum parse instead."
+      ],
+      "suggestion": "Bind [FromQuery] ReportStatus? status directly (ASP.NET parses enum names case-insensitively) and treat null/invalid as a BadRequest, or have TryParseStatus compute the lowercased value once and use Enum.TryParse, removing the duplicated literal set and double ToLowerInvariant().",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "context_updates": {
+    "type_safety": {
+      "add": [
+        {
+          "header": "Nullable RT and TS strict both enabled and respected",
+          "description": "Backend compiles with <Nullable>enable</Nullable> and the SPA with strict:true; nullability is enforced by the compiler rather than convention, so annotations can be trusted as runtime documentation.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Nullable return types honestly model not-found paths",
+          "description": "Service/reader methods return T? (AuthResponse?, MessageDto?, ThreadDto?, RoomDto?) on miss and every caller null-checks — return types never lie about the null path.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Null-suppression operators are guarded or idiomatic",
+          "description": "Every ParentId!.Value is preceded by a `ParentId is not null` filter and EF navigation `= null!` is the framework-standard pattern; the suppressions compensate for lambda flow-narrowing limits, not for unsound assumptions.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend free of any; casts are idiomatic",
+          "description": "No `any` in the SPA; the only casts are `as const`, `as CSSProperties` for CSS custom properties, typed-fetch `as Promise<T>`, and unavoidable localStorage deserialization (the latter guarded with Array.isArray + type predicate in loadSavedIds).",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Redundant non-null assertions in feeds.tsx",
+          "description": "props.thread! on feeds.tsx:192/209 follows an early-return guard that already narrows the value, and sits beside unguarded accesses — leftover assertions that flow analysis disproves.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

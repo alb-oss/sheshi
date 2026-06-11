@@ -1,0 +1,120 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 12,
+  "assessments": {"authorization_consistency": 90.5},
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "Permission strings are fully centralized in the Roles static class (Domain/Enums.cs) and used everywhere: [Authorize(Roles = Roles.Admin)] (RoomsController.cs:27, ModerationController.cs:233), [Authorize(Roles = Roles.ModeratorOrAdmin)] (ModerationController.cs:13), and IsInRoleAsync(user, Roles.Admin/Moderator) (MessagesController.cs:76,122-123). No magic role literals exist in any auth check; the only raw 'user'/'admin' strings are username-fallback defaults, not authorization.",
+        "Consistent [Authorize] placement: every mutating endpoint is protected (MessagesController write actions lines 55,62,88,102,114,131; AuthController logout line 114; MeController class-level line 10; RoomsController.Create line 27). Read endpoints (room messages, threads, highlights, room list, presence) are intentionally public for a forum and pass User.GetUserId() through as a nullable caller id.",
+        "Ban enforcement is layered and consistent across the trust boundary: at token mint (AuthController.Login:99 returns 403 ACCOUNT_BANNED; ExternalCallback:227), at refresh rotation (TokenService.RotateRefreshTokenAsync:53 rejects banned users), and at write controllers (MessagesController:73,95,138). Banning also revokes all active refresh tokens (ModerationController.Ban:216-218) so sessions die immediately.",
+        "Authorization is cleanly delegated into the service layer: MessagesController.SoftDelete computes canModerate from roles and passes it to MessageService.SoftDeleteAsync, which enforces author-or-moderator (MessageService.cs:144) and returns an Authorized flag the controller maps to Forbid() (MessagesController.cs:126). The admin-only role-mutation endpoint is constrained to grant/revoke only the moderator role (ModerationController.cs:237) so the API cannot escalate to admin.",
+        "Ban-check asymmetry on write endpoints: PostMessage, Upvote, and Report all guard with `if (user.IsBanned) return Forbid()` (MessagesController.cs:73,95,138), but RemoveUpvote (line 105-112) and SoftDelete (line 117-129) deliberately omit the ban check. This is defensible (a banned user retracting a vote or deleting their own content is harmless), but a reviewer must reason about each endpoint individually rather than trusting one uniform rule.",
+        "ChatHub (Realtime/ChatHub.cs) has no [Authorize] attribute, so any client can JoinRoom/JoinThread over SignalR. The hub only manages presence and broadcasts content-free 'changed' pings (RealtimeNotifier sends no message bodies); clients re-fetch via REST. Since room reads are already public, this matches the public-read trust boundary rather than leaking protected data, but the JWT-from-query wiring (Program.cs:178-184) exists without the hub actually requiring auth.",
+        "No audit logging on privileged moderation/admin state changes: Ban/Unban (ModerationController.cs:205-231), UpdateRole (233-248), and report Resolve/Dismiss (197-203) mutate users and reports with no audit trail of who acted. Not a bypass, but privileged actions are untraceable."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "Ban-check asymmetry across sibling write endpoints (RemoveUpvote/SoftDelete omit the IsBanned guard that PostMessage/Upvote/Report apply) forces per-endpoint reasoning; ChatHub lacks [Authorize] despite JWT-from-query wiring; and privileged moderation actions (ban/role/report mutations) have no audit logging."
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "dimension_character": "Authorization is applied with strong, deliberate consistency: role strings are fully centralized in a single Roles constant set and used uniformly, [Authorize] gates every mutating endpoint while public reads are an intentional forum design, and ban enforcement is layered across token mint, refresh rotation, and write controllers with session revocation on ban. The few rough edges are minor and mostly intentional: a ban-check asymmetry where RemoveUpvote/SoftDelete omit the IsBanned guard that their write-endpoint siblings apply, an unauthenticated SignalR hub that only carries presence/pings (consistent with the public-read boundary), and the absence of audit logging on privileged moderation actions. A developer can largely trust that auth patterns hold across protected resources.",
+      "score_rationale": "This sits in the strong band (90): centralized permission constants, uniform [Authorize] coverage on writes, and multi-layer ban enforcement give a developer reliable, predictable auth patterns with no magic literals or missing guards on protected mutations. It falls short of exemplary because the per-endpoint ban-check asymmetry requires case-by-case reasoning, the ChatHub carries JWT-from-query wiring yet does not require auth, and privileged admin/moderation actions lack audit trails — friction points rather than coverage gaps."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "ban_check_asymmetry_write_endpoints",
+      "summary": "Sibling write endpoints inconsistently apply the IsBanned guard",
+      "related_files": ["server/Sheshi.Api/Features/Messages/MessagesController.cs"],
+      "evidence": [
+        "PostMessage (CreateMessageAsync line 73), Upvote (line 95), and Report (line 138) all enforce `if (user.IsBanned) return Forbid();`.",
+        "RemoveUpvote (lines 105-112) and SoftDelete (lines 117-129) deliberately omit the IsBanned check, so the rule a reviewer learns from the other handlers does not hold uniformly across siblings."
+      ],
+      "suggestion": "If the omission is intentional (banned users may retract votes / delete their own content), add a one-line comment on RemoveUpvote and SoftDelete stating why the ban guard is skipped, so the asymmetry is self-documenting rather than something each reviewer must re-derive.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "chathub_no_authorize",
+      "summary": "ChatHub has no [Authorize] despite JWT-from-query wiring for /hub",
+      "related_files": ["server/Sheshi.Api/Realtime/ChatHub.cs", "server/Sheshi.Api/Program.cs"],
+      "evidence": [
+        "ChatHub (ChatHub.cs:5) defines JoinRoom/JoinThread with no [Authorize] attribute, so any anonymous client can join any room/thread group.",
+        "Program.cs:178-184 wires access_token-from-query handling specifically for /hub, implying tokens are expected, yet the hub never requires authentication.",
+        "Mitigating factor: the hub only broadcasts presence counts and content-free 'changed' pings (RealtimeNotifier.cs); no message bodies traverse the hub and room reads are already public."
+      ],
+      "suggestion": "Either drop the unused access_token-from-query wiring if the hub is meant to be public, or add [Authorize] to ChatHub so the wiring and the trust boundary agree; document the chosen stance so the intent is explicit.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "moderation_actions_no_audit_log",
+      "summary": "Privileged moderation/admin actions leave no audit trail",
+      "related_files": ["server/Sheshi.Api/Features/Moderation/ModerationController.cs"],
+      "evidence": [
+        "Ban (lines 205-220), Unban (222-231), UpdateRole (233-248), and report Resolve/Dismiss (197-203, SetReportStatus 280-288) mutate user state and report status without recording which moderator/admin performed the action.",
+        "The look_for list calls out 'service role / admin bypass without audit logging'; these are not bypasses but they are unauditable privileged operations."
+      ],
+      "suggestion": "Log the acting user id (User.GetUserId()) and target id for ban/unban/role-change/report-resolution via the existing ILogger so privileged actions are traceable; avoid introducing a new audit subsystem unless retention requirements demand it.",
+      "confidence": "low",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [],
+    "likely_symptoms": [],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "authorization_consistency": {
+      "add": [
+        {
+          "header": "Role strings centralized in Roles constants",
+          "description": "All authorization checks reference the Roles static class (Domain/Enums.cs) — [Authorize(Roles = Roles.Admin)], Roles.ModeratorOrAdmin, IsInRoleAsync(user, Roles.X) — with zero magic role literals in auth decisions, so role vocabulary cannot drift across controllers.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Layered ban enforcement with session revocation",
+          "description": "Bans are enforced at token mint (login/external), at refresh rotation (TokenService), and at write controllers, and a ban revokes all active refresh tokens (ModerationController.Ban) so a banned session cannot survive on a still-valid token.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Authorization delegated cleanly into service layer",
+          "description": "SoftDelete computes canModerate from roles in the controller and passes it to MessageService.SoftDeleteAsync, which enforces author-or-moderator and returns an Authorized flag the controller maps to Forbid() — auth logic lives with the data operation rather than scattered conditionals.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Public reads are an intentional forum boundary",
+          "description": "Read endpoints (room messages, threads, highlights, room list, presence) are deliberately unauthenticated and thread the nullable User.GetUserId() through for per-user enrichment; every mutating endpoint carries [Authorize]. The split is consistent, not accidental.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Ban-check asymmetry across write siblings",
+          "description": "PostMessage/Upvote/Report guard on user.IsBanned but RemoveUpvote/SoftDelete do not; the omission is defensible but undocumented, forcing per-endpoint reasoning instead of a single trusted rule.",
+          "settled": false,
+          "positive": false
+        },
+        {
+          "header": "ChatHub unauthenticated despite JWT-from-query wiring",
+          "description": "The SignalR hub has no [Authorize] yet Program.cs adds access_token-from-query handling for /hub; safe today because the hub only carries presence and content-free change pings, but the wiring and the boundary disagree.",
+          "settled": false,
+          "positive": false
+        }
+      ]
+    }
+  }
+}
