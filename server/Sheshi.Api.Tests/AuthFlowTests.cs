@@ -124,6 +124,19 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
 
         loginResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        // Five failures lock the account: even the correct password is rejected.
+        for (var attempt = 0; attempt < 4; attempt++)
+        {
+            await client.PostAsJsonAsync("/api/auth/login", new { email, password = "NotThePassword123!" });
+        }
+
+        var lockedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = "Password123!"
+        });
+        lockedResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -137,6 +150,47 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var providers = await response.Content.ReadFromJsonAsync<string[]>();
         providers.Should().NotBeNull();
         providers.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Registration_sends_confirmation_email_and_endpoint_confirms_it()
+    {
+        var sender = new CapturingEmailSender();
+        var client = factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<IEmailSender>();
+                services.AddSingleton<IEmailSender>(sender);
+            });
+        }).CreateClient();
+        var email = $"confirm-{Guid.NewGuid():N}@example.com";
+
+        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email,
+            password = "Password123!",
+            display_name = "Confirm User"
+        });
+        registerResponse.EnsureSuccessStatusCode();
+        sender.ConfirmationUrls.Should().ContainSingle();
+
+        var confirmUri = new Uri(sender.ConfirmationUrls.Single());
+        var query = QueryHelpers.ParseQuery(confirmUri.Query);
+        var confirmResponse = await client.PostAsJsonAsync("/api/auth/confirm-email", new
+        {
+            email,
+            token = query["token"].Single()
+        });
+        confirmResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Idempotent: confirming again succeeds; garbage tokens are rejected for others.
+        var againResponse = await client.PostAsJsonAsync("/api/auth/confirm-email", new
+        {
+            email,
+            token = "garbage"
+        });
+        againResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact]
@@ -160,6 +214,8 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
             display_name = "Reset User"
         });
         registerResponse.EnsureSuccessStatusCode();
+        var registered = await registerResponse.Content.ReadFromJsonAsync<AuthResponse>();
+        registered.Should().NotBeNull();
 
         var forgotUnknownResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
         {
@@ -184,6 +240,13 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
             password = "NewPassword123!"
         });
         resetResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // A successful reset revokes every session issued before it.
+        var staleRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refresh_token = registered!.RefreshToken
+        });
+        staleRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         var oldLoginResponse = await client.PostAsJsonAsync("/api/auth/login", new
         {
@@ -217,10 +280,17 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
     private sealed class CapturingEmailSender : IEmailSender
     {
         public List<string> ResetUrls { get; } = [];
+        public List<string> ConfirmationUrls { get; } = [];
 
         public Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default)
         {
             ResetUrls.Add(resetUrl);
+            return Task.CompletedTask;
+        }
+
+        public Task SendEmailConfirmationAsync(string email, string confirmUrl, CancellationToken ct = default)
+        {
+            ConfirmationUrls.Add(confirmUrl);
             return Task.CompletedTask;
         }
     }

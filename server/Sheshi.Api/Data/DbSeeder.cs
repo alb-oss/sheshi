@@ -58,6 +58,7 @@ public static class DbSeeder
             {
                 Id = Guid.NewGuid(),
                 Email = email,
+                EmailConfirmed = true, // operator-configured account, no inbox round-trip needed
                 UserName = await CreateAvailableUsernameAsync(userManager, email),
                 DisplayName = string.IsNullOrWhiteSpace(configuration["SeedAdmin:DisplayName"])
                     ? "Sheshi Admin"
@@ -74,6 +75,12 @@ public static class DbSeeder
         {
             if (!await userManager.IsInRoleAsync(user, role))
                 await userManager.AddToRoleAsync(user, role);
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            user.EmailConfirmed = true;
+            await userManager.UpdateAsync(user);
         }
 
         if (!await userManager.CheckPasswordAsync(user, password))

@@ -5,6 +5,7 @@ export type Route =
   | { name: "room"; slug: string }
   | { name: "thread"; id: string }
   | { name: "authCallback" }
+  | { name: "confirmEmail" }
   | { name: "auth" }
   | { name: "profile" }
   | { name: "moderation" };
@@ -33,6 +34,7 @@ export function parseRoute(): Route {
   if (parts[0] === "dhoma" && parts[1]) return { name: "room", slug: decodeURIComponent(parts[1]) };
   if (parts[0] === "tema" && parts[1]) return { name: "thread", id: parts[1] };
   if (parts[0] === "auth" && parts[1] === "callback") return { name: "authCallback" };
+  if (parts[0] === "confirm-email") return { name: "confirmEmail" };
   if (parts[0] === "auth") return { name: "auth" };
   if (parts[0] === "profili") return { name: "profile" };
   if (parts[0] === "moderim") return { name: "moderation" };

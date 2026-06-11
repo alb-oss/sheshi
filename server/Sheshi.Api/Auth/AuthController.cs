@@ -18,7 +18,8 @@ public class AuthController(
     UserManager<ApplicationUser> userManager,
     TokenService tokenService,
     IEmailSender emailSender,
-    IConfiguration configuration) : ControllerBase
+    IConfiguration configuration,
+    ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken ct)
@@ -41,7 +42,42 @@ public class AuthController(
         if (!result.Succeeded) return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
 
         await userManager.AddToRoleAsync(user, Roles.User);
+        await SendConfirmationEmailAsync(user, ct);
         return Ok(await tokenService.CreateAuthResponseAsync(user, ct));
+    }
+
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request)
+    {
+        var email = NormalizeEmail(request.Email);
+        if (email is null || string.IsNullOrWhiteSpace(request.Token))
+            return BadRequest(new { error = "INVALID_CONFIRM_REQUEST" });
+
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null) return BadRequest(new { error = "INVALID_CONFIRM_REQUEST" });
+        if (user.EmailConfirmed) return NoContent();
+
+        var result = await userManager.ConfirmEmailAsync(user, request.Token);
+        return result.Succeeded ? NoContent() : BadRequest(new { error = "INVALID_CONFIRM_REQUEST" });
+    }
+
+    private async Task SendConfirmationEmailAsync(ApplicationUser user, CancellationToken ct)
+    {
+        // Best-effort: a broken mail server must not block registration.
+        try
+        {
+            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            var confirmUrl = QueryHelpers.AddQueryString($"{FrontendBaseUrl()}/confirm-email", new Dictionary<string, string?>
+            {
+                ["email"] = user.Email,
+                ["token"] = token
+            });
+            await emailSender.SendEmailConfirmationAsync(user.Email!, confirmUrl, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Confirmation email for {Email} was not sent.", user.Email);
+        }
     }
 
     [HttpPost("login")]
@@ -51,8 +87,17 @@ public class AuthController(
         if (email is null) return Unauthorized();
 
         var user = await userManager.FindByEmailAsync(email);
-        if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
+        if (user is null) return Unauthorized();
+        if (await userManager.IsLockedOutAsync(user)) return Unauthorized();
+
+        if (!await userManager.CheckPasswordAsync(user, request.Password))
+        {
+            // Per-account lockout (5 tries / 5 min) on top of the per-IP rate limit.
+            await userManager.AccessFailedAsync(user);
             return Unauthorized();
+        }
+
+        await userManager.ResetAccessFailedCountAsync(user);
         if (user.IsBanned)
             return StatusCode(StatusCodes.Status403Forbidden, new { error = "ACCOUNT_BANNED" });
 
@@ -109,9 +154,13 @@ public class AuthController(
         if (user is null) return BadRequest(new { error = "INVALID_RESET_REQUEST" });
 
         var result = await userManager.ResetPasswordAsync(user, request.Token, request.Password);
-        return result.Succeeded
-            ? NoContent()
-            : BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+
+        // A password reset usually means "someone else may have my password":
+        // kill every active session so the old credentials are worthless.
+        await tokenService.RevokeAllForUserAsync(user.Id);
+        return NoContent();
     }
 
     [HttpGet("providers")]
@@ -135,30 +184,59 @@ public class AuthController(
         var result = await HttpContext.AuthenticateAsync(AuthSchemes.External);
         if (!result.Succeeded || result.Principal is null) return BadRequest(new { error = "EXTERNAL_AUTH_FAILED" });
 
-        var email = result.Principal.FindFirstValue(ClaimTypes.Email);
-        if (string.IsNullOrWhiteSpace(email)) return BadRequest(new { error = "EXTERNAL_EMAIL_MISSING" });
+        var provider = result.Properties?.Items.TryGetValue("provider", out var storedProvider) == true ? storedProvider : null;
+        var providerKey = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(providerKey))
+            return BadRequest(new { error = "EXTERNAL_AUTH_FAILED" });
 
-        var user = await userManager.FindByEmailAsync(email);
+        // Identify by (provider, subject), never by email alone: email is only
+        // used to link or create when no external login exists yet.
+        var user = await userManager.FindByLoginAsync(provider, providerKey);
         if (user is null)
         {
-            user = new ApplicationUser
+            var email = result.Principal.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrWhiteSpace(email)) return BadRequest(new { error = "EXTERNAL_EMAIL_MISSING" });
+
+            user = await userManager.FindByEmailAsync(email);
+            if (user is not null)
             {
-                Id = Guid.NewGuid(),
-                Email = email,
-                UserName = CreateUsername(email),
-                DisplayName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? email.Split('@')[0],
-                AvatarUrl = result.Principal.FindFirstValue("urn:google:picture")
-            };
-            var create = await userManager.CreateAsync(user);
-            if (!create.Succeeded) return BadRequest(new { errors = create.Errors.Select(e => e.Description).ToArray() });
-            await userManager.AddToRoleAsync(user, Roles.User);
+                // Refuse to attach an external identity to a local account whose
+                // email was never verified — otherwise anyone who pre-registers a
+                // victim's address takes over their future OAuth sign-in.
+                if (!user.EmailConfirmed) return ExternalFailureRedirect("EXTERNAL_ACCOUNT_CONFLICT");
+            }
+            else
+            {
+                user = new ApplicationUser
+                {
+                    Id = Guid.NewGuid(),
+                    Email = email,
+                    EmailConfirmed = true, // asserted by the OAuth provider
+                    UserName = CreateUsername(email),
+                    DisplayName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? email.Split('@')[0],
+                    AvatarUrl = result.Principal.FindFirstValue("urn:google:picture")
+                };
+                var create = await userManager.CreateAsync(user);
+                if (!create.Succeeded) return BadRequest(new { errors = create.Errors.Select(e => e.Description).ToArray() });
+                await userManager.AddToRoleAsync(user, Roles.User);
+            }
+
+            var link = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, provider));
+            if (!link.Succeeded) return ExternalFailureRedirect("EXTERNAL_ACCOUNT_CONFLICT");
         }
 
         await HttpContext.SignOutAsync(AuthSchemes.External);
+        if (user.IsBanned) return ExternalFailureRedirect("ACCOUNT_BANNED");
+
         var tokens = await tokenService.CreateAuthResponseAsync(user, ct);
-        var frontend = (configuration["Frontend:BaseUrl"] ?? "http://localhost:3000").TrimEnd('/');
-        return Redirect($"{frontend}/auth/callback#access_token={Uri.EscapeDataString(tokens.AccessToken)}&refresh_token={Uri.EscapeDataString(tokens.RefreshToken)}");
+        return Redirect($"{FrontendBaseUrl()}/auth/callback#access_token={Uri.EscapeDataString(tokens.AccessToken)}&refresh_token={Uri.EscapeDataString(tokens.RefreshToken)}");
     }
+
+    private string FrontendBaseUrl() =>
+        (configuration["Frontend:BaseUrl"] ?? "http://localhost:3000").TrimEnd('/');
+
+    private RedirectResult ExternalFailureRedirect(string code) =>
+        Redirect($"{FrontendBaseUrl()}/auth/callback#error={Uri.EscapeDataString(code)}");
 
     private IEnumerable<string> GetEnabledProviders()
     {

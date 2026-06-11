@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Realtime;
@@ -7,7 +8,7 @@ using Sheshi.Api.Storage;
 
 namespace Sheshi.Api.Features.Messages;
 
-public class MessageService(AppDbContext db, IImageStorage imageStorage, RealtimeNotifier realtime)
+public class MessageService(AppDbContext db, IImageStorage imageStorage, RealtimeNotifier realtime, IMemoryCache cache)
 {
     private const int DefaultRoomLimit = 40;
     private const int DefaultReplyLimit = 80;
@@ -162,6 +163,7 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
         await db.SaveChangesAsync(ct);
 
         var dto = (await EnrichAsync([message], authorId, ct)).Single();
+        cache.Remove(HighlightsCache.Key);
         await realtime.MessageChangedAsync(
             new MessageChangeDto("message.created", message.RoomId, message.RootMessageId, message.Id),
             ct);
@@ -179,6 +181,7 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
             ON CONFLICT ("MessageId", "UserId") DO NOTHING
             """, ct);
 
+        cache.Remove(HighlightsCache.Key);
         await realtime.MessageChangedAsync(
             new MessageChangeDto("vote.changed", message.RoomId, await GetThreadRootIdAsync(message, ct), message.Id),
             ct);
@@ -200,6 +203,7 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
 
         db.Votes.Remove(vote);
         await db.SaveChangesAsync(ct);
+        cache.Remove(HighlightsCache.Key);
         await realtime.MessageChangedAsync(change, ct);
     }
 
@@ -221,6 +225,7 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
             message.RoomId,
             await GetThreadRootIdAsync(message, ct),
             message.Id);
+        cache.Remove(HighlightsCache.Key);
         await realtime.MessageChangedAsync(change, ct);
         return DeleteMessageResult.Deleted(change);
     }

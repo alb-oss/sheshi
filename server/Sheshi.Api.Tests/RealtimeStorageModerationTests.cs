@@ -69,6 +69,17 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         var message = await response.Content.ReadFromJsonAsync<MessageDto>();
         message.Should().NotBeNull();
         message!.ImageUrl.Should().StartWith("http://localhost:5080/uploads/");
+
+        // A fake "PNG" whose bytes are not an image is rejected by magic-byte sniffing.
+        using var fakeForm = new MultipartFormDataContent();
+        fakeForm.Add(new StringContent(room.Id.ToString()), "room_id");
+        fakeForm.Add(new StringContent("Not really an image"), "body");
+        var fake = new ByteArrayContent("<html>not an image</html>"u8.ToArray());
+        fake.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
+        fakeForm.Add(fake, "image", "fake.png");
+
+        var fakeResponse = await client.PostAsync("/api/messages", fakeForm);
+        fakeResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]

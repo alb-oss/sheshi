@@ -22,8 +22,9 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         roomsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var rooms = await roomsResponse.Content.ReadFromJsonAsync<RoomDto[]>();
         rooms.Should().NotBeNull();
-        rooms.Should().ContainSingle();
-        rooms!.Single().Slug.Should().Be("sheshi");
+        // Other tests in this class share the fixture DB and may add rooms;
+        // only the seeded room is guaranteed.
+        rooms.Should().Contain(r => r.Slug == "sheshi");
 
         var sheshiResponse = await client.GetAsync("/api/rooms/sheshi");
         sheshiResponse.StatusCode.Should().Be(HttpStatusCode.OK);

@@ -141,6 +141,8 @@ export const api = {
     requestJson<AuthResponse>("/api/auth/refresh", { method: "POST", body: { refresh_token: refreshToken } }),
   logout: ({ token, refreshToken }: { token: string; refreshToken: string }) =>
     requestNoContent("/api/auth/logout", { method: "POST", token, body: { refresh_token: refreshToken } }),
+  confirmEmail: ({ email, token }: { email: string; token: string }) =>
+    requestNoContent("/api/auth/confirm-email", { method: "POST", body: { email, token } }),
   authProviders: () => requestJson<string[]>("/api/auth/providers"),
   externalAuthUrl: ({ provider }: ExternalAuthRequest) => `${API_BASE}/api/auth/external/${encodeURIComponent(provider)}`,
   me: ({ token }: MeRequest) => requestJson<User>("/api/me", { token })

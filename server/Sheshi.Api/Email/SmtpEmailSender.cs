@@ -5,12 +5,18 @@ namespace Sheshi.Api.Email;
 
 public class SmtpEmailSender(IConfiguration configuration, ILogger<SmtpEmailSender> logger) : IEmailSender
 {
-    public async Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default)
+    public Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default) =>
+        SendAsync(email, "Rivendos fjalëkalimin — Sheshi", $"Përdor këtë link për të rivendosur fjalëkalimin: {resetUrl}", ct);
+
+    public Task SendEmailConfirmationAsync(string email, string confirmUrl, CancellationToken ct = default) =>
+        SendAsync(email, "Konfirmo email-in — Sheshi", $"Përdor këtë link për të konfirmuar email-in tënd: {confirmUrl}", ct);
+
+    private async Task SendAsync(string email, string subject, string body, CancellationToken ct)
     {
         var host = configuration["Smtp:Host"];
         if (string.IsNullOrWhiteSpace(host))
         {
-            logger.LogWarning("SMTP host is not configured; password reset email for {Email} was not sent.", email);
+            logger.LogWarning("SMTP host is not configured; email for {Email} was not sent.", email);
             return;
         }
 
@@ -18,8 +24,8 @@ public class SmtpEmailSender(IConfiguration configuration, ILogger<SmtpEmailSend
         var from = configuration["Smtp:FromEmail"] ?? "no-reply@sheshi.local";
         using var message = new MailMessage(from, email)
         {
-            Subject = "Rivendos fjalëkalimin — Sheshi",
-            Body = $"Përdor këtë link për të rivendosur fjalëkalimin: {resetUrl}"
+            Subject = subject,
+            Body = body
         };
         using var client = new SmtpClient(host, port)
         {

@@ -1,18 +1,32 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Sheshi.Api.Auth;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 
 namespace Sheshi.Api.Features.Messages;
 
+/// <summary>
+/// Shared cache key for the highlights snapshot. Writes that affect the
+/// ranking (post/vote/delete) evict it so readers never wait on the TTL.
+/// </summary>
+public static class HighlightsCache
+{
+    public const string Key = "highlights:snapshot:v1";
+}
+
 [ApiController]
 [Route("api/highlights")]
-public class HighlightsController(AppDbContext db, MessageService messageService) : ControllerBase
+public class HighlightsController(AppDbContext db, MessageService messageService, IMemoryCache cache) : ControllerBase
 {
-    private const int SeedLimit = 500;
+    private const int SeedLimit = 2000;
     private const int BranchLimit = 5000;
+    private const int ResultLimit = 10;
+    private static readonly TimeSpan SeedWindow = TimeSpan.FromDays(7);
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(30);
+    private static readonly SemaphoreSlim SnapshotGate = new(1, 1);
 
     [HttpGet]
     [EnableRateLimiting("reads")]
@@ -21,33 +35,64 @@ public class HighlightsController(AppDbContext db, MessageService messageService
         mode = mode.ToLowerInvariant();
         if (mode is not ("focus" or "hot" or "fresh" or "top" or "replied")) return BadRequest(new { error = "INVALID_MODE" });
 
-        var candidates = await LoadCandidatesAsync(ct);
-        var stats = await LoadStatsAsync(candidates, ct);
-        var enriched = await messageService.EnrichAsync(candidates, User.GetUserId(), ct);
+        var snapshot = await GetSnapshotAsync(ct);
+        var stats = snapshot.Stats;
         var now = DateTimeOffset.UtcNow;
         var ranked = mode switch
         {
-            "fresh" => enriched
+            "fresh" => snapshot.Candidates
                 .OrderByDescending(m => stats[m.Id].ActivityAt)
                 .ThenByDescending(m => FreshTieBreakScore(stats[m.Id])),
-            "focus" or "hot" => enriched.OrderByDescending(m => FocusScore(stats[m.Id], now)),
-            "top" => enriched
+            "focus" or "hot" => snapshot.Candidates.OrderByDescending(m => FocusScore(stats[m.Id], now)),
+            "top" => snapshot.Candidates
                 .OrderByDescending(m => stats[m.Id].Upvotes + stats[m.Id].BranchVotes)
                 .ThenByDescending(m => stats[m.Id].DirectReplies + stats[m.Id].Descendants)
                 .ThenByDescending(m => stats[m.Id].ActivityAt),
-            _ => enriched
+            _ => snapshot.Candidates
                 .OrderByDescending(m => stats[m.Id].DirectReplies * 3 + stats[m.Id].Descendants)
                 .ThenByDescending(m => stats[m.Id].ActivityAt)
         };
 
-        return Ok(ranked.Take(10).ToList());
+        // Rank on the cached stats, then enrich only the winners: the per-user
+        // "voted" flag and author data stay fresh while the heavy scan is shared.
+        var top = ranked.Take(ResultLimit).ToList();
+        var enriched = await messageService.EnrichAsync(top, User.GetUserId(), ct);
+        var byId = enriched.ToDictionary(m => m.Id);
+        return Ok(top.Select(m => byId[m.Id]).ToList());
+    }
+
+    private async Task<HighlightSnapshot> GetSnapshotAsync(CancellationToken ct)
+    {
+        if (cache.TryGetValue(HighlightsCache.Key, out HighlightSnapshot? cached) && cached is not null)
+            return cached;
+
+        // Single-flight: under load only one request pays for the recompute.
+        await SnapshotGate.WaitAsync(ct);
+        try
+        {
+            if (cache.TryGetValue(HighlightsCache.Key, out cached) && cached is not null)
+                return cached;
+
+            var candidates = await LoadCandidatesAsync(ct);
+            var stats = await LoadStatsAsync(candidates, ct);
+            var snapshot = new HighlightSnapshot(candidates, stats);
+            cache.Set(HighlightsCache.Key, snapshot, CacheTtl);
+            return snapshot;
+        }
+        finally
+        {
+            SnapshotGate.Release();
+        }
     }
 
     private async Task<IReadOnlyList<Message>> LoadCandidatesAsync(CancellationToken ct)
     {
+        // Seed by activity window instead of a fixed "last N messages": on a busy
+        // site 500 recent rows may only cover minutes, dropping still-hot threads.
+        var windowStart = DateTimeOffset.UtcNow - SeedWindow;
         var seeds = await db.Messages
             .AsNoTracking()
-            .Where(m => m.DeletedAt == null)
+            .Where(m => m.DeletedAt == null && m.CreatedAt >= windowStart)
             .OrderByDescending(m => m.CreatedAt)
             .Take(SeedLimit)
             .ToListAsync(ct);
@@ -169,6 +214,10 @@ public class HighlightsController(AppDbContext db, MessageService messageService
         message.RootMessageId == Guid.Empty && message.ParentId is null
             ? message.Id
             : message.RootMessageId;
+
+    private sealed record HighlightSnapshot(
+        IReadOnlyList<Message> Candidates,
+        IReadOnlyDictionary<Guid, HighlightStats> Stats);
 
     private sealed class HighlightStats(Message message, int upvotes, int directReplies, DateTimeOffset activityAt)
     {

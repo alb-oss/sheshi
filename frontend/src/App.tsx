@@ -205,6 +205,23 @@ export default function App() {
       });
   }, [route.name, setAuth, showToast]);
 
+  useEffect(() => {
+    if (route.name !== "confirmEmail") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email");
+    const token = params.get("token");
+    navigate("/");
+    if (!email || !token) {
+      showToast("Linku i konfirmimit eshte i pavlefshem.");
+      return;
+    }
+
+    api.confirmEmail({ email, token })
+      .then(() => showToast("Email-i u konfirmua."))
+      .catch(() => showToast("Konfirmimi i email-it deshtoi."));
+  }, [route.name, showToast]);
+
   const loadRoomMessages = useCallback(async (roomId: string, cursor?: string | null, append = false) => {
     setRoomMessagesLoad((current) => ({ status: "loading", data: append ? current.data : [] }));
     try {
