@@ -1,9 +1,23 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 
 namespace Sheshi.Api.Features.Messages;
+
+/// <summary>Tunable weights for the highlight ranking, bound from the "Highlights"
+/// config section so ranking can be adjusted without a redeploy.</summary>
+public class HighlightsOptions
+{
+    public double ReplyWeight { get; set; } = 30;       // per UNIQUE direct replier (anti reply-farming)
+    public double DescendantsWeight { get; set; } = 18; // log-scaled subtree size
+    public double UpvoteWeight { get; set; } = 12;
+    public double BranchVoteWeight { get; set; } = 8;   // log-scaled thread-wide votes
+    public double BranchBonus { get; set; } = 18;       // a reply that itself sparked discussion
+    public double ActivityRecency { get; set; } = 42;
+    public double CreatedRecency { get; set; } = 14;
+}
 
 /// <summary>
 /// Shared cache key for the highlights snapshot. Writes that affect the
@@ -25,6 +39,7 @@ public sealed class HighlightStats(Message message, int upvotes, int directRepli
     public int DirectReplies { get; } = directReplies;
     public int BranchVotes { get; set; }
     public int Descendants { get; set; }
+    public int UniqueRepliers { get; set; }
     public DateTimeOffset ActivityAt { get; set; } = activityAt;
 }
 
@@ -33,8 +48,9 @@ public sealed class HighlightStats(Message message, int upvotes, int directRepli
 /// admin "top posts" panel. The expensive scan runs at most once per TTL (or
 /// once per ranking-relevant write) and is shared by every reader.
 /// </summary>
-public class HighlightsService(AppDbContext db, IMemoryCache cache)
+public class HighlightsService(AppDbContext db, IMemoryCache cache, IOptions<HighlightsOptions> options)
 {
+    private readonly HighlightsOptions _options = options.Value;
     private const int SeedLimit = 2000;
     private const int BranchLimit = 5000;
     private static readonly TimeSpan SeedWindow = TimeSpan.FromDays(7);
@@ -66,42 +82,27 @@ public class HighlightsService(AppDbContext db, IMemoryCache cache)
     }
 
     /// <summary>
-    /// The one scoring formula: weighted discussion + votes + a recency decay,
-    /// used by both the public highlights feed and the admin analytics. The
-    /// frontend keeps a deliberately simplified mirror in appSupport.ts
-    /// (hotScore) for client-side re-sorting without a round-trip; keep the two
-    /// weights roughly in sync.
+    /// The ranking score: discussion (weighted by UNIQUE repliers so one account
+    /// can't farm it) + votes + a recency decay. Weights come from
+    /// <see cref="HighlightsOptions"/>. The frontend keeps a deliberately
+    /// simplified mirror in appSupport.ts (hotScore) for client-side re-sorting.
     /// </summary>
-    public static double Score(
-        int upvotes,
-        int branchVotes,
-        int directReplies,
-        int descendants,
-        bool isReply,
-        DateTimeOffset createdAt,
-        DateTimeOffset activityAt,
-        DateTimeOffset now)
+    public double Score(HighlightStats stats, DateTimeOffset now)
     {
-        var ageHours = Math.Max((now - activityAt).TotalHours, 0.25);
-        var createdAgeHours = Math.Max((now - createdAt).TotalHours, 0.25);
-        var discussion = directReplies * 30 + Math.Log2(descendants + 1) * 18;
-        var votes = upvotes * 12 + Math.Log2(branchVotes + 1) * 8;
-        var branchBonus = isReply && directReplies + descendants > 0 ? 18 : 0;
-        var recency = 42 / Math.Pow(ageHours + 1, 0.95) + 14 / Math.Pow(createdAgeHours + 1, 0.45);
+        var ageHours = Math.Max((now - stats.ActivityAt).TotalHours, 0.25);
+        var createdAgeHours = Math.Max((now - stats.Message.CreatedAt).TotalHours, 0.25);
+        var isReply = stats.Message.ParentId is not null;
+
+        var discussion = stats.UniqueRepliers * _options.ReplyWeight
+            + Math.Log2(stats.Descendants + 1) * _options.DescendantsWeight;
+        var votes = stats.Upvotes * _options.UpvoteWeight
+            + Math.Log2(stats.BranchVotes + 1) * _options.BranchVoteWeight;
+        var branchBonus = isReply && stats.DirectReplies + stats.Descendants > 0 ? _options.BranchBonus : 0;
+        var recency = _options.ActivityRecency / Math.Pow(ageHours + 1, 0.95)
+            + _options.CreatedRecency / Math.Pow(createdAgeHours + 1, 0.45);
 
         return discussion + votes + branchBonus + recency;
     }
-
-    public static double Score(HighlightStats stats, DateTimeOffset now) =>
-        Score(
-            stats.Upvotes,
-            stats.BranchVotes,
-            stats.DirectReplies,
-            stats.Descendants,
-            stats.Message.ParentId is not null,
-            stats.Message.CreatedAt,
-            stats.ActivityAt,
-            now);
 
     public static double FreshTieBreakScore(HighlightStats stats) =>
         stats.DirectReplies * 6 + stats.Descendants * 2 + stats.Upvotes * 3 + stats.BranchVotes;
@@ -161,10 +162,13 @@ public class HighlightsService(AppDbContext db, IMemoryCache cache)
             .Select(g => new { MessageId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.MessageId, x => x.Count, ct);
 
-        var directReplies = branchMessages
+        var directRepliesByParent = branchMessages
             .Where(m => m.ParentId is not null && candidateIds.Contains(m.ParentId.Value))
             .GroupBy(m => m.ParentId!.Value)
-            .ToDictionary(g => g.Key, g => g.Count());
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var directReplies = directRepliesByParent.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Count);
+        var uniqueRepliers = directRepliesByParent.ToDictionary(
+            kvp => kvp.Key, kvp => kvp.Value.Select(m => m.AuthorId).Distinct().Count());
 
         var byId = branchMessages.ToDictionary(m => m.Id);
         var stats = candidates.ToDictionary(
@@ -173,7 +177,10 @@ public class HighlightsService(AppDbContext db, IMemoryCache cache)
                 m,
                 upvotes.GetValueOrDefault(m.Id),
                 directReplies.GetValueOrDefault(m.Id),
-                m.CreatedAt));
+                m.CreatedAt)
+            {
+                UniqueRepliers = uniqueRepliers.GetValueOrDefault(m.Id)
+            });
 
         foreach (var message in branchMessages)
         {

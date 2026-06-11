@@ -396,7 +396,7 @@ public class ModerationService(
         // Reuses the cached highlights snapshot instead of re-walking every thread.
         var snapshot = await highlights.GetSnapshotAsync(ct);
         var top = snapshot.Candidates
-            .OrderByDescending(m => HighlightsService.Score(snapshot.Stats[m.Id], now))
+            .OrderByDescending(m => highlights.Score(snapshot.Stats[m.Id], now))
             .ThenByDescending(m => snapshot.Stats[m.Id].ActivityAt)
             .Take(10)
             .ToList();

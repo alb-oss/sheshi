@@ -25,7 +25,7 @@ public class HighlightsController(HighlightsService highlights, MessageEnricher 
             "fresh" => snapshot.Candidates
                 .OrderByDescending(m => stats[m.Id].ActivityAt)
                 .ThenByDescending(m => HighlightsService.FreshTieBreakScore(stats[m.Id])),
-            "focus" or "hot" => snapshot.Candidates.OrderByDescending(m => HighlightsService.Score(stats[m.Id], now)),
+            "focus" or "hot" => snapshot.Candidates.OrderByDescending(m => highlights.Score(stats[m.Id], now)),
             "top" => snapshot.Candidates
                 .OrderByDescending(m => stats[m.Id].Upvotes + stats[m.Id].BranchVotes)
                 .ThenByDescending(m => stats[m.Id].DirectReplies + stats[m.Id].Descendants)
