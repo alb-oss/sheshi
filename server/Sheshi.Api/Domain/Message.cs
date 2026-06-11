@@ -15,6 +15,10 @@ public class Message
     public DateTimeOffset? DeletedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    // Denormalized counters maintained on write (direct non-deleted replies, votes).
+    public int ReplyCount { get; set; }
+    public int VoteCount { get; set; }
+
     // Thread root: legacy top-level rows stored Guid.Empty before RootMessageId
     // existed, so a root with no parent resolves to its own id.
     public Guid EffectiveRootId => RootMessageId == Guid.Empty && ParentId is null ? Id : RootMessageId;

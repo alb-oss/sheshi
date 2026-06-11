@@ -334,9 +334,14 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var otherDeleteResponse = await client.DeleteAsync($"/api/messages/{main.Id}");
         otherDeleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
+        var beforeDelete = (await GetRoomAsync(client, "sheshi")).ThreadCount;
+
         UseBearer(client, moderator.AccessToken);
         var moderatorDeleteResponse = await client.DeleteAsync($"/api/messages/{main.Id}");
         moderatorDeleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Deleting a root thread decrements the room's denormalized thread count.
+        (await GetRoomAsync(client, "sheshi")).ThreadCount.Should().Be(beforeDelete - 1);
 
         var deleted = await client.GetFromJsonAsync<MessageDto>($"/api/messages/{main.Id}");
         deleted.Should().NotBeNull();
@@ -425,7 +430,8 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         [property: JsonPropertyName("id")] Guid Id,
         [property: JsonPropertyName("slug")] string Slug,
         [property: JsonPropertyName("name")] string Name,
-        [property: JsonPropertyName("description")] string? Description);
+        [property: JsonPropertyName("description")] string? Description,
+        [property: JsonPropertyName("thread_count")] int ThreadCount);
 
     private sealed record UserDto(
         [property: JsonPropertyName("id")] Guid Id,

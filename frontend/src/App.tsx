@@ -18,6 +18,7 @@ import {
 } from "./appSupport";
 import type { AuthState, LoadState } from "./appSupport";
 import { canAdmin, canModerate } from "./roles";
+import type { RealtimeMessageChange } from "./realtime";
 import type { AuthResponse, Message, Room, Thread } from "./types";
 import { AdminModeBar, FocusPanel, MobileDigest, RoomRail, TopBar } from "./components/chrome";
 import { CreateRoomDialog, Dialog, EmptyState, ShareDialog } from "./components/overlays";
@@ -144,6 +145,24 @@ export default function App() {
         data: current.data,
         error: "Dhomat dhe postimet nuk u ngarkuan."
       }));
+    }
+  }, [auth?.token]);
+
+  // Granular background refreshers used by the realtime delta handler so a single
+  // change reloads only the affected scope, not rooms+highlights+feed together.
+  const loadRoomsList = useCallback(async () => {
+    try {
+      setRoomsLoad({ status: "ready", data: await api.rooms() });
+    } catch {
+      // Background refresh: keep the current list on failure.
+    }
+  }, []);
+
+  const loadHighlights = useCallback(async () => {
+    try {
+      setHighlights(await api.highlights({ mode: "focus", token: auth?.token }));
+    } catch {
+      // Background refresh: keep current highlights on failure.
     }
   }, [auth?.token]);
 
@@ -278,10 +297,52 @@ export default function App() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const onRealtimeChanged = useCallback(() => {
+  // Latest view + loaders, read by the stable realtime handler (no resubscribe churn).
+  const realtimeRef = useRef({
+    loadRoomsList,
+    loadHighlights,
+    loadThread,
+    loadRoomMessages,
+    view: { name: route.name, roomId: currentRoom?.id ?? null, threadRootId: thread?.root.id ?? null, threadRouteId: route.name === "thread" ? route.id : null }
+  });
+  useEffect(() => {
+    realtimeRef.current = {
+      loadRoomsList,
+      loadHighlights,
+      loadThread,
+      loadRoomMessages,
+      view: { name: route.name, roomId: currentRoom?.id ?? null, threadRootId: thread?.root.id ?? null, threadRouteId: route.name === "thread" ? route.id : null }
+    };
+  });
+
+  const pendingRef = useRef({ view: false, rooms: false });
+  const onRealtimeMessage = useCallback((change: RealtimeMessageChange) => {
+    const { view } = realtimeRef.current;
+    let viewAffected = false;
+    if (view.name === "thread") {
+      viewAffected = change.thread_id === view.threadRootId
+        || change.thread_id === view.threadRouteId
+        || change.message_id === view.threadRouteId;
+    } else if (view.name === "room") {
+      viewAffected = change.room_id === view.roomId;
+    } else if (view.name === "home") {
+      viewAffected = true; // highlights are global
+    }
+    if (viewAffected) pendingRef.current.view = true;
+    // Only thread create/delete shift the rail's thread counts; votes do not.
+    if (change.type === "message.created" || change.type === "message.deleted") pendingRef.current.rooms = true;
+
     if (refreshTimerRef.current) window.clearTimeout(refreshTimerRef.current);
     refreshTimerRef.current = window.setTimeout(() => {
-      setRefreshTick((tick) => tick + 1);
+      const pending = pendingRef.current;
+      pendingRef.current = { view: false, rooms: false };
+      const handlers = realtimeRef.current;
+      if (pending.rooms) void handlers.loadRoomsList();
+      if (!pending.view) return;
+      const v = handlers.view;
+      if (v.name === "thread" && v.threadRouteId) void handlers.loadThread(v.threadRouteId);
+      else if (v.name === "room" && v.roomId) void handlers.loadRoomMessages(v.roomId);
+      else if (v.name === "home") void handlers.loadHighlights();
     }, 250);
   }, []);
 
@@ -295,12 +356,11 @@ export default function App() {
   }, []);
 
   useRealtimeRefresh({
-    route,
     rooms,
     currentRoomId: currentRoom?.id,
     threadId: route.name === "thread" ? thread?.root.id || route.id : null,
     token: auth?.token,
-    onChanged: onRealtimeChanged,
+    onMessage: onRealtimeMessage,
     onPresence
   });
 

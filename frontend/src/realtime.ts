@@ -3,9 +3,16 @@ import { apiBase } from "./api";
 
 export type RealtimePresenceUpdate = { room_id: string; count: number };
 
+export type RealtimeMessageChange = {
+  type: string;
+  room_id: string;
+  thread_id: string | null;
+  message_id: string | null;
+};
+
 type RealtimeCallbacks = {
   token?: string | null;
-  onChanged: () => void;
+  onMessage: (change: RealtimeMessageChange) => void;
   onPresence: (update: RealtimePresenceUpdate) => void;
 };
 
@@ -15,7 +22,7 @@ type RealtimeScope = RealtimeCallbacks & {
 };
 
 const hubEvents = {
-  changed: "changed",
+  messageChanged: "message_changed",
   presence: "presence"
 } as const;
 
@@ -50,7 +57,7 @@ function subscribeToRealtime(args: RealtimeScope) {
     .withAutomaticReconnect()
     .build();
 
-  connection.on(hubEvents.changed, args.onChanged);
+  connection.on(hubEvents.messageChanged, args.onMessage);
   connection.on(hubEvents.presence, args.onPresence);
 
   const started = connection.start()
@@ -63,7 +70,7 @@ function subscribeToRealtime(args: RealtimeScope) {
 
   return () => {
     disposed = true;
-    connection.off(hubEvents.changed, args.onChanged);
+    connection.off(hubEvents.messageChanged, args.onMessage);
     connection.off(hubEvents.presence, args.onPresence);
 
     void started

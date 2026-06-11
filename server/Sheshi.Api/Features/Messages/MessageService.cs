@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
+using Sheshi.Api.Features.Rooms;
 using Sheshi.Api.Realtime;
 using Sheshi.Api.Storage;
 
@@ -86,8 +87,24 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
         db.Messages.Add(message);
         await db.SaveChangesAsync(ct);
 
+        // Maintain denormalized counters with atomic SQL updates (race-safe).
+        if (message.ParentId is null)
+        {
+            await db.Rooms.Where(r => r.Id == message.RoomId).ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.ThreadCount, r => r.ThreadCount + 1)
+                .SetProperty(r => r.LatestActivityAt, message.CreatedAt), ct);
+        }
+        else
+        {
+            await db.Messages.Where(m => m.Id == message.ParentId)
+                .ExecuteUpdateAsync(s => s.SetProperty(m => m.ReplyCount, m => m.ReplyCount + 1), ct);
+            await db.Rooms.Where(r => r.Id == message.RoomId)
+                .ExecuteUpdateAsync(s => s.SetProperty(r => r.LatestActivityAt, message.CreatedAt), ct);
+        }
+
         var dto = (await enricher.EnrichAsync([message], authorId, ct)).Single();
         cache.Remove(HighlightsCache.Key);
+        cache.Remove(RoomsCache.ListKey);
         await realtime.MessageChangedAsync(
             new MessageChangeDto("message.created", message.RoomId, message.RootMessageId, message.Id),
             ct);
@@ -99,11 +116,16 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
         var message = await db.Messages.AsNoTracking().SingleOrDefaultAsync(m => m.Id == messageId, ct);
         if (message is null) return false;
 
-        await db.Database.ExecuteSqlInterpolatedAsync($"""
+        var inserted = await db.Database.ExecuteSqlInterpolatedAsync($"""
             INSERT INTO "Votes" ("MessageId", "UserId", "CreatedAt")
             VALUES ({messageId}, {userId}, {DateTimeOffset.UtcNow})
             ON CONFLICT ("MessageId", "UserId") DO NOTHING
             """, ct);
+
+        // Only a genuinely new vote (not a duplicate) moves the counter.
+        if (inserted > 0)
+            await db.Messages.Where(m => m.Id == messageId)
+                .ExecuteUpdateAsync(s => s.SetProperty(m => m.VoteCount, m => m.VoteCount + 1), ct);
 
         cache.Remove(HighlightsCache.Key);
         await realtime.MessageChangedAsync(
@@ -127,6 +149,8 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
 
         db.Votes.Remove(vote);
         await db.SaveChangesAsync(ct);
+        await db.Messages.Where(m => m.Id == vote.MessageId)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.VoteCount, m => m.VoteCount - 1), ct);
         cache.Remove(HighlightsCache.Key);
         await realtime.MessageChangedAsync(change, ct);
     }
@@ -141,8 +165,20 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
         if (message is null) return DeleteMessageResult.NotFound();
         if (message.AuthorId != userId && !canModerate) return DeleteMessageResult.Forbidden();
 
+        var wasActive = message.DeletedAt is null;
         message.DeletedAt ??= DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
+
+        // Removing a live message drops the relevant counter (idempotent on re-delete).
+        if (wasActive)
+        {
+            if (message.ParentId is null)
+                await db.Rooms.Where(r => r.Id == message.RoomId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(r => r.ThreadCount, r => r.ThreadCount - 1), ct);
+            else
+                await db.Messages.Where(m => m.Id == message.ParentId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(m => m.ReplyCount, m => m.ReplyCount - 1), ct);
+        }
 
         var change = new MessageChangeDto(
             "message.deleted",
@@ -150,6 +186,7 @@ public class MessageService(AppDbContext db, IImageStorage imageStorage, Realtim
             await MessageReader.ResolveRootAsync(db, message, ct),
             message.Id);
         cache.Remove(HighlightsCache.Key);
+        cache.Remove(RoomsCache.ListKey);
         await realtime.MessageChangedAsync(change, ct);
         return DeleteMessageResult.Deleted(change);
     }
