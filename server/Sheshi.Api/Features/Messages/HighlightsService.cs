@@ -67,7 +67,10 @@ public class HighlightsService(AppDbContext db, IMemoryCache cache)
 
     /// <summary>
     /// The one scoring formula: weighted discussion + votes + a recency decay,
-    /// used by both the public highlights feed and the admin analytics.
+    /// used by both the public highlights feed and the admin analytics. The
+    /// frontend keeps a deliberately simplified mirror in appSupport.ts
+    /// (hotScore) for client-side re-sorting without a round-trip; keep the two
+    /// weights roughly in sync.
     /// </summary>
     public static double Score(
         int upvotes,

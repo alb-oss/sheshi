@@ -2,6 +2,7 @@ using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Sheshi.Api.Auth;
+using Sheshi.Api.Common;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Features.Messages;
 using Sheshi.Api.Realtime;

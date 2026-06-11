@@ -2,241 +2,11 @@
   "command": "show",
   "query": "review",
   "status_filter": "open",
-  "total": 10,
-  "summary": {
-    "by_tier": {
-      "T1": 7,
-      "T2": 3
-    },
-    "by_detector": {
-      "review": 10
-    },
-    "files": 1
-  },
-  "by_file": {
-    ".": [
-      {
-        "id": "review::.::holistic::high_level_elegance::empty_controllers_dir_straggler",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "Empty leftover Controllers/ directory implies a flat-controllers layout the codebase abandoned for feature folders",
-        "detail": {
-          "holistic": true,
-          "dimension": "high_level_elegance",
-          "related_files": [
-            "server/Sheshi.Api/Controllers"
-          ],
-          "evidence": [
-            "server/Sheshi.Api/Controllers/ exists but contains no files; all controllers actually live under Features/*, Auth/, and Realtime/, so the directory is a scaffolding remnant that briefly suggests a second, unused organizational convention."
-          ],
-          "suggestion": "Delete the empty server/Sheshi.Api/Controllers directory so the feature-foldered layout is the single, unambiguous controller organization.",
-          "reasoning": "",
-          "summary_hash": "bede22ab"
-        }
-      },
-      {
-        "id": "review::.::holistic::high_level_elegance::stale_structure_doc",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "codebase_analysis.md Directory Structure and Gaps sections no longer match runtime reality",
-        "detail": {
-          "holistic": true,
-          "dimension": "high_level_elegance",
-          "related_files": [
-            "codebase_analysis.md",
-            "frontend/src/views/feeds.tsx",
-            "frontend/src/components/messages.tsx",
-            "server/Dockerfile"
-          ],
-          "evidence": [
-            "Doc documents the frontend as single files views.tsx (861 lines) and ui.tsx (532 lines), but those files do not exist; the code is split into views/ (Auth, Moderation, Profile, feeds) and components/ (chrome, messages, overlays).",
-            "Doc lists App.tsx as 536 lines (actual 589) and its Gaps section still asserts 'Not a git repository', 'No Dockerfiles for the API', and a README referencing a stale alb_sheshi/ path \u2014 all contradicted by the current tree (a .git dir, server/Dockerfile, and a server/README.md that points at server/Sheshi.Api)."
-          ],
-          "suggestion": "Update the Directory Structure section to reflect frontend/src/views/ and frontend/src/components/, refresh the line counts, and prune the now-resolved Gaps items (git, Dockerfile, README path) so the document remains a trustworthy reference for the structure.",
-          "reasoning": "",
-          "summary_hash": "4d3d5cc4"
-        }
-      },
-      {
-        "id": "review::.::holistic::logic_clarity::tryparsestatus_redundant_eval",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "TryParseStatus re-runs the lowercased string-set check for its return instead of using the switch it computed",
-        "detail": {
-          "holistic": true,
-          "dimension": "logic_clarity",
-          "related_files": [
-            "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
-          ],
-          "evidence": [
-            "Line 292: `parsed = status.ToLowerInvariant() switch { \"open\" => ..., \"resolved\" => ..., \"dismissed\" => ..., _ => default };` assigns the out parameter.",
-            "Line 299: `return status.ToLowerInvariant() is \"open\" or \"resolved\" or \"dismissed\";` re-evaluates ToLowerInvariant() a second/third time and re-lists the same valid values, so the return is not derived from the switch result and the valid-value list is duplicated."
-          ],
-          "suggestion": "Compute the lowercased value once and let the switch signal validity, e.g. `var normalized = status.ToLowerInvariant(); switch return a value/flag` \u2014 set `parsed` and return true for the three cases, return false in the default arm, so the valid set is declared in exactly one place.",
-          "reasoning": "",
-          "summary_hash": "56629147"
-        }
-      },
-      {
-        "id": "review::.::holistic::low_level_elegance::tryparsestatus_redundant_branches",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "TryParseStatus computes parsed via switch then re-derives success from a parallel three-literal check, evaluating ToLowerInvariant three times",
-        "detail": {
-          "holistic": true,
-          "dimension": "low_level_elegance",
-          "related_files": [
-            "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
-          ],
-          "evidence": [
-            "Lines 290-300: the switch on status.ToLowerInvariant() sets `parsed`, then `return status.ToLowerInvariant() is \"open\" or \"resolved\" or \"dismissed\";` re-lowercases and re-lists the same three literals, ignoring the switch result.",
-            "The `_ => default` arm makes the out value indistinguishable for an invalid input (default == ReportStatus.Open), so the separate boolean check exists only to compensate for the discarded switch outcome."
-          ],
-          "suggestion": "Make the switch the single source of truth: switch to `string?` or use a value-tuple, e.g. `return (parsed, ok) = status.ToLowerInvariant() switch { \"open\" => (ReportStatus.Open, true), ... , _ => (default, false) }` \u2014 or simply compute `var ok = ...switch{...=> true, _ => false}` alongside `parsed` so ToLowerInvariant runs once and the branch set is not duplicated.",
-          "reasoning": "",
-          "summary_hash": "fc6f56b6"
-        }
-      },
-      {
-        "id": "review::.::holistic::mid_level_elegance::dead_notifier_overload",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "RealtimeNotifier.MessageChangedAsync(Guid, Guid?, ...) overload has no callers",
-        "detail": {
-          "holistic": true,
-          "dimension": "mid_level_elegance",
-          "related_files": [
-            "server/Sheshi.Api/Realtime/RealtimeNotifier.cs"
-          ],
-          "evidence": [
-            "RealtimeNotifier exposes two MessageChangedAsync overloads (lines 7 and 14). A grep of the API project shows all four call sites in MessageService use the MessageChangeDto overload; the (Guid roomId, Guid? threadId) overload is unreferenced.",
-            "A vestigial overload on the realtime seam widens the boundary surface and invites future callers to use the lower-fidelity notification path (no message_changed payload)."
-          ],
-          "suggestion": "Delete the unused MessageChangedAsync(Guid roomId, Guid? threadId = null, ...) overload so the realtime seam exposes exactly the one notification shape callers actually use.",
-          "reasoning": "",
-          "summary_hash": "9f292581"
-        }
-      },
-      {
-        "id": "review::.::holistic::package_organization::empty_controllers_dir",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "Empty Controllers/ directory contradicts the feature-folder controller convention",
-        "detail": {
-          "holistic": true,
-          "dimension": "package_organization",
-          "related_files": [
-            "server/Sheshi.Api/Controllers/"
-          ],
-          "evidence": [
-            "server/Sheshi.Api/Controllers/ exists but contains zero files (leftover from `dotnet new webapi` scaffolding).",
-            "Controllers actually live in feature folders: Features/Messages/MessagesController.cs, Features/Moderation/ModerationController.cs, Features/Rooms/RoomsController.cs, Auth/AuthController.cs, Auth/MeController.cs, Realtime/PresenceController.cs.",
-            "The folder name implies a flat-by-MVC-role placement convention that the codebase deliberately does not use, sending a contradictory navigation signal."
-          ],
-          "suggestion": "Delete the empty server/Sheshi.Api/Controllers/ directory. No move/import updates needed since it holds no files; run `dotnet build server/Sheshi.Api` afterward to confirm nothing referenced it.",
-          "reasoning": "",
-          "summary_hash": "28ba4c1a"
-        }
-      },
-      {
-        "id": "review::.::holistic::test_strategy::frontend_zero_tests",
-        "tier": 1,
-        "confidence": "high",
-        "summary": "React/TS frontend SPA has no automated tests and no configured test runner",
-        "detail": {
-          "holistic": true,
-          "dimension": "test_strategy",
-          "related_files": [
-            "frontend/src/api.ts",
-            "frontend/src/realtime.ts",
-            "frontend/src/appHooks.ts",
-            "frontend/package.json"
-          ],
-          "evidence": [
-            "No *.test.* or *.spec.* files exist under frontend/src; package.json scripts contain only dev/build/preview \u2014 no test runner (vitest/jest) is wired up.",
-            "frontend/src contains the API client (api.ts), SignalR realtime layer (realtime.ts), role logic (roles.ts), hooks (appHooks.ts), and feature views/components \u2014 none are exercised by any test, so client-side regressions (request shaping, optimistic vote/report handling, realtime reconnection, role gating) are caught only manually."
-          ],
-          "suggestion": "Add a lightweight Vitest setup and cover the highest-value pure modules first: api.ts request/response mapping, roles.ts gating, and realtime.ts connection/event handling with a mocked hub. This validates the client contract without needing a full browser harness.",
-          "reasoning": "",
-          "summary_hash": "9ddd2fad"
-        }
-      },
-      {
-        "id": "review::.::holistic::high_level_elegance::moderation_no_service_layer",
-        "tier": 2,
-        "confidence": "medium",
-        "summary": "ModerationController holds all analytics/aggregation logic inline while sibling features use a controller+service split",
-        "detail": {
-          "holistic": true,
-          "dimension": "high_level_elegance",
-          "related_files": [
-            "server/Sheshi.Api/Features/Moderation/ModerationController.cs"
-          ],
-          "evidence": [
-            "ModerationController.cs is 379 LOC and contains private aggregation helpers LoadTrendAsync, LoadTopRoomsAsync, LoadTopPostsAsync, CountRoleMembersAsync, plus direct AppDbContext/UserManager access for analytics, report triage, bans, and role grants.",
-            "By contrast MessagesController delegates to MessageService/MessageReader and RoomsController delegates to RoomService, so Moderation is the only feature whose controller owns substantial domain logic \u2014 a developer expecting the established per-feature service split will be surprised here."
-          ],
-          "suggestion": "Extract the read/aggregation logic (analytics windowing, top-rooms/top-posts/trend queries) into a ModerationAnalyticsService (or ModerationReader) registered in DI, mirroring MessageReader/HighlightsService, leaving the controller to translate requests and results. Keep it a single straightforward service; do not over-fragment.",
-          "reasoning": "",
-          "summary_hash": "5d45e7f0"
-        }
-      },
-      {
-        "id": "review::.::holistic::mid_level_elegance::stringly_typed_error_seam",
-        "tier": 2,
-        "confidence": "medium",
-        "summary": "Service result error codes cross the service->controller seam as bare strings matched by literal comparison",
-        "detail": {
-          "holistic": true,
-          "dimension": "mid_level_elegance",
-          "related_files": [
-            "server/Sheshi.Api/Features/Messages/MessageService.cs",
-            "server/Sheshi.Api/Features/Messages/MessagesController.cs",
-            "server/Sheshi.Api/Features/Rooms/RoomService.cs"
-          ],
-          "evidence": [
-            "MessageService.CreateMessageAsync returns MessageCreateResult.Failed(\"ROOM_NOT_FOUND\" / \"PARENT_NOT_FOUND\" / \"PARENT_ROOM_MISMATCH\"); the controller re-discriminates with result.Error == \"ROOM_NOT_FOUND\" etc. (MessagesController.cs lines 80-85).",
-            "RoomsController.Create switches on the literal \"ROOM_EXISTS\" string (lines 33-38). The producer and consumer share an implicit string contract with no compiler enforcement, so a code rename or typo on one side silently degrades to the generic BadRequest branch."
-          ],
-          "suggestion": "Replace the free-string Error field on the result records with a small enum (e.g. MessageCreateError { RoomNotFound, ParentNotFound, ParentRoomMismatch, ... }) so the producer and the controller's switch share a compiler-checked discriminator; keep the HTTP-status mapping in the controller as-is. This adds no indirection \u2014 it swaps a stringly-typed field for an enum field on the same record.",
-          "reasoning": "",
-          "summary_hash": "83bf802b"
-        }
-      },
-      {
-        "id": "review::.::holistic::test_strategy::delay_ordering_reliance",
-        "tier": 2,
-        "confidence": "medium",
-        "summary": "Pagination ordering test depends on a 5ms Task.Delay to separate CreatedAt timestamps",
-        "detail": {
-          "holistic": true,
-          "dimension": "test_strategy",
-          "related_files": [
-            "server/Sheshi.Api.Tests/CoreApiTests.cs"
-          ],
-          "evidence": [
-            "Threads_store_root_depth_and_feeds_page_by_cursor posts two messages separated by `await Task.Delay(5)` (line 215), then asserts which post appears on page one \u2014 correctness hinges on the 5ms gap producing distinct CreatedAt values under the DB/clock resolution.",
-            "The keyset index includes Id as a tiebreaker, so the test could be made deterministic without relying on wall-clock spacing."
-          ],
-          "suggestion": "Remove the Task.Delay and make ordering deterministic by asserting against the index's full ordering (CreatedAt desc, Id desc) or by controlling CreatedAt directly so the test does not depend on timing resolution.",
-          "reasoning": "",
-          "summary_hash": "454eeb44"
-        }
-      }
-    ]
-  },
-  "total_matching": 13,
-  "hidden": {
-    "by_detector": {
-      "review": 3
-    },
-    "total": 3
-  },
-  "noise_budget": 10,
-  "noise_global_budget": 0,
+  "total": 0,
+  "issues": [],
   "narrative": {
     "phase": "refinement",
-    "headline": "Crossed 80% strict! (13 review work items \u2014 run `desloppify show review --status open`)",
+    "headline": "Crossed 80% strict!",
     "dimensions": {
       "lowest_dimensions": [
         {
@@ -248,7 +18,7 @@
         {
           "name": "Test strategy",
           "strict": 87.0,
-          "failing": 2,
+          "failing": 0,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -256,7 +26,7 @@
         {
           "name": "Mid elegance",
           "strict": 87.5,
-          "failing": 3,
+          "failing": 0,
           "impact": 0.0,
           "subjective": true,
           "impact_description": "re-review to improve"
@@ -321,17 +91,6 @@
         "lane": "refactor_0"
       },
       {
-        "type": "refactor",
-        "detector": "review",
-        "count": 13,
-        "description": "13 review work items need investigation \u2014 run `desloppify show review --status open` to see them",
-        "command": "desloppify show review --status open",
-        "impact": 0.0,
-        "dimension": "Unknown",
-        "priority": 2,
-        "lane": "refactor_1"
-      },
-      {
         "type": "manual_fix",
         "detector": "stale_exclude",
         "count": 5,
@@ -339,8 +98,8 @@
         "command": "desloppify show stale_exclude --status open",
         "impact": 0.0,
         "dimension": "Code quality",
-        "priority": 3,
-        "lane": "refactor_2"
+        "priority": 2,
+        "lane": "refactor_1"
       },
       {
         "type": "debt_review",
@@ -348,14 +107,14 @@
         "description": "3.8 pts of wontfix debt \u2014 review stale decisions",
         "command": "desloppify show --status wontfix",
         "gap": 3.8,
-        "priority": 4,
+        "priority": 3,
         "lane": "debt_review"
       }
     ],
     "strategy": {
       "fixer_leverage": {
         "auto_fixable_count": 0,
-        "total_count": 45,
+        "total_count": 6,
         "coverage": 0.0,
         "impact_ratio": 0.0,
         "recommendation": "none"
@@ -374,15 +133,6 @@
           "actions": [
             2
           ],
-          "file_count": 1,
-          "total_impact": 0.0,
-          "automation": "manual",
-          "run_first": false
-        },
-        "refactor_2": {
-          "actions": [
-            3
-          ],
           "file_count": 5,
           "total_impact": 0.0,
           "automation": "manual",
@@ -390,7 +140,7 @@
         },
         "debt_review": {
           "actions": [
-            4
+            3
           ],
           "file_count": 0,
           "total_impact": 0.0,
@@ -399,7 +149,7 @@
         }
       },
       "can_parallelize": false,
-      "hint": "Work through actions in priority order. Rescan after each fix to track progress. Review: 13 issue(s) \u2014 `desloppify show review --status open`."
+      "hint": "Work through actions in priority order. Rescan after each fix to track progress."
     },
     "tools": {
       "fixers": [],
@@ -422,7 +172,7 @@
     },
     "debt": {
       "overall_gap": 3.8,
-      "wontfix_count": 8,
+      "wontfix_count": 10,
       "worst_dimension": "Test health",
       "worst_gap": 92.4,
       "trend": "growing"
@@ -432,7 +182,7 @@
       "command": "desloppify show dupes --status open",
       "description": "1 dupes work items \u2014 extract shared utility or consolidate duplicates"
     },
-    "why_now": "Work through actions in priority order. Rescan after each fix to track progress. Review: 13 issue(s) \u2014 `desloppify show review --status open`.",
+    "why_now": "Work through actions in priority order. Rescan after each fix to track progress.",
     "verification_step": {
       "command": "desloppify scan",
       "reason": "revalidate after changes"
@@ -441,7 +191,7 @@
       {
         "type": "wontfix_gap",
         "severity": "medium",
-        "message": "Strict/lenient gap is 3.8 pts with 8 wontfix issues"
+        "message": "Strict/lenient gap is 3.8 pts with 10 wontfix issues"
       }
     ],
     "strict_target": {
@@ -452,13 +202,6 @@
       "warning": null
     },
     "reminders": [
-      {
-        "type": "review_issues_pending",
-        "message": "13 review work item(s) need investigation. Run `desloppify show review --status open` to see the work queue.",
-        "command": "desloppify show review --status open",
-        "priority": 1,
-        "severity": "high"
-      },
       {
         "type": "review_not_run",
         "message": "Mechanical checks look good! Run a subjective design review to catch issues linters miss: desloppify review --prepare",
@@ -473,7 +216,6 @@
       "feedback_nudge": 3,
       "stagnant_nudge": 22,
       "wontfix_growing": 3,
-      "review_issues_pending": 1,
       "review_not_run": 1
     }
   },

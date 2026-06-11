@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Sheshi.Api.Domain;
+namespace Sheshi.Api.Common;
 
 public static partial class Slug
 {

@@ -188,6 +188,9 @@ export function sortHomeThreads(messages: Message[], sort: HomeSort) {
   ));
 }
 
+// Deliberately simplified client-side mirror of the server's canonical
+// HighlightsService.Score (C#), used only to re-sort already-loaded highlights
+// without a round-trip. Keep the weights roughly in sync with the backend.
 function hotScore(message: Message) {
   const now = Date.now();
   const ageHours = Math.max((now - new Date(message.created_at).getTime()) / 36e5, 0.25);

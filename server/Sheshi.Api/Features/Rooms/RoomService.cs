@@ -1,3 +1,4 @@
+using Sheshi.Api.Common;
 using Microsoft.EntityFrameworkCore;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
