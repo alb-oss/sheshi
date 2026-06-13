@@ -46,7 +46,12 @@ builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddScoped<RealtimeNotifier>();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR().AddJsonProtocol(o =>
+{
+    o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+    o.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
+    o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
+});
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;

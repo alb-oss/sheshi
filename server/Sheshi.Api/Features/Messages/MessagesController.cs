@@ -134,7 +134,10 @@ public class MessagesController(
         db.Messages.Add(message);
         await db.SaveChangesAsync(ct);
         await moderationRuleEngine.EvaluateAsync(message, ct);
-        await realtime.MessageChangedAsync(message.RoomId, await GetThreadRootIdAsync(message, ct), ct);
+
+        var rootId = await GetThreadRootIdAsync(message, ct);
+        var broadcast = (await messageService.EnrichAsync([message], null, ct)).Single();
+        await realtime.MessageCreatedAsync(broadcast, message.ParentId is null ? null : rootId, ct);
 
         var dto = await messageService.EnrichAsync([message], user.Id, ct);
         return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, dto.Single());
@@ -159,7 +162,9 @@ public class MessagesController(
             await db.SaveChangesAsync(ct);
         }
 
-        await realtime.MessageChangedAsync(message.RoomId, await GetThreadRootIdAsync(message, ct), ct);
+        var upvotes = await db.Votes.CountAsync(v => v.MessageId == id, ct);
+        await realtime.VoteChangedAsync(id, message.RoomId, upvotes,
+            message.ParentId is null ? null : await GetThreadRootIdAsync(message, ct), ct);
         return NoContent();
     }
 
@@ -176,9 +181,11 @@ public class MessagesController(
         {
             var roomId = vote.Message.RoomId;
             var threadId = await GetThreadRootIdAsync(vote.Message, ct);
+            var isReply = vote.Message.ParentId is not null;
             db.Votes.Remove(vote);
             await db.SaveChangesAsync(ct);
-            await realtime.MessageChangedAsync(roomId, threadId, ct);
+            var upvotes = await db.Votes.CountAsync(v => v.MessageId == id, ct);
+            await realtime.VoteChangedAsync(id, roomId, upvotes, isReply ? threadId : null, ct);
         }
 
         return NoContent();
@@ -203,7 +210,8 @@ public class MessagesController(
         await db.SaveChangesAsync(ct);
         if (canModerate && message.AuthorId != user.Id)
             await actionLogger.LogAsync(User, ModerationActionTypes.MessageDeleted, "message", message.Id, ct: ct);
-        await realtime.MessageChangedAsync(message.RoomId, await GetThreadRootIdAsync(message, ct), ct);
+        await realtime.MessageDeletedAsync(message.Id, message.RoomId,
+            message.ParentId is null ? null : await GetThreadRootIdAsync(message, ct), ct);
         return NoContent();
     }
 
