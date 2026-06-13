@@ -28,6 +28,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-thread-line: var(--thread-line);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
@@ -71,6 +72,8 @@
   --destructive-foreground: #ffffff;
 
   --border: rgba(232, 228, 221, 0.08);
+  /* Comment-thread guide lines — far more visible than --border (which is ~8%) so nesting reads. */
+  --thread-line: rgba(232, 228, 221, 0.2);
   --input: rgba(232, 228, 221, 0.12);
   --ring: #e63946;
 

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Composer } from "@/components/Composer";
@@ -7,7 +7,6 @@ import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { MessageCard } from "@/components/MessageCard";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
-import { cn } from "@/lib/utils";
 import {
   getThread,
   listRooms,
@@ -337,19 +336,29 @@ function ReplyBranch({
 }) {
   const isCollapsed = collapsed.has(node.message.id);
   const hiddenCount = countNodes(node.replies);
-  const levelIndent = node.depth > 1 && node.depth <= 6 ? 12 : 0;
-  const contentIndentClass = node.depth <= 6 ? "pl-3 sm:pl-4" : "pl-0";
+  const hasChildren = hiddenCount > 0;
+  // Consistent ~16px indent per nesting level (depth 1 = top-level reply, no indent), clamped.
+  const levelIndent = node.depth > 1 ? Math.min(node.depth - 1, 8) * 16 : 0;
 
   return (
     <div className="relative" style={{ marginLeft: levelIndent }}>
-      <div
-        className={cn(
-          "absolute left-2 top-0 bottom-0 w-px bg-border/70",
-          node.depth > 6 && "bg-primary/30",
-        )}
-        aria-hidden
-      />
-      <div className={contentIndentClass}>
+      {hasChildren && !isCollapsed ? (
+        // The vertical thread rail doubles as the collapse affordance (Reddit-style: click
+        // the line to fold the subtree). It lives in the left gutter so it never intercepts
+        // clicks on the comment itself, and brightens to the accent on hover.
+        <button
+          type="button"
+          onClick={() => onToggleCollapse(node.message.id)}
+          aria-label="Mbyll përgjigjet"
+          title="Mbyll përgjigjet"
+          className="group/line absolute left-0 top-9 bottom-0 z-10 flex w-4 justify-center"
+        >
+          <span className="w-px bg-thread-line transition-colors group-hover/line:bg-primary" />
+        </button>
+      ) : (
+        <div className="absolute left-2 top-0 bottom-0 w-px bg-thread-line" aria-hidden />
+      )}
+      <div className="pl-4 sm:pl-5">
         <MessageCard
           message={node.message}
           roomSlug={slug}
@@ -362,18 +371,14 @@ function ReplyBranch({
 
         {renderReplyComposer(node.message)}
 
-        {hiddenCount > 0 ? (
+        {hasChildren && isCollapsed ? (
           <button
             type="button"
             onClick={() => onToggleCollapse(node.message.id)}
-            className="ml-6 mb-2 inline-flex min-h-8 items-center gap-1.5 rounded-sm px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-foreground/45 hover:bg-card hover:text-primary"
+            className="mb-2 ml-1 inline-flex min-h-7 items-center gap-1.5 rounded-sm border border-thread-line px-2 py-1 text-[11px] font-bold text-foreground/60 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
           >
-            {isCollapsed ? (
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-            )}
-            {isCollapsed ? `Shfaq ${sq.chat.replies(hiddenCount)}` : "Mbyll përgjigjet"}
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+            {sq.chat.replies(hiddenCount)}
           </button>
         ) : null}
 

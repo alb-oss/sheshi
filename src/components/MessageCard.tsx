@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUp, CornerDownRight, Flag, Share2, Trash2 } from "lucide-react";
+import { ArrowBigUp, Bookmark, CornerDownRight, Flag, Share2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { sq as sqLocale } from "date-fns/locale";
 import { sq } from "@/i18n/sq";
 import { cn } from "@/lib/utils";
 import { SheshiError, toggleVote, softDeleteMessage, type MessageRow } from "@/lib/sheshi";
+import { isSaved, onSavedChanged, toggleSaved } from "@/lib/saved";
 import { ReportDialog } from "./ReportDialog";
 import { ShareDialog, type ShareTarget } from "./ShareDialog";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ export function MessageCard({
   const [optimisticVoted, setOptimisticVoted] = useState(!!message.voted);
   const [reportOpen, setReportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
   const isDeleted = !!message.deleted_at;
   const isOwn = currentUserId && currentUserId === message.author_id;
 
@@ -57,6 +59,18 @@ export function MessageCard({
     setOptimisticUpvotes(message.upvotes ?? 0);
     setOptimisticVoted(!!message.voted);
   }, [message.id, message.upvotes, message.voted]);
+
+  // Saved/bookmark is local-only (localStorage) — keep in sync if another card toggles it.
+  useEffect(() => {
+    setSaved(isSaved(message.id));
+    return onSavedChanged(() => setSaved(isSaved(message.id)));
+  }, [message.id]);
+
+  function onToggleSave() {
+    const next = toggleSaved(message.id);
+    setSaved(next);
+    toast.success(next ? sq.chat.saved : sq.chat.unsave);
+  }
 
   async function onVote() {
     if (!currentUserId) {
@@ -131,25 +145,55 @@ export function MessageCard({
   }
 
   return (
-    <article className={cn("group flex gap-4 px-4 py-4 sm:px-6", compact && "gap-3 px-3 py-2.5")}>
-      <div
-        className={cn(
-          "shrink-0 rounded-full bg-card border border-border/50 flex items-center justify-center font-bold text-foreground/70 overflow-hidden",
-          compact ? "h-8 w-8 text-[10px]" : "h-10 w-10 text-[11px]",
-        )}
-        aria-hidden
-      >
-        {message.author?.avatar_url ? (
-          <img src={message.author.avatar_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <span>{initials || "??"}</span>
-        )}
-      </div>
+    <article className={cn("group flex gap-2 px-3 py-3 sm:gap-3 sm:px-4", compact && "py-2.5")}>
+      {/* Reddit-style left vote rail: up-arrow over the score. The down-arrow lands when the
+          backend gains a real downvote (see docs/plans/2026-06-14-reddit-thread-ui-design.md). */}
+      {!isDeleted && (
+        <div className="flex shrink-0 flex-col items-center gap-0.5 pt-0.5">
+          <button
+            type="button"
+            onClick={onVote}
+            disabled={voting}
+            aria-label={sq.chat.upvote}
+            aria-pressed={optimisticVoted}
+            className={cn(
+              "inline-flex h-6 w-6 items-center justify-center rounded-sm transition-colors disabled:opacity-50",
+              optimisticVoted
+                ? "text-primary"
+                : "text-foreground/35 hover:bg-primary/10 hover:text-primary",
+            )}
+          >
+            <ArrowBigUp
+              className="h-5 w-5"
+              fill={optimisticVoted ? "currentColor" : "none"}
+              aria-hidden
+            />
+          </button>
+          <span
+            className={cn(
+              "min-w-5 text-center text-xs font-bold leading-none tabular-nums",
+              optimisticVoted ? "text-primary" : "text-foreground/70",
+            )}
+          >
+            {optimisticUpvotes}
+          </span>
+        </div>
+      )}
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className="font-bold text-sm truncate">{handle}</span>
-          <span className="text-[10px] text-foreground/30 font-medium tabular-nums">{time}</span>
+        <div className="mb-1 flex items-center gap-2">
+          <span
+            className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-card text-[9px] font-bold text-foreground/70"
+            aria-hidden
+          >
+            {message.author?.avatar_url ? (
+              <img src={message.author.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span>{initials || "??"}</span>
+            )}
+          </span>
+          <span className="truncate text-sm font-bold">{handle}</span>
+          <span className="text-[10px] font-medium tabular-nums text-foreground/30">{time}</span>
         </div>
 
         <div
@@ -170,21 +214,7 @@ export function MessageCard({
         ) : null}
 
         {!isDeleted && (
-          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-4">
-            <button
-              type="button"
-              onClick={onVote}
-              disabled={voting}
-              aria-label={sq.chat.upvote}
-              className={cn(
-                "inline-flex min-h-8 items-center gap-1.5 rounded-sm px-1.5 text-xs font-bold transition-colors disabled:opacity-50",
-                optimisticVoted ? "text-primary" : "text-foreground/40 hover:text-primary",
-              )}
-            >
-              <ArrowUp className="w-3.5 h-3.5" aria-hidden />
-              <span className="tabular-nums">{optimisticUpvotes}</span>
-            </button>
-
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-3">
             {(() => {
               const isTopLevel = message.parent_id === null;
               const replyClass = cn(
@@ -245,14 +275,31 @@ export function MessageCard({
               <Share2 className="h-3.5 w-3.5" aria-hidden />
             </button>
 
+            <button
+              type="button"
+              onClick={onToggleSave}
+              aria-label={saved ? sq.chat.unsave : sq.chat.save}
+              title={saved ? sq.chat.unsave : sq.chat.save}
+              aria-pressed={saved}
+              className={cn(
+                "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors",
+                saved
+                  ? "border-primary/60 bg-primary/10 text-primary"
+                  : "border-border/70 text-foreground/50 hover:border-primary/60 hover:bg-primary/10 hover:text-primary",
+              )}
+            >
+              <Bookmark className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} aria-hidden />
+            </button>
+
             {currentUserId && !isOwn && (
               <button
                 type="button"
                 onClick={() => setReportOpen(true)}
                 aria-label={sq.chat.report}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border/70 text-foreground/60 transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary md:h-8 md:w-8 md:border-0 md:bg-transparent md:text-foreground/40 md:opacity-0 md:group-hover:opacity-100"
+                title={sq.chat.report}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 text-foreground/50 transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
               >
-                <Flag className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                <Flag className="h-3.5 w-3.5" />
               </button>
             )}
             {isOwn && (
@@ -260,9 +307,10 @@ export function MessageCard({
                 type="button"
                 onClick={onDelete}
                 aria-label={sq.chat.delete}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-primary/10 hover:text-primary md:opacity-0 md:group-hover:opacity-100"
+                title={sq.chat.delete}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 text-foreground/50 transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
