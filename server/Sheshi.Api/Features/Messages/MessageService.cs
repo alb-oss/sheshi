@@ -84,12 +84,10 @@ public class MessageService(AppDbContext db)
             .Select(g => new { MessageId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.MessageId, x => x.Count, ct);
 
-        var replyCounts = await db.Messages
-            .AsNoTracking()
-            .Where(m => m.ParentId != null && ids.Contains(m.ParentId.Value) && m.DeletedAt == null)
-            .GroupBy(m => m.ParentId!.Value)
-            .Select(g => new { MessageId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.MessageId, x => x.Count, ct);
+        // Reply count = the FULL subtree size (sub-replies included), not just direct children,
+        // so a thread's count matches what the thread view shows and the live feed's per-reply
+        // increment. Computed for every enriched message (a reply also reports its own subtree).
+        var replyCounts = await LoadDescendantCountsAsync(ids, ct);
 
         var voted = callerId is null
             ? new HashSet<Guid>()
@@ -112,6 +110,35 @@ public class MessageService(AppDbContext db)
             upvotes.GetValueOrDefault(m.Id),
             replyCounts.GetValueOrDefault(m.Id),
             voted.Contains(m.Id))).ToList();
+    }
+
+    private sealed record DescendantCount(Guid RootId, int Count);
+
+    // Total descendants (all depths) under each given message. The model is an adjacency list
+    // (ParentId only), so a recursive CTE walks down from each root. Deleted nodes are counted —
+    // the thread tree keeps them ("[deleted]") and the live feed never decrements on delete, so
+    // counting them keeps the badge, the thread header, and realtime in agreement.
+    private async Task<Dictionary<Guid, int>> LoadDescendantCountsAsync(Guid[] ids, CancellationToken ct)
+    {
+        if (ids.Length == 0) return [];
+
+        var rows = await db.Database
+            .SqlQuery<DescendantCount>($@"
+                WITH RECURSIVE descendants AS (
+                    SELECT ""Id"" AS ""RootId"", ""Id"" AS node_id
+                    FROM ""Messages""
+                    WHERE ""Id"" = ANY({ids})
+                    UNION ALL
+                    SELECT d.""RootId"", m.""Id""
+                    FROM ""Messages"" m
+                    JOIN descendants d ON m.""ParentId"" = d.node_id
+                )
+                SELECT ""RootId"", (COUNT(*) - 1)::int AS ""Count""
+                FROM descendants
+                GROUP BY ""RootId""")
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(r => r.RootId, r => r.Count);
     }
 
     private async Task<CursorPageDto<MessageDto>> ToCursorPageAsync(

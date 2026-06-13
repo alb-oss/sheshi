@@ -142,10 +142,12 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var messages = await messagesResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
         messages.Should().NotBeNull();
         messages!.NextCursor.Should().BeNull();
+        // reply_count is the FULL subtree size: main has a direct reply AND a nested sub-reply,
+        // so it counts 2 (not 1) — sub-replies are included.
         messages.Items.Should().ContainSingle(m =>
             m.Id == main.Id &&
             m.Upvotes == 1 &&
-            m.ReplyCount == 1 &&
+            m.ReplyCount == 2 &&
             m.Voted);
 
         var repliesResponse = await client.GetAsync($"/api/messages/{main.Id}/replies");
@@ -160,6 +162,7 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var thread = await threadResponse.Content.ReadFromJsonAsync<ThreadDto>();
         thread.Should().NotBeNull();
         thread!.Root.Id.Should().Be(main.Id);
+        thread.Root.ReplyCount.Should().Be(2); // root counts the nested sub-reply too
         thread.Replies.Should().ContainSingle();
         thread.Replies.Single().Message.Id.Should().Be(reply.Id);
         thread.Replies.Single().Replies.Should().ContainSingle();
