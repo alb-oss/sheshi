@@ -22,17 +22,65 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         roomsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var rooms = await roomsResponse.Content.ReadFromJsonAsync<RoomDto[]>();
         rooms.Should().NotBeNull();
-        rooms.Should().HaveCount(5);
-        rooms!.Select(r => r.Slug).Should().Contain(["sheshi", "vjosa-narta", "tirana", "shkodra", "korca"]);
+        rooms.Should().Contain(r => r.Slug == "sheshi");
 
         var sheshiResponse = await client.GetAsync("/api/rooms/sheshi");
         sheshiResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var sheshi = await sheshiResponse.Content.ReadFromJsonAsync<RoomDto>();
         sheshi.Should().NotBeNull();
         sheshi!.Name.Should().Be("#sheshi");
+        sheshi.Description.Should().Be("Diskutimi kryesor publik.");
 
         var missingResponse = await client.GetAsync("/api/rooms/missing-room");
         missingResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Only_admins_can_create_rooms()
+    {
+        var client = factory.CreateClient();
+        var normal = await RegisterAsync(client, "room-user");
+        var admin = await RegisterAsync(client, "room-admin");
+        await WithServicesAsync(async sp =>
+        {
+            var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
+            var adminUser = await userManager.FindByEmailAsync(admin.Email);
+            await userManager.AddToRoleAsync(adminUser!, Roles.Admin);
+        });
+        admin = await LoginAsync(client, admin.Email);
+
+        client.DefaultRequestHeaders.Authorization = null;
+        var unauthenticatedResponse = await client.PostAsJsonAsync("/api/rooms", new
+        {
+            name = "Lagjja"
+        });
+        unauthenticatedResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        UseBearer(client, normal.AccessToken);
+        var normalCreateResponse = await client.PostAsJsonAsync("/api/rooms", new
+        {
+            name = "Lagjja",
+            description = "Diskutim lokal"
+        });
+        normalCreateResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        UseBearer(client, admin.AccessToken);
+        var createResponse = await client.PostAsJsonAsync("/api/rooms", new
+        {
+            name = "Lagjja",
+            description = "Diskutim lokal"
+        });
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var room = await createResponse.Content.ReadFromJsonAsync<RoomDto>();
+        room.Should().NotBeNull();
+        room!.Slug.Should().Be("lagjja");
+        room.Name.Should().Be("#Lagjja");
+
+        var duplicateResponse = await client.PostAsJsonAsync("/api/rooms", new
+        {
+            name = "Lagjja"
+        });
+        duplicateResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
     [Fact]
@@ -66,6 +114,17 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         reply.Should().NotBeNull();
         reply!.ParentId.Should().Be(main.Id);
 
+        var nestedReplyResponse = await client.PostAsJsonAsync("/api/messages", new
+        {
+            room_id = room.Id,
+            parent_id = reply.Id,
+            body = "@alice Nested reply"
+        });
+        nestedReplyResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var nestedReply = await nestedReplyResponse.Content.ReadFromJsonAsync<MessageDto>();
+        nestedReply.Should().NotBeNull();
+        nestedReply!.ParentId.Should().Be(reply.Id);
+
         UseBearer(client, bob.AccessToken);
         var voteResponse = await client.PutAsync($"/api/messages/{main.Id}/vote", content: null);
         voteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -73,13 +132,17 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         secondVoteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var replyVoteResponse = await client.PutAsync($"/api/messages/{reply.Id}/vote", content: null);
-        replyVoteResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        replyVoteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var nestedReplyVoteResponse = await client.PutAsync($"/api/messages/{nestedReply.Id}/vote", content: null);
+        nestedReplyVoteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var messagesResponse = await client.GetAsync($"/api/rooms/{room.Id}/messages");
         messagesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var messages = await messagesResponse.Content.ReadFromJsonAsync<MessageDto[]>();
+        var messages = await messagesResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
         messages.Should().NotBeNull();
-        messages.Should().ContainSingle(m =>
+        messages!.NextCursor.Should().BeNull();
+        messages.Items.Should().ContainSingle(m =>
             m.Id == main.Id &&
             m.Upvotes == 1 &&
             m.ReplyCount == 1 &&
@@ -87,9 +150,22 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var repliesResponse = await client.GetAsync($"/api/messages/{main.Id}/replies");
         repliesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var replies = await repliesResponse.Content.ReadFromJsonAsync<MessageDto[]>();
+        var replies = await repliesResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
         replies.Should().NotBeNull();
-        replies.Should().ContainSingle(r => r.Id == reply.Id);
+        replies!.NextCursor.Should().BeNull();
+        replies.Items.Should().ContainSingle(r => r.Id == reply.Id && r.Upvotes == 1 && r.ReplyCount == 1 && r.Voted);
+
+        var threadResponse = await client.GetAsync($"/api/threads/{main.Id}");
+        threadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var thread = await threadResponse.Content.ReadFromJsonAsync<ThreadDto>();
+        thread.Should().NotBeNull();
+        thread!.Root.Id.Should().Be(main.Id);
+        thread.Replies.Should().ContainSingle();
+        thread.Replies.Single().Message.Id.Should().Be(reply.Id);
+        thread.Replies.Single().Replies.Should().ContainSingle();
+        thread.Replies.Single().Replies.Single().Message.Id.Should().Be(nestedReply.Id);
+        thread.Replies.Single().Replies.Single().Message.Upvotes.Should().Be(1);
+        thread.Replies.Single().Replies.Single().Message.Voted.Should().BeTrue();
 
         var reportResponse = await client.PostAsJsonAsync($"/api/messages/{main.Id}/report", new
         {
@@ -181,6 +257,19 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return auth! with { Email = email };
     }
 
+    private async Task<AuthResponse> LoginAsync(HttpClient client, string email)
+    {
+        var response = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = "Password123!"
+        });
+        response.EnsureSuccessStatusCode();
+        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        auth.Should().NotBeNull();
+        return auth! with { Email = email };
+    }
+
     private static void UseBearer(HttpClient client, string accessToken) =>
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
@@ -239,4 +328,17 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         [property: JsonPropertyName("upvotes")] int Upvotes,
         [property: JsonPropertyName("reply_count")] int ReplyCount,
         [property: JsonPropertyName("voted")] bool Voted);
+
+    private sealed record CursorPageDto<T>(
+        [property: JsonPropertyName("items")] T[] Items,
+        [property: JsonPropertyName("next_cursor")] string? NextCursor);
+
+    private sealed record ThreadDto(
+        [property: JsonPropertyName("root")] MessageDto Root,
+        [property: JsonPropertyName("replies")] ReplyNodeDto[] Replies);
+
+    private sealed record ReplyNodeDto(
+        [property: JsonPropertyName("message")] MessageDto Message,
+        [property: JsonPropertyName("replies")] ReplyNodeDto[] Replies,
+        [property: JsonPropertyName("depth")] int Depth);
 }

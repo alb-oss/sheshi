@@ -91,14 +91,15 @@ profile + `user` role on signup (DB trigger `handle_new_user`); profile (view em
 edit `display_name`, auto username); roles `user`/`moderator`/`admin`; ban via
 `banned_at` (blocks posting/voting; can't self-unban).
 
-**Rooms:** seeded `sheshi`, `vjosa-narta`, `tirana`, `shkodra`, `korca`; list + by-slug.
+**Rooms:** originally seeded multiple topic/location rooms; the current product seed keeps only
+`sheshi`.
 
-**Messages:** top-level per room (latest 80, shown oldest→newest); post (1–2000 chars,
-banned blocked); one-level threaded replies (`parent_id`) with @mention prefill;
+**Messages:** top-level per room (latest 80, shown newest-first); post (1–2000 chars,
+banned blocked); nested threaded replies (`parent_id`) with @mention prefill;
 soft-delete (author own / mod any).
 
-**Votes:** upvote toggle, top-level only (DB trigger `enforce_vote_on_main`); one per
-user per message; counts via `message_stats` view; per-user `voted` state.
+**Votes:** upvote toggle on top-level threads and nested replies; one per user per
+message; counts via `message_stats` view; per-user `voted` state.
 
 **Reports/moderation:** report (spam/hate/doxxing/violence/other + note); statuses
 (open/resolved/dismissed) readable by mods/admins (no UI — DB only).
@@ -146,8 +147,8 @@ ASP.NET Identity replaces Supabase `auth.users` **and** the `user_roles` table.
 - **`RefreshToken`** (Id, UserId, TokenHash, ExpiresAt, RevokedAt, CreatedAt).
 
 `message_stats` (upvotes + reply_count) → computed via LINQ aggregation in the service
-layer (not a DB view). EF migrations recreate the schema; a seeder ensures roles + the 5
-rooms with the **exact** Albanian strings from `supabase/migrations`. The two Postgres
+layer (not a DB view). EF migrations recreate the schema; a seeder ensures roles + the
+single default `sheshi` room. The two Postgres
 triggers become service-layer logic (§C.6).
 
 ## C.3 REST API surface
@@ -164,8 +165,9 @@ All under `/api`, JSON (snake_case to match the existing frontend types), bearer
 | `GET /auth/providers` | enabled OAuth providers (UI shows/hides buttons) | anon |
 | `GET /me` · `PATCH /me` | current profile; edit display_name | user |
 | `GET /rooms` · `GET /rooms/{slug}` | list / fetch room | anon |
+| `POST /rooms` | create public room | user |
 | `GET /rooms/{id}/messages` | top-level, latest 80 | anon |
-| `GET /messages/{id}` · `GET /messages/{id}/replies` | thread parent + replies | anon |
+| `GET /messages/{id}` · `GET /messages/{id}/replies` · `GET /threads/{id}` | message, direct replies, nested thread tree | anon |
 | `POST /messages` | post message/reply (multipart if image) | user |
 | `DELETE /messages/{id}` | soft-delete (author or mod) | user |
 | `PUT /messages/{id}/vote` · `DELETE …/vote` | toggle upvote | user |
@@ -189,7 +191,7 @@ exist) — ship Google first; Apple needs an Apple Developer account + key-signe
 secret.
 
 ## C.5 Realtime (SignalR)
-One `ChatHub` at `/hub`. Clients join groups `room:{roomId}` / `thread:{messageId}`.
+One `ChatHub` at `/hub`. Clients join groups `room:{roomId}` / `thread:{rootMessageId}`.
 On writes the API broadcasts a `changed` signal to the relevant group(s); the client
 re-fetches (keeps today's debounced reload). **Presence**: the hub tracks connection
 counts per `room:{roomId}` → live `presence` events + `GET /api/rooms/presence` for
@@ -198,7 +200,7 @@ initial render. Replaces the hardcoded sidebar counts.
 ## C.6 Authorization (replaces Supabase RLS — critical)
 RLS moves to explicit **service-layer** checks. Direct ports:
 - **Post / vote** → must be authenticated and **not banned** (`is_banned`).
-- **Vote target** → must be top-level (`enforce_vote_on_main`).
+- **Vote target** → any non-missing message, including replies; one vote per user/message.
 - **Soft-delete** → author *or* moderator/admin.
 - **Profile self-update** → may change `display_name`, never `banned_at`/roles (can't self-unban).
 - **Reports** → any user files; only mod/admin reads/actions the queue.
@@ -240,8 +242,9 @@ port `55432`.
 
 ## C.11 Testing
 xUnit + `WebApplicationFactory` + Testcontainers Postgres: auth round-trip; post/vote/
-report flows; the §C.6 authorization rules (banned can't post, can't vote on replies,
-can't self-unban, mod-only endpoints reject normal users); highlights ranking; presence.
+report flows; nested replies and reply votes; the §C.6 authorization rules (banned can't
+post/vote, can't self-unban, mod-only endpoints reject normal users); highlights ranking;
+presence.
 
 ## C.12 Out of scope / flagged
 - No Supabase data migration (fresh DB). Copying current rows = separate add-on.
@@ -272,8 +275,9 @@ can't self-unban, mod-only endpoints reject normal users); highlights ranking; p
 
 **Phase 3 — Core API + authorization**
 - 3.1 Rooms. 3.2 Message read model + stats projection (DTO mirrors `MessageRow`, snake_case
-  JSON). 3.3 Post message (ban check, body 1–2000, parent top-level). 3.4 Votes (main-only +
-  ban). 3.5 Soft-delete (author/mod). 3.6 Reports. 3.7 Highlights (server-side ranking).
+  JSON). 3.3 Post message (ban check, body 1–2000, nested replies allowed). 3.4 Votes
+  (threads/replies + ban). 3.5 Soft-delete (author/mod). 3.6 Reports. 3.7 Highlights
+  (server-side ranking).
 
 **Phase 4 — SignalR + presence**
 - 4.1 `ChatHub` + change broadcasts (JWT over query string for websockets). 4.2 Presence
@@ -329,8 +333,8 @@ Quality review: **PASS** with non-blocking nits (below). Commits landed:
 - `07d4ec1` test(api): WebApplicationFactory + Testcontainers smoke test
 
 State: `server/` scaffolded (`Sheshi.Api`, `Sheshi.Api.Tests`, `Sheshi.sln`); `dotnet build`
-green; `/health` Testcontainers smoke test passing (1/1); Postgres via docker-compose; 5 rooms
-+ 3 roles seeded with exact Albanian strings (diacritics verified).
+green; `/health` Testcontainers smoke test passing (1/1); Postgres via docker-compose; default
+room + 3 roles seeded.
 
 **Important deviation — DB port:** this machine already runs a native Postgres on `5432`, so
 the compose container is mapped to host port **`55432`** (appsettings + design-time factory
@@ -364,12 +368,12 @@ removal of the `WeatherForecast` template sample, and a `server/.gitignore` re-i
   discovery, and password reset.
 
 ### ✅ Phase 3 — Core API + authorization (complete)
-- Implemented rooms, message reads, posting, replies, votes, soft-delete, reports, and server-side
-  highlights.
+- Implemented rooms, signed-in room creation, message reads, posting, nested replies,
+  nested thread-tree loading, votes, soft-delete, reports, and server-side highlights.
 - Added `MessageService` enrichment so message DTOs match the existing frontend shape: author,
   upvotes, reply counts, and caller-specific `voted`.
 - Ported critical Supabase RLS/trigger behavior into API checks: banned users cannot post/vote,
-  votes are main-message only, replies stay one level deep, and soft-delete is author or
+  votes apply to threads and replies, replies can nest, and soft-delete is author or
   moderator/admin.
 - Added integration tests covering rooms, message/reply/vote/report/highlight flow, and key
   authorization rules.
@@ -390,6 +394,8 @@ removal of the `WeatherForecast` template sample, and a `server/.gitignore` re-i
   realtime, highlights, and presence with .NET API + SignalR calls.
 - Added Composer image upload support, message image rendering, live sidebar presence, and `/moderim`
   moderation UI.
+- Added the Reddit-style product routes: `/` room directory, `/dhoma/:slug` room feeds,
+  `/tema/:messageId` nested thread pages, no `/r/*` redirects or links.
 - Removed Supabase frontend integrations, Supabase migrations, Lovable runtime auth/error code, and
   stale Supabase startup wiring. The build-time `@lovable.dev/vite-tanstack-config` preset remains.
 

@@ -4,6 +4,7 @@
 # .NET build artifacts
 bin/
 obj/
+Sheshi.Api/uploads/
 
 # User-specific files
 *.user

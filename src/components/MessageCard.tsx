@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Flag, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowUp, CornerDownRight, Flag, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { sq as sqLocale } from "date-fns/locale";
 import { sq } from "@/i18n/sq";
 import { cn } from "@/lib/utils";
-import { toggleVote, softDeleteMessage, type MessageRow } from "@/lib/sheshi";
+import { SheshiError, toggleVote, softDeleteMessage, type MessageRow } from "@/lib/sheshi";
 import { ReportDialog } from "./ReportDialog";
 import { toast } from "sonner";
 
@@ -29,6 +29,8 @@ export function MessageCard({
   onReply,
 }: Props) {
   const [voting, setVoting] = useState(false);
+  const [optimisticUpvotes, setOptimisticUpvotes] = useState(message.upvotes ?? 0);
+  const [optimisticVoted, setOptimisticVoted] = useState(!!message.voted);
   const [reportOpen, setReportOpen] = useState(false);
   const isDeleted = !!message.deleted_at;
   const isOwn = currentUserId && currentUserId === message.author_id;
@@ -49,17 +51,39 @@ export function MessageCard({
     }
   })();
 
+  useEffect(() => {
+    setOptimisticUpvotes(message.upvotes ?? 0);
+    setOptimisticVoted(!!message.voted);
+  }, [message.id, message.upvotes, message.voted]);
+
   async function onVote() {
     if (!currentUserId) {
       toast.error(sq.chat.signInToPost);
       return;
     }
+    if (voting) return;
+
+    const previousVoted = optimisticVoted;
+    const previousUpvotes = optimisticUpvotes;
+    const nextVoted = !previousVoted;
+    const nextUpvotes = Math.max(0, previousUpvotes + (nextVoted ? 1 : -1));
+
+    setOptimisticVoted(nextVoted);
+    setOptimisticUpvotes(nextUpvotes);
     setVoting(true);
     try {
-      await toggleVote(message.id, !!message.voted);
+      await toggleVote(message.id, previousVoted);
       onChanged?.();
-    } catch {
-      toast.error(sq.errors.generic);
+    } catch (error) {
+      setOptimisticVoted(previousVoted);
+      setOptimisticUpvotes(previousUpvotes);
+      toast.error(
+        error instanceof SheshiError && error.code === "UNAUTH"
+          ? sq.errors.auth
+          : error instanceof SheshiError && error.code === "RATE_LIMITED"
+            ? sq.errors.rateLimited
+          : "Vota nuk u ruajt. Provo sërish.",
+      );
     } finally {
       setVoting(false);
     }
@@ -76,9 +100,12 @@ export function MessageCard({
   }
 
   return (
-    <article className={cn("group flex gap-4 px-6 py-4", compact && "py-3")}>
+    <article className={cn("group flex gap-4 px-4 py-4 sm:px-6", compact && "gap-3 px-3 py-2.5")}>
       <div
-        className="shrink-0 w-10 h-10 rounded-full bg-card border border-border/50 flex items-center justify-center text-[11px] font-bold text-foreground/70 overflow-hidden"
+        className={cn(
+          "shrink-0 rounded-full bg-card border border-border/50 flex items-center justify-center font-bold text-foreground/70 overflow-hidden",
+          compact ? "h-8 w-8 text-[10px]" : "h-10 w-10 text-[11px]",
+        )}
         aria-hidden
       >
         {message.author?.avatar_url ? (
@@ -112,58 +139,32 @@ export function MessageCard({
         ) : null}
 
         {!isDeleted && (
-          <div className="mt-3 flex items-center gap-5">
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 sm:gap-x-4">
             <button
               type="button"
               onClick={onVote}
               disabled={voting}
               aria-label={sq.chat.upvote}
               className={cn(
-                "flex items-center gap-1.5 transition-colors text-xs font-bold disabled:opacity-50",
-                message.voted ? "text-primary" : "text-foreground/40 hover:text-primary",
+                "inline-flex min-h-8 items-center gap-1.5 rounded-sm px-1.5 text-xs font-bold transition-colors disabled:opacity-50",
+                optimisticVoted ? "text-primary" : "text-foreground/40 hover:text-primary",
               )}
             >
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M5 15l7-7 7 7"
-                />
-              </svg>
-              <span className="tabular-nums">{message.upvotes ?? 0}</span>
+              <ArrowUp className="w-3.5 h-3.5" aria-hidden />
+              <span className="tabular-nums">{optimisticUpvotes}</span>
             </button>
 
             {(() => {
               const isTopLevel = message.parent_id === null;
               const replyClass = cn(
-                "inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest transition-colors",
+                "inline-flex min-h-8 items-center gap-1.5 rounded-sm px-1.5 text-xs font-bold uppercase tracking-widest transition-colors",
                 message.reply_count
                   ? "text-foreground/70 hover:text-primary"
                   : "text-foreground/40 hover:text-primary",
               );
               const inner = (
                 <>
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2.5}
-                      d="M3 10h10a4 4 0 014 4v2m0 0l-3-3m3 3l-3 3"
-                    />
-                  </svg>
+                  <CornerDownRight className="w-3.5 h-3.5" aria-hidden />
                   <span>{sq.chat.reply}</span>
                   {isTopLevel && message.reply_count ? (
                     <span className="tabular-nums text-foreground/50">({message.reply_count})</span>
@@ -177,7 +178,7 @@ export function MessageCard({
                     onClick={() => onReply(message)}
                     className={cn(
                       replyClass,
-                      "rounded-sm px-1 py-0.5 -mx-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+                      "-mx-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
                     )}
                   >
                     {inner}
@@ -187,8 +188,8 @@ export function MessageCard({
               if (isTopLevel && asThreadLink) {
                 return (
                   <Link
-                    to="/r/$slug/t/$messageId"
-                    params={{ slug: roomSlug, messageId: message.id }}
+                    to="/tema/$messageId"
+                    params={{ messageId: message.id }}
                     onClick={() => {
                       if (typeof window !== "undefined") {
                         window.sessionStorage.setItem("sheshi:reply-intent", message.id);
@@ -208,9 +209,9 @@ export function MessageCard({
                 type="button"
                 onClick={() => setReportOpen(true)}
                 aria-label={sq.chat.report}
-                className="text-foreground/30 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border/70 text-foreground/60 transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary md:h-8 md:w-8 md:border-0 md:bg-transparent md:text-foreground/40 md:opacity-0 md:group-hover:opacity-100"
               >
-                <Flag className="w-3.5 h-3.5" />
+                <Flag className="h-4 w-4 md:h-3.5 md:w-3.5" />
               </button>
             )}
             {isOwn && (
@@ -218,7 +219,7 @@ export function MessageCard({
                 type="button"
                 onClick={onDelete}
                 aria-label={sq.chat.delete}
-                className="text-foreground/30 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-primary/10 hover:text-primary md:opacity-0 md:group-hover:opacity-100"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

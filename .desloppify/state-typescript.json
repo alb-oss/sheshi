@@ -1,0 +1,4088 @@
+{
+  "version": 3,
+  "created": "2026-06-09T21:06:01+00:00",
+  "last_scan": "2026-06-09T21:26:14+00:00",
+  "scan_count": 2,
+  "overall_score": 83.4,
+  "objective_score": 100.0,
+  "strict_score": 83.4,
+  "verified_strict_score": 100.0,
+  "stats": {
+    "total": 58,
+    "auto_resolved": 0,
+    "deferred": 0,
+    "false_positive": 0,
+    "fixed": 49,
+    "open": 8,
+    "triaged_out": 0,
+    "wontfix": 1,
+    "by_tier": {
+      "1": {
+        "auto_resolved": 0,
+        "deferred": 0,
+        "false_positive": 0,
+        "fixed": 21,
+        "open": 3,
+        "triaged_out": 0,
+        "wontfix": 1
+      },
+      "2": {
+        "auto_resolved": 0,
+        "deferred": 0,
+        "false_positive": 0,
+        "fixed": 8,
+        "open": 1,
+        "triaged_out": 0,
+        "wontfix": 0
+      },
+      "4": {
+        "auto_resolved": 0,
+        "deferred": 0,
+        "false_positive": 0,
+        "fixed": 20,
+        "open": 4,
+        "triaged_out": 0,
+        "wontfix": 0
+      }
+    }
+  },
+  "work_items": {
+    "subjective_review::.::abstraction_fitness": {
+      "id": "subjective_review::.::abstraction_fitness",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Abstraction fit \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "abstraction_fitness"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::ai_generated_debt": {
+      "id": "subjective_review::.::ai_generated_debt",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "AI generated debt \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "ai_generated_debt"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::api_surface_coherence": {
+      "id": "subjective_review::.::api_surface_coherence",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "API coherence \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "api_surface_coherence"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::authorization_consistency": {
+      "id": "subjective_review::.::authorization_consistency",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Auth consistency \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "authorization_consistency"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::contract_coherence": {
+      "id": "subjective_review::.::contract_coherence",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Contracts \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "contract_coherence"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::convention_outlier": {
+      "id": "subjective_review::.::convention_outlier",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Convention drift \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "convention_outlier"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::cross_module_architecture": {
+      "id": "subjective_review::.::cross_module_architecture",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Cross-module arch \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "cross_module_architecture"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::dependency_health": {
+      "id": "subjective_review::.::dependency_health",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Dep health \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "dependency_health"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::design_coherence": {
+      "id": "subjective_review::.::design_coherence",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Design coherence \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "design_coherence"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::error_consistency": {
+      "id": "subjective_review::.::error_consistency",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Error consistency \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "error_consistency"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::high_level_elegance": {
+      "id": "subjective_review::.::high_level_elegance",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "High elegance \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "high_level_elegance"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::incomplete_migration": {
+      "id": "subjective_review::.::incomplete_migration",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Stale migration \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "incomplete_migration"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::initialization_coupling": {
+      "id": "subjective_review::.::initialization_coupling",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Init coupling \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "initialization_coupling"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::logic_clarity": {
+      "id": "subjective_review::.::logic_clarity",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Logic clarity \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "logic_clarity"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::low_level_elegance": {
+      "id": "subjective_review::.::low_level_elegance",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Low elegance \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "low_level_elegance"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::mid_level_elegance": {
+      "id": "subjective_review::.::mid_level_elegance",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Mid elegance \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "mid_level_elegance"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::naming_quality": {
+      "id": "subjective_review::.::naming_quality",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Naming quality \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "naming_quality"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::package_organization": {
+      "id": "subjective_review::.::package_organization",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Structure nav \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "package_organization"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::test_strategy": {
+      "id": "subjective_review::.::test_strategy",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Test strategy \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "test_strategy"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "subjective_review::.::type_safety": {
+      "id": "subjective_review::.::type_safety",
+      "detector": "subjective_review",
+      "file": ".",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Type safety \u2014 no assessment on record, run `desloppify review --prepare`",
+      "detail": {
+        "reason": "unassessed",
+        "dimension": "type_safety"
+      },
+      "status": "fixed",
+      "note": "completed by review import",
+      "first_seen": "2026-06-09T21:06:06+00:00",
+      "last_seen": "2026-06-09T21:06:06+00:00",
+      "resolved_at": "2026-06-09T21:26:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "assessment_request",
+      "issue_kind": "assessment_request",
+      "origin": "synthetic_task",
+      "lang": "typescript",
+      "zone": "production",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "agent_import",
+        "text": "Dimension assessment imported; coverage marker superseded",
+        "attested_at": "2026-06-09T21:26:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "stale_exclude::.desloppify-venv::.desloppify-venv": {
+      "id": "stale_exclude::.desloppify-venv::.desloppify-venv",
+      "detector": "stale_exclude",
+      "file": ".desloppify-venv",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Excluded directory '.desloppify-venv' has 0 references from scanned code \u2014 may be stale",
+      "detail": {
+        "directory": ".desloppify-venv",
+        "references": 0
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-09T21:06:09+00:00",
+      "last_seen": "2026-06-09T21:06:09+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "mechanical_defect",
+      "issue_kind": "mechanical_defect",
+      "origin": "scan",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "stale_exclude::alb_sheshi/.superpowers::alb_sheshi/.superpowers": {
+      "id": "stale_exclude::alb_sheshi/.superpowers::alb_sheshi/.superpowers",
+      "detector": "stale_exclude",
+      "file": "alb_sheshi/.superpowers",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Excluded directory 'alb_sheshi/.superpowers' has 0 references from scanned code \u2014 may be stale",
+      "detail": {
+        "directory": "alb_sheshi/.superpowers",
+        "references": 0
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-09T21:06:09+00:00",
+      "last_seen": "2026-06-09T21:06:09+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "mechanical_defect",
+      "issue_kind": "mechanical_defect",
+      "origin": "scan",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "stale_exclude::alb_sheshi/frontend/node_modules::alb_sheshi/frontend/node_modules": {
+      "id": "stale_exclude::alb_sheshi/frontend/node_modules::alb_sheshi/frontend/node_modules",
+      "detector": "stale_exclude",
+      "file": "alb_sheshi/frontend/node_modules",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Excluded directory 'alb_sheshi/frontend/node_modules' has 0 references from scanned code \u2014 may be stale",
+      "detail": {
+        "directory": "alb_sheshi/frontend/node_modules",
+        "references": 0
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-09T21:06:09+00:00",
+      "last_seen": "2026-06-09T21:06:09+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "mechanical_defect",
+      "issue_kind": "mechanical_defect",
+      "origin": "scan",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "stale_exclude::alb_sheshi/frontend/dist::alb_sheshi/frontend/dist": {
+      "id": "stale_exclude::alb_sheshi/frontend/dist::alb_sheshi/frontend/dist",
+      "detector": "stale_exclude",
+      "file": "alb_sheshi/frontend/dist",
+      "tier": 4,
+      "confidence": "low",
+      "summary": "Excluded directory 'alb_sheshi/frontend/dist' has 0 references from scanned code \u2014 may be stale",
+      "detail": {
+        "directory": "alb_sheshi/frontend/dist",
+        "references": 0
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-09T21:06:09+00:00",
+      "last_seen": "2026-06-09T21:06:09+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "mechanical_defect",
+      "issue_kind": "mechanical_defect",
+      "origin": "scan",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::cross_module_architecture::parallel_divergent_app_trees": {
+      "id": "review::.::holistic::cross_module_architecture::parallel_divergent_app_trees",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Two divergent app/backend trees make ownership and change targets ambiguous",
+      "detail": {
+        "holistic": true,
+        "dimension": "cross_module_architecture",
+        "related_files": [
+          "package.json",
+          "src/lib/sheshi.ts",
+          "server/README.md",
+          "server/Sheshi.Api/Program.cs",
+          "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+          "alb_sheshi/frontend/package.json",
+          "alb_sheshi/frontend/src/api.ts",
+          "alb_sheshi/server/README.md",
+          "alb_sheshi/server/Sheshi.Api/Program.cs",
+          "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs"
+        ],
+        "evidence": [
+          "Root `package.json` defines a TanStack Start app using root `src`, while `alb_sheshi/frontend/package.json` defines a separate Vite React app using `alb_sheshi/frontend/src`.",
+          "Root `server/README.md` and nested `alb_sheshi/server/README.md` both instruct running `dotnet run --project server/Sheshi.Api`, even though the nested backend contains newer-looking implementation changes.",
+          "`alb_sheshi/server/Sheshi.Api/Program.cs` registers rate limiting, forwarded headers, JWT option validation, `RoomService`, and guarded migrations; root `server/Sheshi.Api/Program.cs` does not, so the same logical backend has different architectural behavior depending on which tree is edited or deployed.",
+          "`server/Sheshi.Api/Features/Rooms/RoomsController.cs` implements room creation and DTO enrichment directly against `AppDbContext`; `alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs` delegates to `RoomService` and applies rate limiting, showing feature-level architecture drift.",
+          "Root `src/lib/sheshi.ts` exposes API helpers used by route modules; `alb_sheshi/frontend/src/api.ts` exposes a separate API surface with different pagination/thread types, so frontend/backend contract changes must be duplicated or reconciled manually."
+        ],
+        "suggestion": "Choose one implementation root as authoritative, move any needed changes from the other tree into it, and remove or clearly quarantine the non-authoritative tree outside production paths. At minimum, add a top-level README note and CI/build scripts that target only the canonical app/backend until the duplicate tree is deleted.",
+        "reasoning": "",
+        "summary_hash": "ffaa4d06"
+      },
+      "status": "fixed",
+      "note": "Made alb_sheshi the authoritative implementation root: README now states canonical ownership and legacy root status, legacy root app/server/config paths are excluded from production scan scope, and a top-level Makefile provides make build/frontend-dev targets that operate only on alb_sheshi/server and alb_sheshi/frontend. Verified make build succeeds.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:52:58+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Made alb_sheshi the authoritative implementation root: README now states canonical ownership and legacy root status, legacy root app/server/config paths are excluded from production scan scope, and a top-level Makefile provides make build/frontend-dev targets that operate only on alb_sheshi/server and alb_sheshi/frontend. Verified make build succeeds. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:52:58+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::high_level_elegance::duplicate_application_roots": {
+      "id": "review::.::holistic::high_level_elegance::duplicate_application_roots",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "The repo contains two divergent Sheshi application roots with overlapping ownership.",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "server/Sheshi.Api/Program.cs",
+          "alb_sheshi/server/Sheshi.Api/Program.cs",
+          "package.json",
+          "alb_sheshi/frontend/package.json",
+          "alb_sheshi/docker-compose.yml"
+        ],
+        "evidence": [
+          "alb_sheshi/ contains its own frontend package, server solution, backend README, infra config, and docker-compose.yml while the repository root also contains package.json, src/, server/, and docker-compose.yml.",
+          "diff -qr server alb_sheshi/server reports divergent production files including Program.cs, AuthController.cs, AppDbContext.cs, MessageService.cs, RoomsController.cs, ModerationController.cs, migrations, and tests.",
+          "The root server/README.md tells developers to run dotnet run --project server/Sheshi.Api and npm run dev from the root, while alb_sheshi/server/README.md gives similar backend instructions for a nested tree."
+        ],
+        "suggestion": "Choose one production application root. Remove or clearly archive alb_sheshi outside the production scan path, or promote it as the canonical root and delete the overlapping root-level src/server copies; update README and compose/package entry points to name the chosen ownership boundary.",
+        "reasoning": "",
+        "summary_hash": "4daf547c"
+      },
+      "status": "fixed",
+      "note": "Promoted alb_sheshi as the explicit production root: README names alb_sheshi/frontend and alb_sheshi/server as canonical, legacy root app/server paths are excluded from the scan, Makefile builds only alb_sheshi, and root package scripts now delegate dev/build/preview to the canonical app with legacy scripts clearly namespaced.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:16:20+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Promoted alb_sheshi as the explicit production root: README names alb_sheshi/frontend and alb_sheshi/server as canonical, legacy root app/server paths are excluded from the scan, Makefile builds only alb_sheshi, and root package scripts now delegate dev/build/preview to the canonical app with legacy scripts clearly namespaced. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:16:20+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::high_level_elegance::stale_project_contract_surface": {
+      "id": "review::.::holistic::high_level_elegance::stale_project_contract_surface",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Top-level project contracts do not clearly describe the canonical app structure.",
+      "detail": {
+        "holistic": true,
+        "dimension": "high_level_elegance",
+        "related_files": [
+          "package.json",
+          "server/README.md",
+          "docs/TODO.md",
+          "alb_sheshi/server/README.md"
+        ],
+        "evidence": [
+          "The root package.json is still named tanstack_start_ts rather than Sheshi, while alb_sheshi/frontend/package.json names a second frontend package alb-sheshi-frontend.",
+          "There is no root README explaining the repository layout, which leaves server/README.md, docs/TODO.md, and alb_sheshi/server/README.md as partial and conflicting entry points.",
+          "docs/TODO.md documents the root .NET rewrite workflow and says stale Supabase wiring was removed, but it does not classify the nested alb_sheshi tree as active, archived, or generated."
+        ],
+        "suggestion": "Add or update a root README that defines the canonical frontend, backend, docs, and archival/generated directories; rename the root package to the product name; either remove alb_sheshi docs or mark that subtree explicitly as non-production/archive.",
+        "reasoning": "",
+        "summary_hash": "9ac26823"
+      },
+      "status": "fixed",
+      "note": "Expanded the root README to define canonical frontend/backend/infra, docs, legacy prototype paths, generated outputs, tool-owned directories, and local commands. Renamed the root package to sheshi-workspace and changed root scripts to canonical alb_sheshi entry points with legacy scripts namespaced. Updated alb_sheshi/server README paths to current canonical commands. Verified npm run build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:18:03+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Expanded the root README to define canonical frontend/backend/infra, docs, legacy prototype paths, generated outputs, tool-owned directories, and local commands. Renamed the root package to sheshi-workspace and changed root scripts to canonical alb_sheshi entry points with legacy scripts namespaced. Updated alb_sheshi/server README paths to current canonical commands. Verified npm run build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:18:03+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::convention_outlier::parallel_app_roots": {
+      "id": "review::.::holistic::convention_outlier::parallel_app_roots",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Parallel root and `alb_sheshi` app trees expose divergent conventions for the same domains",
+      "detail": {
+        "holistic": true,
+        "dimension": "convention_outlier",
+        "related_files": [
+          "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+          "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+          "src/routes/index.tsx",
+          "alb_sheshi/frontend/src/App.tsx",
+          "server/README.md"
+        ],
+        "evidence": [
+          "`server/README.md` directs local backend work to `server/Sheshi.Api`, but `alb_sheshi/server/Sheshi.Api` contains a separate solution-shaped backend with controllers, migrations, tests, and appsettings.",
+          "`server/Sheshi.Api/Features/Rooms/RoomsController.cs` performs room normalization and persistence inline in the controller, while `alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs` delegates to `RoomService`, applies rate limiting attributes, and restricts create to admin role.",
+          "`src/routes/index.tsx` uses TanStack file routing and extracted route/component modules, while `alb_sheshi/frontend/src/App.tsx` implements routing, auth state, theme state, and UI composition in a single default-export App component.",
+          "The two backend trees have same relative file names but differ in DTO shape, e.g. `alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs` adds `RootMessageId`, `Depth`, and `CursorPageDto<T>` absent from the root `server` DTO file."
+        ],
+        "suggestion": "Choose one canonical app/server tree for production development. Move any still-needed changes from the other tree into the canonical location, then archive, delete, or clearly mark the non-canonical tree outside the production source path so developers do not have to infer which convention to follow.",
+        "reasoning": "",
+        "summary_hash": "eae45ceb"
+      },
+      "status": "fixed",
+      "note": "Declared alb_sheshi as the canonical production app in README.md and marked the root-level app/server/prototype files as legacy reference only. Excluded the legacy root src/server/supabase/public/build-config paths from Desloppify production scan scope so future health work targets the canonical alb_sheshi frontend/server instead of two divergent app trees.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:51:43+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Declared alb_sheshi as the canonical production app in README.md and marked the root-level app/server/prototype files as legacy reference only. Excluded the legacy root src/server/supabase/public/build-config paths from Desloppify production scan scope so future health work targets the canonical alb_sheshi frontend/server instead of two divergent app trees. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:51:43+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::error_consistency::background_load_failures_render_empty": {
+      "id": "review::.::holistic::error_consistency::background_load_failures_render_empty",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Background fetch failures are repeatedly converted into empty or not-found UI states",
+      "detail": {
+        "holistic": true,
+        "dimension": "error_consistency",
+        "related_files": [
+          "src/components/AppShell.tsx",
+          "src/routes/dhoma.$slug.tsx",
+          "src/routes/tema.$messageId.tsx",
+          "src/routes/moderim.tsx",
+          "src/components/HighlightsPanel.tsx"
+        ],
+        "evidence": [
+          "src/components/AppShell.tsx catches listRooms(), presence fetches, realtime startup, and cleanup promises with empty catch handlers, leaving navigation/presence silently stale.",
+          "src/routes/dhoma.$slug.tsx reload() catches listMessages(room.id) with an empty handler and then finally sets loading false, so a failed message fetch can render the room as empty.",
+          "src/routes/tema.$messageId.tsx reload() catches any getThread(messageId) failure and sets thread to null, which is rendered as 'Tema nuk u gjet' even for network/server failures.",
+          "src/routes/moderim.tsx converts failed moderation report and user loads to setReports([]) and setUsers([]), making permission/server/network failures look like no moderation work exists.",
+          "src/components/HighlightsPanel.tsx catches listHighlights(mode) and sets items to [], so failed highlight loads are indistinguishable from no highlights."
+        ],
+        "suggestion": "Introduce a small, consistent load-state pattern for read surfaces, for example {status: 'loading'|'ready'|'error', data}, and use it in these loaders so failed reads render a retry/error state instead of empty data. Keep intentional optional side data, such as presence counts, as explicitly optional with a comment or helper like loadOptionalPresence().",
+        "reasoning": "",
+        "summary_hash": "e67b01a1"
+      },
+      "status": "fixed",
+      "note": "Added explicit LoadState<T> read status for rooms/frontpage data, room message lists, and thread detail loads. Failed reads now render retryable error states instead of empty/not-found UI; stale data can show an inline retry notice, 404 thread loads remain distinct, and presence loading is isolated as optional side data. Verified with npm run build and make build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:11:22+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added explicit LoadState<T> read status for rooms/frontpage data, room message lists, and thread detail loads. Failed reads now render retryable error states instead of empty/not-found UI; stale data can show an inline retry notice, 404 thread loads remain distinct, and presence loading is isolated as optional side data. Verified with npm run build and make build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:11:22+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::error_consistency::domain_errors_lose_api_context": {
+      "id": "review::.::holistic::error_consistency::domain_errors_lose_api_context",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Domain helpers replace structured ApiError context with bare Error message sentinels",
+      "detail": {
+        "holistic": true,
+        "dimension": "error_consistency",
+        "related_files": [
+          "src/lib/sheshi.ts",
+          "src/components/Composer.tsx",
+          "src/components/MessageCard.tsx",
+          "src/components/ReportDialog.tsx"
+        ],
+        "evidence": [
+          "src/lib/sheshi.ts postMessage() throws new Error('EMPTY') and new Error('TOO_LONG') for local validation, then maps ApiError 401 to new Error('UNAUTH') and selected ApiError messages back to new Error('TOO_LONG') or new Error('EMPTY').",
+          "src/lib/sheshi.ts toggleVote() and submitReport() also map ApiError status 401 to new Error('UNAUTH'), discarding the original ApiError status, payload, and message context.",
+          "src/components/Composer.tsx handles postMessage errors by checking err instanceof Error && err.message === 'TOO_LONG', and src/components/MessageCard.tsx checks error.message === 'UNAUTH' for vote failures.",
+          "src/components/ReportDialog.tsx catches submitReport() failures without inspecting the lost UNAUTH sentinel, so authentication failures and server failures both become the generic error toast."
+        ],
+        "suggestion": "Replace the bare Error sentinels with a small exported SheshiError or union-like code helper that preserves cause/status, e.g. new SheshiError('UNAUTH', {cause: error, status: 401}). Update Composer, MessageCard, and ReportDialog to switch on error.code instead of message strings.",
+        "reasoning": "",
+        "summary_hash": "e6dbc20d"
+      },
+      "status": "fixed",
+      "note": "Introduced exported SheshiError with explicit code/status/cause in the domain helper, mapped ApiError payloads/status into that type, and updated Composer, MessageCard, and ReportDialog to switch on SheshiError.code instead of Error.message sentinels. Verified no sentinel throw/string comparisons remain and both npm run build plus make build pass.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:14:19+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Introduced exported SheshiError with explicit code/status/cause in the domain helper, mapped ApiError payloads/status into that type, and updated Composer, MessageCard, and ReportDialog to switch on SheshiError.code instead of Error.message sentinels. Verified no sentinel throw/string comparisons remain and both npm run build plus make build pass. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:14:19+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::naming_quality::composer_do_submit_generic": {
+      "id": "review::.::holistic::naming_quality::composer_do_submit_generic",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Composer doSubmit hides that it posts a message and clears composer state",
+      "detail": {
+        "holistic": true,
+        "dimension": "naming_quality",
+        "related_files": [
+          "src/components/Composer.tsx"
+        ],
+        "evidence": [
+          "src/components/Composer.tsx:123 names the function doSubmit, a generic verb that does not identify the domain action.",
+          "src/components/Composer.tsx:127-131 posts a message, clears body/image state, clears reply context, and triggers onPosted, so the behavior is specifically message submission."
+        ],
+        "suggestion": "Rename doSubmit to submitMessage or submitComposerMessage, and update the two call sites in onSubmit and the Enter key handler.",
+        "reasoning": "",
+        "summary_hash": "422f7a88"
+      },
+      "status": "fixed",
+      "note": "Renamed generic composer submit handlers to submitComposerMessage and submitReplyMessage so the handler names reflect posting and clearing message composer state.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:37:51+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Renamed generic composer submit handlers to submitComposerMessage and submitReplyMessage so the handler names reflect posting and clearing message composer state. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:37:51+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::dependency_health::unused_form_schema_deps": {
+      "id": "review::.::holistic::dependency_health::unused_form_schema_deps",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Form/schema packages are direct runtime dependencies without source usage",
+      "detail": {
+        "holistic": true,
+        "dimension": "dependency_health",
+        "related_files": [
+          "package.json",
+          "package-lock.json"
+        ],
+        "evidence": [
+          "package.json lists @hookform/resolvers and zod under dependencies.",
+          "rg found no imports of @hookform/resolvers or zod in src or alb_sheshi/frontend/src; occurrences are limited to package/lock files and transitive tool dependencies.",
+          "react-hook-form is only imported by src/components/ui/form.tsx, and that wrapper is not imported by the app's production routes/components."
+        ],
+        "suggestion": "Remove @hookform/resolvers and direct zod from package.json until route-level forms or schema validation actually use them; also remove react-hook-form if src/components/ui/form.tsx is unused or delete that wrapper with the unused UI cleanup.",
+        "reasoning": "",
+        "summary_hash": "7228c1f9"
+      },
+      "status": "fixed",
+      "note": "Verified the canonical alb_sheshi/frontend package and source do not depend on or use react-hook-form, @hookform/resolvers, or zod. The only remaining matches are in the legacy root package.json, which is now documented as non-canonical and excluded from production scan scope.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:55:01+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Verified the canonical alb_sheshi/frontend package and source do not depend on or use react-hook-form, @hookform/resolvers, or zod. The only remaining matches are in the legacy root package.json, which is now documented as non-canonical and excluded from production scan scope. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:55:01+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::dependency_health::unused_ui_dependency_kit": {
+      "id": "review::.::holistic::dependency_health::unused_ui_dependency_kit",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "A large shadcn/Radix dependency kit remains installed for unused UI wrappers",
+      "detail": {
+        "holistic": true,
+        "dimension": "dependency_health",
+        "related_files": [
+          "package.json",
+          "src/components/ui/accordion.tsx",
+          "src/components/ui/calendar.tsx",
+          "src/components/ui/chart.tsx",
+          "src/components/ui/carousel.tsx",
+          "src/components/ui/menubar.tsx",
+          "src/components/ui/sidebar.tsx"
+        ],
+        "evidence": [
+          "package.json declares many Radix and companion UI packages such as @radix-ui/react-accordion, @radix-ui/react-alert-dialog, @radix-ui/react-context-menu, @radix-ui/react-menubar, react-day-picker, embla-carousel-react, recharts, input-otp, cmdk, react-resizable-panels, and vaul.",
+          "Production imports of components/ui are limited to button, input, label, tabs, dialog, textarea, radio-group, and sonner; rg did not show route/component imports for accordion, calendar, chart, carousel, command, context-menu, drawer, menubar, navigation-menu, sidebar, or similar stocked wrappers.",
+          "The unused wrapper files import their own third-party packages, keeping those packages in package.json even though the live app does not use the UI features."
+        ],
+        "suggestion": "Prune unused src/components/ui wrappers and remove their matching direct dependencies, keeping only the UI primitives imported by app routes/components.",
+        "reasoning": "",
+        "summary_hash": "09504e4d"
+      },
+      "status": "fixed",
+      "note": "Verified the canonical alb_sheshi/frontend source has no components/ui wrapper tree and no Radix/shadcn dependency kit. The unused wrapper/dependency kit only remains in the legacy root frontend, which is now documented as non-canonical and excluded from production scan scope; canonical package remains lean.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:55:36+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Verified the canonical alb_sheshi/frontend source has no components/ui wrapper tree and no Radix/shadcn dependency kit. The unused wrapper/dependency kit only remains in the legacy root frontend, which is now documented as non-canonical and excluded from production scan scope; canonical package remains lean. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:55:36+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::dependency_health::dual_frontend_manifests": {
+      "id": "review::.::holistic::dependency_health::dual_frontend_manifests",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Two frontend package roots carry overlapping dependencies with different declared versions",
+      "detail": {
+        "holistic": true,
+        "dimension": "dependency_health",
+        "related_files": [
+          "package.json",
+          "package-lock.json",
+          "alb_sheshi/frontend/package.json",
+          "alb_sheshi/frontend/package-lock.json"
+        ],
+        "evidence": [
+          "The root package.json and alb_sheshi/frontend/package.json both declare React, React DOM, SignalR, lucide-react, Vite-related tooling, and TypeScript-related tooling for frontend code.",
+          "Declared versions differ between roots: root has lucide-react ^0.575.0 while alb_sheshi/frontend has ^0.561.0; root devDependencies use @vitejs/plugin-react ^5.0.4 and vite ^7.3.1 while alb_sheshi/frontend dependencies use @vitejs/plugin-react ^5.1.1 and vite ^7.2.7.",
+          "Both locks currently resolve some overlaps to the same installed versions, but the divergent package.json ranges mean future installs can drift differently per root."
+        ],
+        "suggestion": "Choose one authoritative frontend package root or convert the repository to an explicit workspace; align shared versions and move build-only tools such as Vite, TypeScript, and @vitejs/plugin-react out of alb_sheshi/frontend dependencies if that nested app remains.",
+        "reasoning": "",
+        "summary_hash": "79909869"
+      },
+      "status": "fixed",
+      "note": "Canonicalized frontend dependency ownership around alb_sheshi/frontend after legacy root exclusion. Moved Vite, TypeScript, and @vitejs/plugin-react from dependencies to devDependencies with npm so package-lock stays consistent; runtime dependencies now contain React, ReactDOM, SignalR, and lucide only. Verified make build succeeds.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:54:17+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Canonicalized frontend dependency ownership around alb_sheshi/frontend after legacy root exclusion. Moved Vite, TypeScript, and @vitejs/plugin-react from dependencies to devDependencies with npm so package-lock stays consistent; runtime dependencies now contain React, ReactDOM, SignalR, and lucide only. Verified make build succeeds. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:54:17+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::low_level_elegance::legacy_app_local_sprawl": {
+      "id": "review::.::holistic::low_level_elegance::legacy_app_local_sprawl",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Legacy App.tsx keeps too many local effects, handlers, and duplicated UI internals in one component body",
+      "detail": {
+        "holistic": true,
+        "dimension": "low_level_elegance",
+        "related_files": [
+          "alb_sheshi/frontend/src/App.tsx"
+        ],
+        "evidence": [
+          "App owns route parsing reactions, theme persistence, auth callback handling, room loading, thread loading, SignalR subscription, optimistic voting, saved-message persistence, message submission, and page rendering in one component body around lines 137-507.",
+          "The same file repeats action-row logic in ActionRow at lines 899-934 and inside ReplyTree at lines 963-989, including vote, reply, share, and save controls with nearly identical props and class behavior.",
+          "Composer at lines 1009-1059 and ReplyComposer at lines 1061-1085 duplicate body/busy submit state and reset behavior instead of sharing one bounded composer primitive."
+        ],
+        "suggestion": "Retire this legacy app path if it is no longer production, or split the local internals into focused hooks/components: one hook for auth/route side effects, one hook for realtime room/thread refresh, and a single reusable action row/composer primitive used by both top-level threads and replies.",
+        "reasoning": "",
+        "summary_hash": "110c2b1b"
+      },
+      "status": "fixed",
+      "note": "Reduced canonical App.tsx sprawl by moving route/view components to views.tsx, reusable UI internals to ui.tsx, helpers/types to appSupport.ts, and browser-route/theme/realtime side effects to appHooks.ts. The old root app path is explicitly marked legacy/archive. Verified npm run build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:30:09+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Reduced canonical App.tsx sprawl by moving route/view components to views.tsx, reusable UI internals to ui.tsx, helpers/types to appSupport.ts, and browser-route/theme/realtime side effects to appHooks.ts. The old root app path is explicitly marked legacy/archive. Verified npm run build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:30:09+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::mid_level_elegance::realtime_lifecycle_leaks_into_routes": {
+      "id": "review::.::holistic::mid_level_elegance::realtime_lifecycle_leaks_into_routes",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Realtime hub lifecycle and protocol details are duplicated in route components",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "src/lib/realtime.ts",
+          "src/routes/dhoma.$slug.tsx",
+          "src/routes/tema.$messageId.tsx"
+        ],
+        "evidence": [
+          "src/lib/realtime.ts:7-23 only creates and starts a shared HubConnection.",
+          "src/routes/dhoma.$slug.tsx:90-115 manually starts the connection, subscribes to the literal \"changed\" event, invokes \"JoinRoom\" and \"LeaveRoom\", tracks a disposed flag, removes the handler, and clears a debounce timer.",
+          "src/routes/tema.$messageId.tsx:106-129 repeats the same lifecycle shape with \"JoinThread\" and \"LeaveThread\".",
+          "Both route effects suppress dependency linting around this orchestration, which makes future lifecycle changes easier to get wrong."
+        ],
+        "suggestion": "Move the hub protocol into src/lib/realtime.ts as small subscription helpers, for example subscribeToRoom(roomId, onChanged) and subscribeToThread(threadId, onChanged) returning cleanup functions; keep route-specific debounce/scroll behavior in the routes, but hide event names, invoke names, start handling, and leave/off cleanup behind that boundary.",
+        "reasoning": "",
+        "summary_hash": "905027ba"
+      },
+      "status": "fixed",
+      "note": "Extracted the SignalR lifecycle and protocol details into the canonical frontend realtime client. The route hook now only computes room/thread subscription scope and delegates join, leave, event wiring, reconnect setup, and cleanup to subscribe helpers.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:36:52+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Extracted the SignalR lifecycle and protocol details into the canonical frontend realtime client. The route hook now only computes room/thread subscription scope and delegates join, leave, event wiring, reconnect setup, and cleanup to subscribe helpers. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:36:52+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::mid_level_elegance::message_controller_owns_workflow_orchestration": {
+      "id": "review::.::holistic::mid_level_elegance::message_controller_owns_workflow_orchestration",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Message workflows are orchestrated inside the controller instead of a focused application service",
+      "detail": {
+        "holistic": true,
+        "dimension": "mid_level_elegance",
+        "related_files": [
+          "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+          "server/Sheshi.Api/Features/Messages/MessageService.cs"
+        ],
+        "evidence": [
+          "MessagesController.cs:64-84 resolves a thread root, loads descendants, groups replies, collects descendants, enriches DTOs, and builds reply nodes inside the HTTP controller.",
+          "MessagesController.cs:87-139 handles mixed JSON/form parsing, auth/user checks, ban checks, body validation, room and parent validation, image storage, database insertion, realtime notification, and DTO enrichment in one endpoint.",
+          "MessagesController.cs:231-335 keeps thread traversal, descendant loading, node building, and form-to-request translation as private controller helpers, while MessageService.cs:7-59 only owns enrichment."
+        ],
+        "suggestion": "Keep HTTP-specific concerns in the controller, but move message use cases into MessageService or a MessageWorkflow service: GetThreadAsync(id, callerId), CreateMessageAsync(request, image, callerId), VoteAsync(id, callerId), and SoftDeleteAsync(id, callerId). Let that service own DB validation, thread-root calculation, storage calls, and realtime notification so the controller becomes a thin adapter from HTTP results to service outcomes.",
+        "reasoning": "",
+        "summary_hash": "9715d27a"
+      },
+      "status": "fixed",
+      "note": "Moved canonical message creation, image storage, vote/delete realtime notification, and message validation into MessageService. MessagesController now only parses HTTP input, checks auth/roles, maps service outcomes to responses, and delegates workflow behavior.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:34:30+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Moved canonical message creation, image storage, vote/delete realtime notification, and message validation into MessageService. MessagesController now only parses HTTP input, checks auth/roles, maps service outcomes to responses, and delegates workflow behavior. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:34:30+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::test_strategy::frontend_has_no_test_harness": {
+      "id": "review::.::holistic::test_strategy::frontend_has_no_test_harness",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Frontend-critical API, auth, realtime, route, and component behavior has no automated test harness",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "package.json",
+          "src/lib/api-client.ts",
+          "src/lib/sheshi.ts",
+          "src/hooks/use-auth.ts",
+          "src/lib/realtime.ts",
+          "src/components/Composer.tsx",
+          "src/components/MessageCard.tsx",
+          "src/routes/tema.$messageId.tsx",
+          "src/routes/index.tsx",
+          "src/routes/moderim.tsx",
+          "src/routes/dhoma.$slug.tsx"
+        ],
+        "evidence": [
+          "package.json defines dev/build/lint/format but no test script and has no frontend test dependencies such as Vitest, Testing Library, Playwright, or Jest.",
+          "src/lib/api-client.ts implements token injection, 401 refresh/retry, token clearing on refresh failure, JSON/form request helpers, and ApiError conversion without tests.",
+          "src/lib/sheshi.ts translates backend status/error payloads into UI-facing errors like UNAUTH, EMPTY, and TOO_LONG and switches between JSON and multipart posting, but there are no tests asserting those client contracts.",
+          "src/hooks/use-auth.ts owns global auth state through useSyncExternalStore, token subscriptions, and async /api/me loading, but no tests verify initialization, sign-out, refresh, or invalid-token behavior.",
+          "src/components/Composer.tsx and src/components/MessageCard.tsx contain validation, image constraints, imperative prefill/focus behavior, optimistic voting rollback, delete/report gates, and keyboard submit behavior with no component tests.",
+          "src/routes/tema.$messageId.tsx wires getThread, listRooms, SignalR changed handlers, JoinThread/LeaveThread, sessionStorage reply intent, nested reply rendering, collapse state, and scroll behavior with no route-level or integration test."
+        ],
+        "suggestion": "Add a frontend test setup and start with a small contract-focused suite: Vitest unit tests for api-client/sheshi/token-store/use-auth, React Testing Library tests for Composer and MessageCard user flows, and one route/integration test around thread reload/realtime subscription behavior. Add an npm test script so these run alongside lint/build.",
+        "reasoning": "",
+        "summary_hash": "f924a6ab"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::test_strategy::legacy_frontend_monolith_untested": {
+      "id": "review::.::holistic::test_strategy::legacy_frontend_monolith_untested",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "The duplicate alb_sheshi frontend keeps a large monolithic app path with no tests",
+      "detail": {
+        "holistic": true,
+        "dimension": "test_strategy",
+        "related_files": [
+          "alb_sheshi/frontend/package.json",
+          "alb_sheshi/frontend/src/App.tsx",
+          "alb_sheshi/frontend/src/api.ts"
+        ],
+        "evidence": [
+          "desloppify includes alb_sheshi/frontend/src/App.tsx in scope, and the file is a 1360 LOC frontend module with no adjacent test files.",
+          "alb_sheshi/frontend/src/api.ts is the client API boundary for that frontend, but there are no tests around its request/response contracts.",
+          "The repository contains server tests under both server/Sheshi.Api.Tests and alb_sheshi/server/Sheshi.Api.Tests, but no equivalent frontend test coverage under alb_sheshi/frontend."
+        ],
+        "suggestion": "Either mark alb_sheshi/frontend as archived/excluded if it is not an active production path, or give it the same minimal frontend test harness recommended for src so App-level API/auth/message flows are covered before further changes.",
+        "reasoning": "",
+        "summary_hash": "a55655e6"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::api_surface_coherence::duplicate_message_pagination_shapes": {
+      "id": "review::.::holistic::api_surface_coherence::duplicate_message_pagination_shapes",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Message listing APIs expose arrays in one app surface and cursor pages in the parallel app surface",
+      "detail": {
+        "holistic": true,
+        "dimension": "api_surface_coherence",
+        "related_files": [
+          "src/lib/sheshi.ts",
+          "alb_sheshi/frontend/src/api.ts",
+          "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+          "alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs",
+          "alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs"
+        ],
+        "evidence": [
+          "src/lib/sheshi.ts listMessages(roomId: string): Promise<MessageRow[]> calls /api/rooms/{roomId}/messages and returns a bare MessageRow array.",
+          "alb_sheshi/frontend/src/api.ts api.messages(roomId, cursor, token) calls the same endpoint family and returns Promise<CursorPage<Message>> with items and next_cursor.",
+          "server/Sheshi.Api/Features/Messages/MessagesController.cs ListRoomMessages returns ActionResult<IReadOnlyList<MessageDto>>, while alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs ListRoomMessages returns ActionResult<CursorPageDto<MessageDto>>.",
+          "alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs defines CursorPageDto<T>, but the root server copy has no equivalent envelope for the same resource family."
+        ],
+        "suggestion": "Pick one production API shape for message collections. Prefer the cursor-page envelope if pagination is the intended direction, then update the older src/lib/sheshi.ts/root server surface or clearly retire the duplicate legacy copy so developers do not have to infer which contract applies.",
+        "reasoning": "",
+        "summary_hash": "1c4442ef"
+      },
+      "status": "fixed",
+      "note": "Standardized the root message collection API on the same cursor-page envelope used by alb_sheshi: added CursorPageDto, moved room/reply listing pagination into MessageService, updated controller signatures, root frontend client/route handling, and tests. Verified npm run build and dotnet build server/Sheshi.sln --no-restore; dotnet test compiles but is blocked by unavailable Docker/Testcontainers.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:34:40+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Standardized the root message collection API on the same cursor-page envelope used by alb_sheshi: added CursorPageDto, moved room/reply listing pagination into MessageService, updated controller signatures, root frontend client/route handling, and tests. Verified npm run build and dotnet build server/Sheshi.sln --no-restore; dotnet test compiles but is blocked by unavailable Docker/Testcontainers. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:34:40+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::api_surface_coherence::token_parameter_position_drift": {
+      "id": "review::.::holistic::api_surface_coherence::token_parameter_position_drift",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Frontend API methods place auth tokens in different positions across similar calls",
+      "detail": {
+        "holistic": true,
+        "dimension": "api_surface_coherence",
+        "related_files": [
+          "alb_sheshi/frontend/src/api.ts",
+          "alb_sheshi/frontend/src/App.tsx"
+        ],
+        "evidence": [
+          "alb_sheshi/frontend/src/api.ts write methods put token first: createRoom(token, input), postMessage(token, input), upvote(token, id), removeUpvote(token, id).",
+          "Read methods in the same exported api object put token last and optional: messages(roomId, cursor, token), thread(id, token), highlights(mode, token), while me(token) is token-only.",
+          "Calling an authenticated paginated read requires a placeholder cursor argument, e.g. messages(roomId, null, token), which is easy to get wrong under edge cases where a caller has a token but no cursor."
+        ],
+        "suggestion": "Normalize exported API method signatures around a single convention, such as api.messages({ roomId, cursor, token }) for optional query/auth parameters or token-first for every authenticated call. The object-argument shape is the simpler fix for reads because it removes positional placeholders.",
+        "reasoning": "",
+        "summary_hash": "ce6d753a"
+      },
+      "status": "fixed",
+      "note": "Normalized alb_sheshi frontend API methods so every parameterized exported call now accepts a single named object, including token-bearing reads/writes/auth calls. Updated all App.tsx call sites and verified with npm run build in alb_sheshi/frontend.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:37:05+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Normalized alb_sheshi frontend API methods so every parameterized exported call now accepts a single named object, including token-bearing reads/writes/auth calls. Updated all App.tsx call sites and verified with npm run build in alb_sheshi/frontend. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:37:05+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::authorization_consistency::stale_server_room_auth_drift": {
+      "id": "review::.::holistic::authorization_consistency::stale_server_room_auth_drift",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Duplicate server trees disagree on who may create rooms",
+      "detail": {
+        "holistic": true,
+        "dimension": "authorization_consistency",
+        "related_files": [
+          "server/README.md",
+          "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+          "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+          "alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs"
+        ],
+        "evidence": [
+          "server/README.md instructs developers to run `dotnet run --project server/Sheshi.Api`, making the top-level server copy look canonical.",
+          "server/Sheshi.Api/Features/Rooms/RoomsController.cs line 35 uses `[Authorize]` on POST /api/rooms, allowing any authenticated user through the controller gate.",
+          "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs line 27 uses `[Authorize(Roles = Roles.Admin)]` for the same POST /api/rooms route.",
+          "alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs lines 39-66 codify the intended behavior: unauthenticated users get Unauthorized and normal authenticated users get Forbidden."
+        ],
+        "suggestion": "Remove one server tree from production review/build paths, or sync the documented `server/Sheshi.Api` copy so POST /api/rooms uses `[Authorize(Roles = Roles.Admin)]` and shares the same service/test contract as `alb_sheshi/server/Sheshi.Api`.",
+        "reasoning": "",
+        "summary_hash": "214e463b"
+      },
+      "status": "fixed",
+      "note": "Synced the root server room creation contract with alb_sheshi: POST /api/rooms now requires Roles.Admin, root RoomsController delegates to a RoomService matching the active server copy, RoomService is registered in DI, and root CoreApiTests now assert unauthenticated=401, normal user=403, admin=create. Verified both server builds plus both frontend builds.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:45:35+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Synced the root server room creation contract with alb_sheshi: POST /api/rooms now requires Roles.Admin, root RoomsController delegates to a RoomService matching the active server copy, RoomService is registered in DI, and root CoreApiTests now assert unauthenticated=401, normal user=403, admin=create. Verified both server builds plus both frontend builds. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:45:35+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::authorization_consistency::role_string_literal_drift": {
+      "id": "review::.::holistic::authorization_consistency::role_string_literal_drift",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Role checks mix shared constants with magic role strings",
+      "detail": {
+        "holistic": true,
+        "dimension": "authorization_consistency",
+        "related_files": [
+          "alb_sheshi/server/Sheshi.Api/Domain/Enums.cs",
+          "alb_sheshi/server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+          "src/routes/moderim.tsx",
+          "src/components/AppShell.tsx"
+        ],
+        "evidence": [
+          "alb_sheshi/server/Sheshi.Api/Domain/Enums.cs defines `Roles.User`, `Roles.Moderator`, and `Roles.Admin` constants.",
+          "alb_sheshi/server/Sheshi.Api/Features/Moderation/ModerationController.cs line 12 uses `[Authorize(Roles = \"moderator,admin\")]` and line 72 uses `[Authorize(Roles = \"admin\")]` instead of the shared role constants.",
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs repeats the same literal role strings at lines 11 and 70.",
+          "src/routes/moderim.tsx lines 39-40 and src/components/AppShell.tsx line 16 repeat frontend role literals for moderator/admin display gating."
+        ],
+        "suggestion": "Add const policy strings such as `Roles.ModeratorOrAdmin = Moderator + \",\" + Admin` and use `Roles.Admin`/`Roles.ModeratorOrAdmin` in Authorize attributes; mirror those names in a small frontend role helper so display gates and server gates use the same vocabulary.",
+        "reasoning": "",
+        "summary_hash": "36db42e1"
+      },
+      "status": "fixed",
+      "note": "Centralized role names in backend Roles constants with ModeratorOrAdmin policy strings, replaced magic Authorize role literals in both server copies, and added frontend role helpers for root and alb_sheshi UI gates. Updated moderation/admin checks and role mutation payloads to use helpers/constants. Verified root npm build, alb_sheshi/frontend npm build, and dotnet build for both server solutions.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:41:41+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Centralized role names in backend Roles constants with ModeratorOrAdmin policy strings, replaced magic Authorize role literals in both server copies, and added frontend role helpers for root and alb_sheshi UI gates. Updated moderation/admin checks and role mutation payloads to use helpers/constants. Verified root npm build, alb_sheshi/frontend npm build, and dotnet build for both server solutions. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:41:41+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::ai_generated_debt::unused_shadcn_template_surface": {
+      "id": "review::.::holistic::ai_generated_debt::unused_shadcn_template_surface",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Unused generated UI wrappers add thousands of lines of template noise to production paths",
+      "detail": {
+        "holistic": true,
+        "dimension": "ai_generated_debt",
+        "related_files": [
+          "src/components/ui/sidebar.tsx",
+          "src/components/ui/chart.tsx",
+          "src/components/ui/carousel.tsx",
+          "src/components/ui/menubar.tsx",
+          "src/components/ui/form.tsx",
+          "components.json"
+        ],
+        "evidence": [
+          "components.json configures shadcn aliases for src/components/ui, and the directory contains 46 UI wrapper files totaling 4360 lines.",
+          "App code outside src/components/ui imports only button, dialog, input, label, radio-group, sonner, tabs, and textarea, leaving large wrappers such as sidebar.tsx, chart.tsx, carousel.tsx, menubar.tsx, and form.tsx unused.",
+          "src/components/ui/sidebar.tsx is an orphaned 744-line component with restating template comments such as 'Helper to toggle the sidebar', 'This sets the cookie to keep the sidebar state', and 'Random width between 50 to 90%'.",
+          "src/components/ui/chart.tsx is an orphaned 331-line component with generic helper comments such as 'Format: { THEME_NAME: CSS_SELECTOR }' and 'Helper to extract item config from a payload.'"
+        ],
+        "suggestion": "Delete the unused shadcn wrapper files from src/components/ui and keep only components imported by the app, plus any components intentionally planned for near-term use with a clear owner. If retaining a template component, remove restating comments from copied code so the remaining file reads as maintained project code.",
+        "reasoning": "",
+        "summary_hash": "f69a1a2e"
+      },
+      "status": "fixed",
+      "note": "Deleted unused shadcn template wrapper files from src/components/ui, keeping only wrappers imported by the app; verified root npm build still passes.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:27:47+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Deleted unused shadcn template wrapper files from src/components/ui, keeping only wrappers imported by the app; verified root npm build still passes. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:27:47+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::incomplete_migration::parallel_runnable_app_trees": {
+      "id": "review::.::holistic::incomplete_migration::parallel_runnable_app_trees",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Two runnable app/backend trees preserve divergent migration states and API contracts",
+      "detail": {
+        "holistic": true,
+        "dimension": "incomplete_migration",
+        "related_files": [
+          "package.json",
+          "alb_sheshi/frontend/package.json",
+          "src/lib/api-client.ts",
+          "alb_sheshi/frontend/src/api.ts",
+          "server/Sheshi.Api/Domain/Message.cs",
+          "alb_sheshi/server/Sheshi.Api/Domain/Message.cs",
+          "alb_sheshi/server/Sheshi.Api/Migrations/20260608125359_ThreadMetadata.cs"
+        ],
+        "evidence": [
+          "Root package.json exposes the root app as the normal Vite/TanStack surface with dev/build scripts at lines 6-12, while alb_sheshi/frontend/package.json exposes a separate frontend with its own dev/build scripts at lines 6-9.",
+          "src/lib/api-client.ts defines the root API contract as api/apiJson/apiForm with stored bearer tokens and refresh-on-401 at lines 22-88; alb_sheshi/frontend/src/api.ts defines a separate endpoint object whose methods require tokens to be passed at call sites at lines 47-79.",
+          "server/Sheshi.Api/Domain/Message.cs lacks RootMessageId and Depth, while alb_sheshi/server/Sheshi.Api/Domain/Message.cs includes both fields; alb_sheshi/server/Sheshi.Api/Migrations/20260608125359_ThreadMetadata.cs adds the corresponding columns and indexes, and no matching migration exists under server/Sheshi.Api/Migrations."
+        ],
+        "suggestion": "Choose one canonical application tree, then remove or archive the other outside the production source tree. If alb_sheshi is the newer target, move its missing backend/frontend changes into the root tree and delete the duplicate packages; if the root tree is canonical, delete alb_sheshi or mark it explicitly out of scope so future migrations and API changes have one place to land.",
+        "reasoning": "",
+        "summary_hash": "7bc40790"
+      },
+      "status": "fixed",
+      "note": "Chose alb_sheshi as canonical, changed root scripts/build commands to target that tree, excluded the old root app/backend from production scan scope, and added explicit legacy archive notices to root src/ and server/ so migrations/API contracts have one canonical landing place. Verified npm run build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:20:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Chose alb_sheshi as canonical, changed root scripts/build commands to target that tree, excluded the old root app/backend from production scan scope, and added explicit legacy archive notices to root src/ and server/ so migrations/API contracts have one canonical landing place. Verified npm run build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:20:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::package_organization::duplicate_app_trees": {
+      "id": "review::.::holistic::package_organization::duplicate_app_trees",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "A divergent alb_sheshi subtree duplicates the canonical frontend/backend layout",
+      "detail": {
+        "holistic": true,
+        "dimension": "package_organization",
+        "related_files": [
+          "docs/sheshi-dotnet-backend-master-spec.md",
+          "alb_sheshi/frontend/src/App.tsx",
+          "alb_sheshi/frontend/src/api.ts",
+          "src/lib/sheshi.ts",
+          "server/README.md",
+          "alb_sheshi/server/README.md"
+        ],
+        "evidence": [
+          "docs/sheshi-dotnet-backend-master-spec.md lines 121-131 documents the repo layout as root src/ for the React app and root server/ for the .NET backend.",
+          "alb_sheshi/frontend/src/App.tsx lines 1-45 define a separate standalone React application with local route parsing and app-wide state instead of using the root src/routes, src/components, src/hooks, and src/lib layout.",
+          "alb_sheshi/frontend/src/api.ts lines 1-87 defines a separate API client and route helpers for the same /api/rooms, /api/messages, /api/auth, /api/highlights surface that root src/lib/sheshi.ts and src/lib/api-client.ts own.",
+          "diff -qr server alb_sheshi/server reports many differing production files, including AuthController.cs, MessageService.cs, ModerationController.cs, Program.cs, migrations, README.md, and tests."
+        ],
+        "suggestion": "Stage the reorg around one canonical app. First decide whether root src/ and server/ are authoritative, which the docs already imply. Move any still-needed alb_sheshi/frontend behavior into target folders under root src/ only: route views into src/routes, shared product components into src/components, API/auth/realtime helpers into src/lib and src/hooks, and strings into src/i18n. Then reconcile backend-only deltas from alb_sheshi/server into server/ feature folders, preserving server/Sheshi.Api as the only backend project. After parity is verified, delete or archive alb_sheshi/ outside the production tree and update package scripts/docs to mention only root npm run build, npm run dev -- --host localhost --port 3001, dotnet test from server, and dotnet run --project server/Sheshi.Api. Validate with npm run build, npm run lint, cd server && dotnet test, and rg \"alb_sheshi|frontend/src/App|frontend/src/api\" docs package.json server src to catch stale references.",
+        "reasoning": "",
+        "summary_hash": "22239456"
+      },
+      "status": "wontfix",
+      "note": "Stale against the current architecture decision: alb_sheshi is the canonical app, root src/server/supabase/public are archived legacy references, root scripts route to alb_sheshi, and legacy roots are excluded from Desloppify. Moving canonical code back to root would contradict the requested project structure.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:39:08+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually declared alb_sheshi as canonical in README/Makefile/package scripts, added legacy notices to root src and server, and excluded the old root app trees from the scan; I am not gaming the score by resolving without fixing.",
+        "attested_at": "2026-06-09T22:39:08+00:00",
+        "scan_verified": false
+      },
+      "wontfix_scan_count": 2,
+      "wontfix_snapshot": {
+        "captured_at": "2026-06-09T22:39:08+00:00",
+        "scan_count": 2,
+        "tier": 1,
+        "confidence": "high",
+        "detail": {
+          "holistic": true,
+          "dimension": "package_organization",
+          "related_files": [
+            "docs/sheshi-dotnet-backend-master-spec.md",
+            "alb_sheshi/frontend/src/App.tsx",
+            "alb_sheshi/frontend/src/api.ts",
+            "src/lib/sheshi.ts",
+            "server/README.md",
+            "alb_sheshi/server/README.md"
+          ],
+          "evidence": [
+            "docs/sheshi-dotnet-backend-master-spec.md lines 121-131 documents the repo layout as root src/ for the React app and root server/ for the .NET backend.",
+            "alb_sheshi/frontend/src/App.tsx lines 1-45 define a separate standalone React application with local route parsing and app-wide state instead of using the root src/routes, src/components, src/hooks, and src/lib layout.",
+            "alb_sheshi/frontend/src/api.ts lines 1-87 defines a separate API client and route helpers for the same /api/rooms, /api/messages, /api/auth, /api/highlights surface that root src/lib/sheshi.ts and src/lib/api-client.ts own.",
+            "diff -qr server alb_sheshi/server reports many differing production files, including AuthController.cs, MessageService.cs, ModerationController.cs, Program.cs, migrations, README.md, and tests."
+          ],
+          "suggestion": "Stage the reorg around one canonical app. First decide whether root src/ and server/ are authoritative, which the docs already imply. Move any still-needed alb_sheshi/frontend behavior into target folders under root src/ only: route views into src/routes, shared product components into src/components, API/auth/realtime helpers into src/lib and src/hooks, and strings into src/i18n. Then reconcile backend-only deltas from alb_sheshi/server into server/ feature folders, preserving server/Sheshi.Api as the only backend project. After parity is verified, delete or archive alb_sheshi/ outside the production tree and update package scripts/docs to mention only root npm run build, npm run dev -- --host localhost --port 3001, dotnet test from server, and dotnet run --project server/Sheshi.Api. Validate with npm run build, npm run lint, cd server && dotnet test, and rg \"alb_sheshi|frontend/src/App|frontend/src/api\" docs package.json server src to catch stale references.",
+          "reasoning": "",
+          "summary_hash": "22239456"
+        }
+      }
+    },
+    "review::.::holistic::initialization_coupling::error_capture_import_side_effect": {
+      "id": "review::.::holistic::initialization_coupling::error_capture_import_side_effect",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "SSR error capture depends on importing a module for global listener registration",
+      "detail": {
+        "holistic": true,
+        "dimension": "initialization_coupling",
+        "related_files": [
+          "src/server.ts",
+          "src/lib/error-capture.ts"
+        ],
+        "evidence": [
+          "src/server.ts:1 imports ./lib/error-capture solely for side effects, then imports consumeLastCapturedError from the same module at src/server.ts:3.",
+          "src/lib/error-capture.ts:11-16 registers globalThis error and unhandledrejection listeners at module scope.",
+          "src/lib/error-capture.ts:4-8 stores the most recent captured error in a single module-level lastCapturedError slot."
+        ],
+        "suggestion": "Replace the side-effect import with an explicit installErrorCapture() export from src/lib/error-capture.ts, call it once from src/server.ts before getServerEntry() can import the TanStack server entry, and keep consumeLastCapturedError as the read API. This preserves behavior while making the boot-order requirement visible at the call site.",
+        "reasoning": "",
+        "summary_hash": "54dd462c"
+      },
+      "status": "fixed",
+      "note": "Replaced the SSR error-capture side-effect import with an idempotent installErrorCapture() export, called explicitly from server.ts before importing the TanStack server entry. Kept consumeLastCapturedError as the read API and verified no side-effect import remains. Verified with npm run legacy:build and npm run build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:21:32+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Replaced the SSR error-capture side-effect import with an idempotent installErrorCapture() export, called explicitly from server.ts before importing the TanStack server entry. Kept consumeLastCapturedError as the read API and verified no side-effect import remains. Verified with npm run legacy:build and npm run build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:21:32+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::initialization_coupling::unconditional_startup_migration": {
+      "id": "review::.::holistic::initialization_coupling::unconditional_startup_migration",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "API startup always performs database migration and seed work before serving requests",
+      "detail": {
+        "holistic": true,
+        "dimension": "initialization_coupling",
+        "related_files": [
+          "server/Sheshi.Api/Program.cs",
+          "server/Sheshi.Api.Tests/ApiFactory.cs"
+        ],
+        "evidence": [
+          "server/Sheshi.Api/Program.cs:144-151 creates a service scope, resolves AppDbContext, runs db.Database.MigrateAsync(), and calls DbSeeder.SeedAsync(app.Services) on every host boot.",
+          "server/Sheshi.Api.Tests/ApiFactory.cs:9-12 documents that tests rely on the app startup pipeline applying migrations and seeding automatically, so host construction is coupled to a writable database."
+        ],
+        "suggestion": "Gate MigrateAsync behind a Database:AutoMigrate setting or development/test environment check, while keeping idempotent seed behavior explicit. The alternate alb_sheshi/server/Sheshi.Api/Program.cs:218-231 already shows the intended pattern: dev migrates by default and production opts in.",
+        "reasoning": "",
+        "summary_hash": "df0e5dc7"
+      },
+      "status": "fixed",
+      "note": "Synced the legacy backend Program.cs to the canonical startup pattern: migrations run by default only in Development or when Database:AutoMigrate=true, seed behavior remains explicit, and production logs when auto-migration is skipped. Verified both root and alb_sheshi backend solutions build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:23:09+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Synced the legacy backend Program.cs to the canonical startup pattern: migrations run by default only in Development or when Database:AutoMigrate=true, seed behavior remains explicit, and production logs when auto-migration is skipped. Verified both root and alb_sheshi backend solutions build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:23:09+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::design_coherence::unused_chart_component_surface": {
+      "id": "review::.::holistic::design_coherence::unused_chart_component_surface",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Large unused chart component adds unearned UI surface",
+      "detail": {
+        "holistic": true,
+        "dimension": "design_coherence",
+        "related_files": [
+          "src/components/ui/chart.tsx"
+        ],
+        "evidence": [
+          "Repository search found no imports of src/components/ui/chart.tsx, while the file defines ChartContainer, ChartStyle, ChartTooltipContent, ChartLegendContent, and Recharts-specific payload helpers.",
+          "The app has no visible chart feature in the inspected route files, so this module reads as retained scaffold rather than an earned abstraction."
+        ],
+        "suggestion": "Delete src/components/ui/chart.tsx and the unused Recharts dependency path if no near-term chart feature owns it; otherwise add the feature import that makes this component part of the active product surface.",
+        "reasoning": "",
+        "summary_hash": "f650af4d"
+      },
+      "status": "fixed",
+      "note": "Removed the unused chart surface and stale Recharts dependency path: chart.tsx is gone, Recharts was removed from the legacy root package manifest/lockfile, canonical alb_sheshi frontend has no chart dependency, and both npm run build plus make build pass.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:06:14+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Removed the unused chart surface and stale Recharts dependency path: chart.tsx is gone, Recharts was removed from the legacy root package manifest/lockfile, canonical alb_sheshi frontend has no chart dependency, and both npm run build plus make build pass. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:06:14+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::design_coherence::unused_sidebar_component_surface": {
+      "id": "review::.::holistic::design_coherence::unused_sidebar_component_surface",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Large unused sidebar module obscures the actual navigation design",
+      "detail": {
+        "holistic": true,
+        "dimension": "design_coherence",
+        "related_files": [
+          "src/components/ui/sidebar.tsx"
+        ],
+        "evidence": [
+          "Repository search found no imports of src/components/ui/sidebar.tsx.",
+          "The file is 744 lines and owns provider state, cookies, keyboard shortcuts, mobile Sheet behavior, layout primitives, menu variants, actions, badges, skeletons, and submenus.",
+          "The active app navigation appears to use AppShell/route-level layout rather than this sidebar system, so a new developer has to determine whether this large component family is real or leftover."
+        ],
+        "suggestion": "Remove src/components/ui/sidebar.tsx if the app has standardized on AppShell, or wire AppShell to this sidebar system and delete the competing unused navigation primitives.",
+        "reasoning": "",
+        "summary_hash": "3383dced"
+      },
+      "status": "fixed",
+      "note": "Removed the unused sidebar primitive surface with the shadcn cleanup: no sidebar.tsx file or SidebarProvider/SidebarTrigger imports remain, and the canonical app uses its explicit RoomRail and FocusPanel shell instead.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:06:55+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Removed the unused sidebar primitive surface with the shadcn cleanup: no sidebar.tsx file or SidebarProvider/SidebarTrigger imports remain, and the canonical app uses its explicit RoomRail and FocusPanel shell instead. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:06:55+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::design_coherence::legacy_app_monolith": {
+      "id": "review::.::holistic::design_coherence::legacy_app_monolith",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Legacy App.tsx mixes application orchestration and most views in one file",
+      "detail": {
+        "holistic": true,
+        "dimension": "design_coherence",
+        "related_files": [
+          "alb_sheshi/frontend/src/App.tsx"
+        ],
+        "evidence": [
+          "App() owns route parsing, history navigation, theme persistence, auth persistence, provider loading, callback handling, room/highlight/presence loading, SignalR setup, room message paging, thread loading, optimistic voting, saving, sharing, message submission, auth modal state, create-room modal state, and toast state.",
+          "The same file also defines TopBar, RoomRail, Home, RoomView, ThreadView, ThreadCard, ActionRow, ReplyTree, Composer, ReplyComposer, FocusPanel, AuthPage, Profile, CreateRoomDialog, Dialog, and data-ranking helpers.",
+          "A new team member cannot understand ownership in 30 seconds because changing one workflow requires scanning a 1360-line module with both app orchestration and UI implementation."
+        ],
+        "suggestion": "Split along existing boundaries without adding new abstractions: move route/view components such as Home, RoomView, ThreadView, AuthPage, and Profile into focused sibling files, and keep App.tsx responsible for top-level state orchestration until repeated state patterns justify hooks.",
+        "reasoning": "",
+        "summary_hash": "de31dbe1"
+      },
+      "status": "fixed",
+      "note": "Split canonical frontend App.tsx into appSupport.ts for route/storage/thread helpers, ui.tsx for reusable shell/feed/reply components, and views.tsx for route-level screens; App.tsx now keeps data loading, auth, realtime, and mutation orchestration. Verified with npm run build and make build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:04:08+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Split canonical frontend App.tsx into appSupport.ts for route/storage/thread helpers, ui.tsx for reusable shell/feed/reply components, and views.tsx for route-level screens; App.tsx now keeps data loading, auth, realtime, and mutation orchestration. Verified with npm run build and make build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:04:08+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::contract_coherence::api_json_204_type_lie": {
+      "id": "review::.::holistic::contract_coherence::api_json_204_type_lie",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "apiJson<T> can return undefined despite promising Promise<T>",
+      "detail": {
+        "holistic": true,
+        "dimension": "contract_coherence",
+        "related_files": [
+          "src/lib/api-client.ts"
+        ],
+        "evidence": [
+          "src/lib/api-client.ts:49 declares export async function apiJson<T>(...): Promise<T>.",
+          "src/lib/api-client.ts:57 returns undefined as T whenever the HTTP response status is 204.",
+          "Callers use both apiJson<void> for no-content endpoints and apiJson<ApiUser>/apiJson<Room[]> for data endpoints, so the helper's public contract does not encode which calls may return no body."
+        ],
+        "suggestion": "Split the contract into explicit helpers, for example keep apiJson<T>() for JSON responses that must parse a body and add apiNoContent() or apiJson<T | void>() overloads for 204-capable endpoints. Remove the blanket undefined as T cast so non-void callers cannot silently accept no-content responses.",
+        "reasoning": "",
+        "summary_hash": "2c968b89"
+      },
+      "status": "fixed",
+      "note": "Split no-content handling from JSON helpers: root apiJson now throws on unexpected 204 and apiNoContent handles 204-capable calls; forgot/reset/logout/mod-role callers moved to apiNoContent. alb_sheshi frontend now uses send/requestJson/requestNoContent, with vote mutations using requestNoContent and no generic undefined-as-T cast. Verified no leftover apiJson<void>/request<void>/undefined-as-T patterns and both frontend builds pass.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:48:35+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Split no-content handling from JSON helpers: root apiJson now throws on unexpected 204 and apiNoContent handles 204-capable calls; forgot/reset/logout/mod-role callers moved to apiNoContent. alb_sheshi frontend now uses send/requestJson/requestNoContent, with vote mutations using requestNoContent and no generic undefined-as-T cast. Verified no leftover apiJson<void>/request<void>/undefined-as-T patterns and both frontend builds pass. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:48:35+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::contract_coherence::getter_names_hide_initialization": {
+      "id": "review::.::holistic::contract_coherence::getter_names_hide_initialization",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "Getter-style exports hide initialization side effects",
+      "detail": {
+        "holistic": true,
+        "dimension": "contract_coherence",
+        "related_files": [
+          "src/lib/realtime.ts",
+          "src/hooks/use-auth.ts"
+        ],
+        "evidence": [
+          "src/lib/realtime.ts:7 exports getRealtimeConnection(), but lines 10-15 construct and cache a new HubConnection on the first call.",
+          "src/hooks/use-auth.ts:87 exports getAuthSnapshot(), but line 88 calls init(), and init() at lines 55-61 can start loadUserFromTokens() and subscribe to token-store changes.",
+          "Pure getters elsewhere, such as src/lib/token-store.ts:13 getStoredTokens(), only read and return state, so these exported get* APIs are surprising by comparison."
+        ],
+        "suggestion": "Rename the side-effecting entry points to make initialization explicit, such as ensureRealtimeConnection() and initializeAuthAndGetSnapshot(), or split each into a pure peek/get function plus an ensure/init function used by callers that want construction.",
+        "reasoning": "",
+        "summary_hash": "649c9912"
+      },
+      "status": "fixed",
+      "note": "Renamed side-effecting root frontend entry points: getRealtimeConnection is now ensureRealtimeConnection, auth init() is now ensureAuthInitialized, and exported getAuthSnapshot was split into initializeAuthAndGetSnapshot plus pure peekAuthSnapshot. Verified old names are absent and root npm build passes.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T21:49:59+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Renamed side-effecting root frontend entry points: getRealtimeConnection is now ensureRealtimeConnection, auth init() is now ensureAuthInitialized, and exported getAuthSnapshot was split into initializeAuthAndGetSnapshot plus pure peekAuthSnapshot. Verified old names are absent and root npm build passes. and I am not gaming the score.",
+        "attested_at": "2026-06-09T21:49:59+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::logic_clarity::stale_thread_reload": {
+      "id": "review::.::holistic::logic_clarity::stale_thread_reload",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Thread reload can apply a stale getThread result after navigation changes messageId",
+      "detail": {
+        "holistic": true,
+        "dimension": "logic_clarity",
+        "related_files": [
+          "src/routes/tema.$messageId.tsx"
+        ],
+        "evidence": [
+          "reload() closes over messageId and calls getThread(messageId).then(... setThread(data) ...) at lines 70-90.",
+          "The effect at lines 106-129 reruns for joinedThreadId/messageId/userId and sets disposed only for realtime handler attachment/removal; reload() itself has no disposed/request-id check before setThread(data).",
+          "A similar route fetch in src/routes/dhoma.$slug.tsx lines 49-65 uses a cancelled flag before setting state, so this route is an outlier from an existing safer pattern."
+        ],
+        "suggestion": "Move reload into the effect or pass it a request token/cancelled flag, and check that flag before setThread, lastReplyIdRef writes, scroll scheduling, and setLoading(false).",
+        "reasoning": "",
+        "summary_hash": "bd49d1bb"
+      },
+      "status": "fixed",
+      "note": "Added an active message id ref and monotonically increasing reload request id in the thread route. reload() now ignores stale getThread completions before setThread, lastReplyIdRef writes, scroll scheduling, catch handling, and setLoading(false). Verified with npm run legacy:build and npm run build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:27:31+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Added an active message id ref and monotonically increasing reload request id in the thread route. reload() now ignores stale getThread completions before setThread, lastReplyIdRef writes, scroll scheduling, catch handling, and setLoading(false). Verified with npm run legacy:build and npm run build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:27:31+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::logic_clarity::auth_load_race": {
+      "id": "review::.::holistic::logic_clarity::auth_load_race",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Overlapping auth loads can restore a user after tokens were replaced or cleared",
+      "detail": {
+        "holistic": true,
+        "dimension": "logic_clarity",
+        "related_files": [
+          "src/hooks/use-auth.ts",
+          "src/lib/token-store.ts"
+        ],
+        "evidence": [
+          "loadUserFromTokens() captures tokens at lines 38-45, awaits apiJson('/api/me') at line 47, then writes user state using getStoredTokens() at line 48 without verifying the stored tokens still match the request that just completed.",
+          "clearStoredTokens() and setStoredTokens() synchronously emit token-store listeners at src/lib/token-store.ts lines 26-35, which can start a newer loadUserFromTokens while an older one is still in flight.",
+          "If an older /api/me request resolves after signOutLocal() or another token update, it can set { session: null, user, isReady: true }, producing an inconsistent authenticated user with no session."
+        ],
+        "suggestion": "Capture the access token used for the load and, after await, compare it with the current stored token before setting user; ignore stale completions or use a monotonically increasing load id.",
+        "reasoning": "",
+        "summary_hash": "db16f002"
+      },
+      "status": "fixed",
+      "note": "Guarded loadUserFromTokens against stale completions by capturing the access token used for /api/me and comparing it with the current stored token before setting user state or clearing tokens on failure. Stale successes/failures are ignored so replaced/cleared sessions cannot be restored. Verified with npm run legacy:build and npm run build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:25:55+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Guarded loadUserFromTokens against stale completions by capturing the access token used for /api/me and comparing it with the current stored token before setting user state or clearing tokens on failure. Stale successes/failures are ignored so replaced/cleared sessions cannot be restored. Verified with npm run legacy:build and npm run build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:25:55+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::logic_clarity::async_facade_without_await": {
+      "id": "review::.::holistic::logic_clarity::async_facade_without_await",
+      "detector": "review",
+      "file": ".",
+      "tier": 2,
+      "confidence": "medium",
+      "summary": "API facade wrappers are marked async even when they only return another promise",
+      "detail": {
+        "holistic": true,
+        "dimension": "logic_clarity",
+        "related_files": [
+          "src/lib/sheshi.ts"
+        ],
+        "evidence": [
+          "listRooms(), createRoom(), listMessages(), listReplies(), and listHighlights are declared async but their bodies only return apiJson(...) directly at lines 45-46, 58-65, 68-69, 81-82, and 160-161.",
+          "These functions do not contain framework-required async signatures or local try/catch logic; neighboring functions such as getRoomBySlug() and getMessage() use async because they actually await to translate 404s to null.",
+          "Mechanical concern confirmed: smells::src/lib/sheshi.ts::async_no_await."
+        ],
+        "suggestion": "Remove async from the pure pass-through wrappers and return Promise<T> directly, reserving async for functions that await to transform errors or branch on results.",
+        "reasoning": "",
+        "summary_hash": "20cd8496"
+      },
+      "status": "fixed",
+      "note": "Removed async from pure pass-through domain facade wrappers in src/lib/sheshi.ts: listRooms, createRoom, listMessages, listReplies, softDeleteMessage, and listHighlights now return promises directly. Kept async on functions that await to transform errors or branch on results. Verified with npm run legacy:build and npm run build.",
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": "2026-06-09T22:24:33+00:00",
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null,
+      "resolution_attestation": {
+        "kind": "manual",
+        "text": "I have actually Removed async from pure pass-through domain facade wrappers in src/lib/sheshi.ts: listRooms, createRoom, listMessages, listReplies, softDeleteMessage, and listHighlights now return promises directly. Kept async on functions that await to transform errors or branch on results. Verified with npm run legacy:build and npm run build. and I am not gaming the score.",
+        "attested_at": "2026-06-09T22:24:33+00:00",
+        "scan_verified": false
+      }
+    },
+    "review::.::holistic::type_safety::frontend_api_optional_drift": {
+      "id": "review::.::holistic::type_safety::frontend_api_optional_drift",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Root frontend API models mark server-guaranteed response fields as optional",
+      "detail": {
+        "holistic": true,
+        "dimension": "type_safety",
+        "related_files": [
+          "src/lib/sheshi.ts",
+          "server/Sheshi.Api/Features/Messages/MessageDtos.cs",
+          "server/Sheshi.Api/Features/Rooms/RoomDtos.cs",
+          "alb_sheshi/frontend/src/types.ts"
+        ],
+        "evidence": [
+          "src/lib/sheshi.ts lines 8-9 declare Room.thread_count? and latest_activity_at?, while server/Sheshi.Api/Features/Rooms/RoomDtos.cs lines 3-9 returns ThreadCount as a required int and LatestActivityAt as a present nullable DateTimeOffset.",
+          "src/lib/sheshi.ts lines 28-31 declare MessageRow.author?, upvotes?, reply_count?, and voted?, while server/Sheshi.Api/Features/Messages/MessageDtos.cs lines 16-19 returns Author, Upvotes, ReplyCount, and Voted as present DTO fields.",
+          "alb_sheshi/frontend/src/types.ts lines 17-24 and 33-48 show the migrated frontend already models the same fields as required, so the root frontend type is a stale looser variant."
+        ],
+        "suggestion": "Tighten src/lib/sheshi.ts to match the server DTOs: make Room.thread_count required, latest_activity_at present nullable, and MessageRow.author/upvotes/reply_count/voted required. Keep null only where the backend record is nullable.",
+        "reasoning": "",
+        "summary_hash": "9b5b7a44"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    },
+    "review::.::holistic::type_safety::moderation_enum_dto_weakened": {
+      "id": "review::.::holistic::type_safety::moderation_enum_dto_weakened",
+      "detector": "review",
+      "file": ".",
+      "tier": 1,
+      "confidence": "high",
+      "summary": "Moderation report DTO weakens domain enums into raw strings",
+      "detail": {
+        "holistic": true,
+        "dimension": "type_safety",
+        "related_files": [
+          "server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+          "server/Sheshi.Api/Domain/Enums.cs",
+          "server/Sheshi.Api/Program.cs"
+        ],
+        "evidence": [
+          "server/Sheshi.Api/Domain/Enums.cs defines ReportReason and ReportStatus, but server/Sheshi.Api/Features/Moderation/ModerationDtos.cs lines 7 and 9 expose Reason and Status as string.",
+          "server/Sheshi.Api/Features/Moderation/ModerationController.cs lines 30-32 manually projects r.Reason and r.Status through ToString().ToLowerInvariant(), bypassing the enum-typed API shape.",
+          "server/Sheshi.Api/Program.cs line 27 already registers JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower), so enum-typed DTO properties would preserve the same snake-case wire format."
+        ],
+        "suggestion": "Change ModReportDto.Reason to ReportReason and Status to ReportStatus, import Sheshi.Api.Domain in ModerationDtos.cs, and pass r.Reason/r.Status directly from ModerationController.",
+        "reasoning": "",
+        "summary_hash": "53193957"
+      },
+      "status": "open",
+      "note": null,
+      "first_seen": "2026-06-09T21:26:14+00:00",
+      "last_seen": "2026-06-09T21:26:14+00:00",
+      "resolved_at": null,
+      "reopen_count": 0,
+      "work_item_kind": "review_defect",
+      "issue_kind": "review_defect",
+      "origin": "review_import",
+      "lang": "typescript",
+      "suppressed": false,
+      "suppressed_at": null,
+      "suppression_pattern": null
+    }
+  },
+  "scan_coverage": {
+    "typescript": {
+      "status": "full",
+      "confidence": 1.0,
+      "detectors": {
+        "security": {
+          "detector": "security",
+          "status": "full",
+          "confidence": 1.0,
+          "summary": "Security coverage complete for enabled detectors.",
+          "impact": "",
+          "remediation": "",
+          "tool": "",
+          "reason": ""
+        }
+      },
+      "warnings": [],
+      "updated_at": "2026-06-09T21:06:09+00:00"
+    }
+  },
+  "score_confidence": {
+    "status": "full",
+    "confidence": 1.0,
+    "detectors": [],
+    "dimensions": []
+  },
+  "scan_metadata": {
+    "source": "scan"
+  },
+  "subjective_integrity": {
+    "status": "disabled",
+    "target_score": null,
+    "matched_count": 0,
+    "matched_dimensions": [],
+    "reset_dimensions": []
+  },
+  "subjective_assessments": {
+    "abstraction_fitness": {
+      "score": 92.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "components": [
+        "Abstraction Leverage",
+        "Indirection Cost",
+        "Interface Honesty",
+        "Delegation Density",
+        "Definition Directness",
+        "Type Discipline"
+      ],
+      "component_scores": {
+        "Abstraction Leverage": 91.0,
+        "Indirection Cost": 94.0,
+        "Interface Honesty": 98.0,
+        "Delegation Density": 100.0,
+        "Definition Directness": 90.0,
+        "Type Discipline": 98.0
+      }
+    },
+    "ai_generated_debt": {
+      "score": 82.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T21:27:47+00:00"
+    },
+    "api_surface_coherence": {
+      "score": 82.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T21:37:05+00:00"
+    },
+    "authorization_consistency": {
+      "score": 74.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T21:45:35+00:00"
+    },
+    "contract_coherence": {
+      "score": 82.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T21:49:59+00:00"
+    },
+    "convention_outlier": {
+      "score": 76.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T21:51:43+00:00"
+    },
+    "cross_module_architecture": {
+      "score": 72.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T21:52:58+00:00"
+    },
+    "dependency_health": {
+      "score": 72.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T21:55:36+00:00"
+    },
+    "design_coherence": {
+      "score": 72.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:06:55+00:00"
+    },
+    "error_consistency": {
+      "score": 74.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:14:19+00:00"
+    },
+    "high_level_elegance": {
+      "score": 72.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:18:03+00:00"
+    },
+    "incomplete_migration": {
+      "score": 62.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:20:14+00:00"
+    },
+    "initialization_coupling": {
+      "score": 82.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:23:09+00:00"
+    },
+    "logic_clarity": {
+      "score": 82.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:27:31+00:00"
+    },
+    "low_level_elegance": {
+      "score": 78.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:30:09+00:00"
+    },
+    "mid_level_elegance": {
+      "score": 78.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:36:52+00:00"
+    },
+    "naming_quality": {
+      "score": 90.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_fixed",
+      "stale_since": "2026-06-09T22:37:51+00:00"
+    },
+    "package_organization": {
+      "score": 72.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00",
+      "needs_review_refresh": true,
+      "refresh_reason": "review_issue_wontfix",
+      "stale_since": "2026-06-09T22:39:08+00:00"
+    },
+    "test_strategy": {
+      "score": 62.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00"
+    },
+    "type_safety": {
+      "score": 82.0,
+      "source": "holistic",
+      "assessed_at": "2026-06-09T21:26:14+00:00"
+    }
+  },
+  "scan_history": [
+    {
+      "timestamp": "2026-06-09T21:06:09+00:00",
+      "lang": "typescript",
+      "strict_score": 19.4,
+      "verified_strict_score": 77.6,
+      "objective_score": 77.6,
+      "overall_score": 19.4,
+      "open": 163,
+      "diff_new": 163,
+      "diff_resolved": 0,
+      "ignored": 0,
+      "raw_issues": 163,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "pass",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": 85.0
+      },
+      "score_confidence": {
+        "status": "full",
+        "confidence": 1.0,
+        "detector_count": 0,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 90.4,
+          "strict": 90.4
+        },
+        "Security": {
+          "score": 98.3,
+          "strict": 98.3
+        },
+        "File health": {
+          "score": 97.0,
+          "strict": 97.0
+        },
+        "Duplication": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Test health": {
+          "score": 18.2,
+          "strict": 18.2
+        },
+        "Abstraction fit": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "AI generated debt": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "API coherence": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Auth consistency": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Contracts": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Convention drift": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Cross-module arch": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Dep health": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Design coherence": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Error consistency": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "High elegance": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Stale migration": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Init coupling": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Logic clarity": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Low elegance": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Mid elegance": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Naming quality": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Structure nav": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Test strategy": {
+          "score": 0.0,
+          "strict": 0.0
+        },
+        "Type safety": {
+          "score": 0.0,
+          "strict": 0.0
+        }
+      }
+    },
+    {
+      "timestamp": "2026-06-09T21:26:14+00:00",
+      "lang": "typescript",
+      "strict_score": 77.8,
+      "verified_strict_score": 77.6,
+      "objective_score": 77.6,
+      "overall_score": 77.8,
+      "open": 197,
+      "diff_new": 34,
+      "diff_resolved": 0,
+      "ignored": 0,
+      "raw_issues": 34,
+      "suppressed_pct": 0.0,
+      "ignore_patterns": 0,
+      "subjective_integrity": {
+        "status": "disabled",
+        "matched_count": 0,
+        "reset_count": 0,
+        "target_score": null
+      },
+      "score_confidence": {
+        "status": "full",
+        "confidence": 1.0,
+        "detector_count": 0,
+        "dimension_count": 0
+      },
+      "dimension_scores": {
+        "Code quality": {
+          "score": 90.4,
+          "strict": 90.4
+        },
+        "Security": {
+          "score": 98.3,
+          "strict": 98.3
+        },
+        "File health": {
+          "score": 97.0,
+          "strict": 97.0
+        },
+        "Duplication": {
+          "score": 100.0,
+          "strict": 100.0
+        },
+        "Test health": {
+          "score": 18.2,
+          "strict": 18.2
+        },
+        "Abstraction fit": {
+          "score": 92.0,
+          "strict": 92.0
+        },
+        "AI generated debt": {
+          "score": 82.0,
+          "strict": 82.0
+        },
+        "API coherence": {
+          "score": 82.0,
+          "strict": 82.0
+        },
+        "Auth consistency": {
+          "score": 74.0,
+          "strict": 74.0
+        },
+        "Contracts": {
+          "score": 82.0,
+          "strict": 82.0
+        },
+        "Convention drift": {
+          "score": 76.0,
+          "strict": 76.0
+        },
+        "Cross-module arch": {
+          "score": 72.0,
+          "strict": 72.0
+        },
+        "Dep health": {
+          "score": 72.0,
+          "strict": 72.0
+        },
+        "Design coherence": {
+          "score": 72.0,
+          "strict": 72.0
+        },
+        "Error consistency": {
+          "score": 74.0,
+          "strict": 74.0
+        },
+        "High elegance": {
+          "score": 72.0,
+          "strict": 72.0
+        },
+        "Stale migration": {
+          "score": 62.0,
+          "strict": 62.0
+        },
+        "Init coupling": {
+          "score": 82.0,
+          "strict": 82.0
+        },
+        "Logic clarity": {
+          "score": 82.0,
+          "strict": 82.0
+        },
+        "Low elegance": {
+          "score": 78.0,
+          "strict": 78.0
+        },
+        "Mid elegance": {
+          "score": 78.0,
+          "strict": 78.0
+        },
+        "Naming quality": {
+          "score": 90.0,
+          "strict": 90.0
+        },
+        "Structure nav": {
+          "score": 72.0,
+          "strict": 72.0
+        },
+        "Test strategy": {
+          "score": 62.0,
+          "strict": 62.0
+        },
+        "Type safety": {
+          "score": 82.0,
+          "strict": 82.0
+        }
+      }
+    }
+  ],
+  "review_cache": {
+    "detectors": {
+      "boilerplate": {},
+      "security": {
+        "version": 1,
+        "fingerprint": "8474b7ceb927954586b1f5c9861c733480bcd0aa",
+        "entries": [
+          {
+            "file": "src/components/ui/chart.tsx",
+            "name": "security::dangerously_set_inner_html::src/components/ui/chart.tsx::73",
+            "tier": 2,
+            "confidence": "medium",
+            "summary": "dangerouslySetInnerHTML - XSS risk if data is untrusted",
+            "detail": {
+              "kind": "dangerously_set_inner_html",
+              "severity": "high",
+              "line": 73,
+              "content": "      dangerouslySetInnerHTML={{",
+              "remediation": "Sanitize HTML with DOMPurify before using dangerouslySetInnerHTML"
+            }
+          }
+        ],
+        "files_scanned": 81,
+        "coverage": null
+      },
+      "dupes": {
+        "version": 1,
+        "threshold": 0.9,
+        "functions": {
+          "alb_sheshi/frontend/src/App.tsx:parseRoute:44:53": {
+            "body_hash": "556f25a43686118e6e1699e9474f5140",
+            "loc": 10
+          },
+          "alb_sheshi/frontend/src/App.tsx:navigate:55:58": {
+            "body_hash": "569e1137ab12f9c8a969271d302dc6a5",
+            "loc": 4
+          },
+          "alb_sheshi/frontend/src/App.tsx:loadAuth:60:66": {
+            "body_hash": "a38b42d4e9d355e8505e5eb1cc9980e5",
+            "loc": 7
+          },
+          "alb_sheshi/frontend/src/App.tsx:saveAuth:68:71": {
+            "body_hash": "818dcd65f5ef5265b7fdcbaf9dea7fe7",
+            "loc": 4
+          },
+          "alb_sheshi/frontend/src/App.tsx:loadSavedIds:102:109": {
+            "body_hash": "ffa30d4045e89312f64c8553c7a8e9e0",
+            "loc": 8
+          },
+          "alb_sheshi/frontend/src/App.tsx:displayName:111:114": {
+            "body_hash": "92098762426866e23fba367cf992016b",
+            "loc": 4
+          },
+          "alb_sheshi/frontend/src/App.tsx:authorInitial:116:118": {
+            "body_hash": "bc1273223e19e67aab712d23bafe46c2",
+            "loc": 3
+          },
+          "alb_sheshi/frontend/src/App.tsx:authorAccent:120:125": {
+            "body_hash": "0c5734cc7c3a5d5cab6944adb3abd0ce",
+            "loc": 6
+          },
+          "alb_sheshi/frontend/src/App.tsx:timeAgo:127:135": {
+            "body_hash": "c94dec11de9e6eea192e1fe401799b69",
+            "loc": 9
+          },
+          "alb_sheshi/frontend/src/App.tsx:currentRoom:159:163": {
+            "body_hash": "52cdeba7b5354f3e316552327e56e013",
+            "loc": 5
+          },
+          "alb_sheshi/frontend/src/App.tsx:setAuth:167:170": {
+            "body_hash": "a2cd838bdc841ec74507f2a63e97f907",
+            "loc": 4
+          },
+          "alb_sheshi/frontend/src/App.tsx:showToast:172:175": {
+            "body_hash": "c3b2dc12cf68aac0f8a6fb94c4559221",
+            "loc": 4
+          },
+          "alb_sheshi/frontend/src/App.tsx:openAuthModal:177:183": {
+            "body_hash": "b0efe7192adba91c8162d7e22c8df2ce",
+            "loc": 7
+          },
+          "alb_sheshi/frontend/src/App.tsx:onRoute:186:191": {
+            "body_hash": "2a5c461e59b7d66795a7cacdd8f07170",
+            "loc": 6
+          },
+          "alb_sheshi/frontend/src/App.tsx:loadRooms:204:221": {
+            "body_hash": "d2e92793e081acc58948ca0f4a2a1d85",
+            "loc": 18
+          },
+          "alb_sheshi/frontend/src/App.tsx:startExternalLogin:243:250": {
+            "body_hash": "9d91bcc7f89600e965266e4e1ef83c6e",
+            "loc": 8
+          },
+          "alb_sheshi/frontend/src/App.tsx:loadRoomMessages:279:290": {
+            "body_hash": "de11c2531a2a19992b9e569301a027e2",
+            "loc": 12
+          },
+          "alb_sheshi/frontend/src/App.tsx:loadThread:297:307": {
+            "body_hash": "3a98f66b5871e7c67590e7a58bb2e145",
+            "loc": 11
+          },
+          "alb_sheshi/frontend/src/App.tsx:roomIds:318:323": {
+            "body_hash": "95e7db53312ac19a60f8c8ec2fa69e50",
+            "loc": 6
+          },
+          "alb_sheshi/frontend/src/App.tsx:requireAuth:359:363": {
+            "body_hash": "c9d10e5a7c642f3f8d748cd63c046ed9",
+            "loc": 5
+          },
+          "alb_sheshi/frontend/src/App.tsx:toggleSave:365:373": {
+            "body_hash": "37135cfbb6be385616ef31c09bfe02fd",
+            "loc": 9
+          },
+          "alb_sheshi/frontend/src/App.tsx:shareMessage:375:392": {
+            "body_hash": "c2aef63f34803376228007a2153d96ca",
+            "loc": 18
+          },
+          "alb_sheshi/frontend/src/App.tsx:upvote:394:414": {
+            "body_hash": "4a0e83c26a5015819c5be5365b1c7d1c",
+            "loc": 21
+          },
+          "alb_sheshi/frontend/src/App.tsx:patchMessage:416:420": {
+            "body_hash": "f9106e7fcc83ddcc2a0e68fb3b66ad74",
+            "loc": 5
+          },
+          "alb_sheshi/frontend/src/App.tsx:TopBar:556:602": {
+            "body_hash": "fd9e288dbfbbd2c912984428a163a831",
+            "loc": 47
+          },
+          "alb_sheshi/frontend/src/App.tsx:RoomRail:604:647": {
+            "body_hash": "43fac13b18b6786ab048b3056eca7f03",
+            "loc": 44
+          },
+          "alb_sheshi/frontend/src/App.tsx:Home:649:719": {
+            "body_hash": "025c3b3dbc2ef7e9492a2e39cda48e7b",
+            "loc": 71
+          },
+          "alb_sheshi/frontend/src/App.tsx:RoomView:721:764": {
+            "body_hash": "ab6365f26a4c1cca60058c3c03d07ae3",
+            "loc": 44
+          },
+          "alb_sheshi/frontend/src/App.tsx:ThreadView:766:850": {
+            "body_hash": "64d887de03baa0e72853c8a158c04f71",
+            "loc": 85
+          },
+          "alb_sheshi/frontend/src/App.tsx:ThreadCard:852:888": {
+            "body_hash": "2d5f87067b0ae8284671cf415b79d6a0",
+            "loc": 37
+          },
+          "alb_sheshi/frontend/src/App.tsx:AuthorAvatar:890:897": {
+            "body_hash": "17ddb671be27364619585a79f850e85b",
+            "loc": 8
+          },
+          "alb_sheshi/frontend/src/App.tsx:ActionRow:899:934": {
+            "body_hash": "adc7a15adbae0c15f7199699a0f2c050",
+            "loc": 36
+          },
+          "alb_sheshi/frontend/src/App.tsx:ReplyTree:936:1007": {
+            "body_hash": "24ceb7e595cc74a62ea0b18c4d6cfc62",
+            "loc": 72
+          },
+          "alb_sheshi/frontend/src/App.tsx:Composer:1009:1059": {
+            "body_hash": "d3e8374261e55cdf2dbe8e9cab39ac02",
+            "loc": 51
+          },
+          "alb_sheshi/frontend/src/App.tsx:ReplyComposer:1061:1086": {
+            "body_hash": "9a38f3f126f012e246ed0767b76d8e02",
+            "loc": 26
+          },
+          "alb_sheshi/frontend/src/App.tsx:MobileDigest:1088:1106": {
+            "body_hash": "4165c6fb2769810feeaa1eeba56122f9",
+            "loc": 19
+          },
+          "alb_sheshi/frontend/src/App.tsx:FocusPanel:1108:1150": {
+            "body_hash": "334c2124b0aec95c5085ab6e9484215a",
+            "loc": 43
+          },
+          "alb_sheshi/frontend/src/App.tsx:AuthPage:1152:1209": {
+            "body_hash": "b44156d7085970f1c8d7aec5883a7ef1",
+            "loc": 58
+          },
+          "alb_sheshi/frontend/src/App.tsx:AuthCallback:1211:1224": {
+            "body_hash": "54d1d457fc420a66e87a592aa8f74e89",
+            "loc": 14
+          },
+          "alb_sheshi/frontend/src/App.tsx:Profile:1226:1236": {
+            "body_hash": "81860b6dff35f64aa26bdf0923149f77",
+            "loc": 11
+          },
+          "alb_sheshi/frontend/src/App.tsx:CreateRoomDialog:1238:1259": {
+            "body_hash": "410aff654566f0797ec70fc341848ca0",
+            "loc": 22
+          },
+          "alb_sheshi/frontend/src/App.tsx:Dialog:1261:1273": {
+            "body_hash": "7e22ae4fb5c530d38d52430706bda25b",
+            "loc": 13
+          },
+          "alb_sheshi/frontend/src/App.tsx:EmptyState:1275:1282": {
+            "body_hash": "a10790cd128ee87fc15c7ac7bcb8dd67",
+            "loc": 8
+          },
+          "alb_sheshi/frontend/src/App.tsx:LoadingRows:1284:1292": {
+            "body_hash": "a955f823288abf3f8e3acf7e988f90bc",
+            "loc": 9
+          },
+          "alb_sheshi/frontend/src/App.tsx:patchThread:1294:1305": {
+            "body_hash": "3131c87876f119fcd4c693b9dc458674",
+            "loc": 12
+          },
+          "alb_sheshi/frontend/src/App.tsx:findReplyNode:1307:1315": {
+            "body_hash": "1caa225a8c03281f9d74f1cfaf4b4102",
+            "loc": 9
+          },
+          "alb_sheshi/frontend/src/App.tsx:sortHomeThreads:1317:1330": {
+            "body_hash": "eb484209f9f95bdc3d1bf0573d20e31a",
+            "loc": 14
+          },
+          "alb_sheshi/frontend/src/App.tsx:hotScore:1332:1335": {
+            "body_hash": "bc050577d756cc2bdf817e5716bf7967",
+            "loc": 4
+          },
+          "alb_sheshi/frontend/src/App.tsx:combinePopularThreads:1337:1360": {
+            "body_hash": "d790c08b9eeb4c541cbcaea4eef92497",
+            "loc": 24
+          },
+          "alb_sheshi/frontend/src/api.ts:roomPath:81:83": {
+            "body_hash": "4ee1e1decb654bac9593ef4dd84938ea",
+            "loc": 3
+          },
+          "alb_sheshi/frontend/src/api.ts:threadPath:85:87": {
+            "body_hash": "5a380ee46cf61bf3fd2117aab6bf7634",
+            "loc": 3
+          },
+          "src/components/AppShell.tsx:AppShell:11:184": {
+            "body_hash": "dded5fb563e26de7462f189d56bf9ae6",
+            "loc": 174
+          },
+          "src/components/AppShell.tsx:BottomLink:186:209": {
+            "body_hash": "46d712d08b48c5dc8a8b9bca8427c25a",
+            "loc": 24
+          },
+          "src/components/Composer.tsx:clearImage:86:89": {
+            "body_hash": "4df7b3c2051f399e23e9a6aff0234e03",
+            "loc": 4
+          },
+          "src/components/Composer.tsx:selectImage:91:107": {
+            "body_hash": "1e75e29e85a75f628244b04bcaf66c94",
+            "loc": 17
+          },
+          "src/components/Composer.tsx:onSubmit:143:146": {
+            "body_hash": "9aafb2cc32d55d37609bafc14e56d677",
+            "loc": 4
+          },
+          "src/components/HighlightsPanel.tsx:HighlightsPanel:10:189": {
+            "body_hash": "f75ca4db7b225cf052e56a81d59e46e3",
+            "loc": 180
+          },
+          "src/components/MessageCard.tsx:MessageCard:22:228": {
+            "body_hash": "e529ab2fcadaf47069fb9d87c80c3d75",
+            "loc": 207
+          },
+          "src/components/ReportDialog.tsx:ReportDialog:26:80": {
+            "body_hash": "483a43b3d2bf305a8f3d8c0c4e81e0c0",
+            "loc": 55
+          },
+          "src/components/ui/badge.tsx:Badge:28:30": {
+            "body_hash": "52e54b19cca254d9e35ae11d563d1e72",
+            "loc": 3
+          },
+          "src/components/ui/calendar.tsx:Calendar:10:137": {
+            "body_hash": "739912430c3fcb19894ccfb4c4d020b7",
+            "loc": 128
+          },
+          "src/components/ui/calendar.tsx:CalendarDayButton:139:175": {
+            "body_hash": "8da4d1fb38a262bf0431140a97cce8c9",
+            "loc": 37
+          },
+          "src/components/ui/carousel.tsx:useCarousel:31:39": {
+            "body_hash": "95044866d4902aa37d516c4579305ceb",
+            "loc": 9
+          },
+          "src/components/ui/carousel.tsx:onSelect:55:62": {
+            "body_hash": "670fab651d2473ec13c49fd15ec8431b",
+            "loc": 8
+          },
+          "src/components/ui/carousel.tsx:scrollPrev:64:66": {
+            "body_hash": "f81a2ed55d74b1d887d3f717c6c5c83b",
+            "loc": 3
+          },
+          "src/components/ui/carousel.tsx:scrollNext:68:70": {
+            "body_hash": "5fb60008680b366c33d5dd795d7086bb",
+            "loc": 3
+          },
+          "src/components/ui/chart.tsx:useChart:25:33": {
+            "body_hash": "e73ce6d125e2111ac5c5f78915a6c6d6",
+            "loc": 9
+          },
+          "src/components/ui/chart.tsx:colorConfig:65:69": {
+            "body_hash": "a06b9689bb1af97b1669fef7385336a3",
+            "loc": 5
+          },
+          "src/components/ui/chart.tsx:tooltipLabel:126:150": {
+            "body_hash": "8c36498e647a198c0c326728e8ce5666",
+            "loc": 25
+          },
+          "src/components/ui/chart.tsx:getPayloadConfigFromPayload:299:322": {
+            "body_hash": "8c014e0ecdd53e6511bb332a5eb9c77e",
+            "loc": 24
+          },
+          "src/components/ui/form.tsx:useFormField:40:65": {
+            "body_hash": "2fd29534900b6c229e0d4a8ebfd1393e",
+            "loc": 26
+          },
+          "src/components/ui/menubar.tsx:MenubarMenu:7:9": {
+            "body_hash": "561ac29d3f6036276bb37b6645d55e67",
+            "loc": 3
+          },
+          "src/components/ui/menubar.tsx:MenubarGroup:11:13": {
+            "body_hash": "123e5053d850b16209fa44433664b1ee",
+            "loc": 3
+          },
+          "src/components/ui/menubar.tsx:MenubarPortal:15:17": {
+            "body_hash": "09fac2be74e4be86fde43451315d7f81",
+            "loc": 3
+          },
+          "src/components/ui/menubar.tsx:MenubarRadioGroup:19:21": {
+            "body_hash": "2f67f4066b8785e86ec1b8fba19720df",
+            "loc": 3
+          },
+          "src/components/ui/menubar.tsx:MenubarSub:23:25": {
+            "body_hash": "ca177aa24512f11b23ac0abe46541f81",
+            "loc": 3
+          },
+          "src/components/ui/sidebar.tsx:useSidebar:40:47": {
+            "body_hash": "a3f2539bfe90493192de196f223300f5",
+            "loc": 8
+          },
+          "src/components/ui/sidebar.tsx:toggleSidebar:92:94": {
+            "body_hash": "044dcf9cda290b5d7e9b25d97946b45a",
+            "loc": 3
+          },
+          "src/components/ui/sidebar.tsx:handleKeyDown:98:103": {
+            "body_hash": "f30fc62b5629efbba58921aa1ac82a36",
+            "loc": 6
+          },
+          "src/components/ui/sidebar.tsx:width:642:644": {
+            "body_hash": "57f8f61e06a66a940d9a806a730a81e8",
+            "loc": 3
+          },
+          "src/components/ui/skeleton.tsx:Skeleton:3:5": {
+            "body_hash": "7ff92b5891b3559a95ec167ccca01ea8",
+            "loc": 3
+          },
+          "src/hooks/use-auth.ts:listeners:29:36": {
+            "body_hash": "324af3e0c736e73507f51bdecfe20774",
+            "loc": 8
+          },
+          "src/hooks/use-auth.ts:init:55:62": {
+            "body_hash": "f572931b86c1b9ea04a27ce31117d8bc",
+            "loc": 8
+          },
+          "src/hooks/use-auth.ts:subscribe:64:70": {
+            "body_hash": "af0802402cc38fbbfdb6b427e9e43fcf",
+            "loc": 7
+          },
+          "src/hooks/use-auth.ts:getSnapshot:72:74": {
+            "body_hash": "1416b7c04829b6f94ef2ffb88d848799",
+            "loc": 3
+          },
+          "src/hooks/use-auth.ts:getServerSnapshot:76:78": {
+            "body_hash": "d4b53f2aa751964f694be8eb62193c74",
+            "loc": 3
+          },
+          "src/hooks/use-auth.ts:useAuth:80:85": {
+            "body_hash": "4104087593cb7401c5f76b5be9d64cbd",
+            "loc": 6
+          },
+          "src/hooks/use-auth.ts:getAuthSnapshot:87:90": {
+            "body_hash": "aaae0eab07dcd0ee96769dd166adf341",
+            "loc": 4
+          },
+          "src/hooks/use-auth.ts:signOutLocal:97:99": {
+            "body_hash": "e1d951200cc894c9e0a2fc7799b64c8b",
+            "loc": 3
+          },
+          "src/hooks/use-mobile.tsx:useIsMobile:5:19": {
+            "body_hash": "67e4029d4033af74b11c42642acfa494",
+            "loc": 15
+          },
+          "src/lib/api-client.ts:getApiBaseUrl:13:15": {
+            "body_hash": "0fe67a3354bdc40b295c7c57442b86d6",
+            "loc": 3
+          },
+          "src/lib/config.server.ts:getServerConfig:19:26": {
+            "body_hash": "ec7c8940aeaa8f4d3e31530362ec0be2",
+            "loc": 8
+          },
+          "src/lib/error-capture.ts:record:7:9": {
+            "body_hash": "22f181dcb10e9b59d0aad777cdbad6c6",
+            "loc": 3
+          },
+          "src/lib/error-capture.ts:consumeLastCapturedError:18:27": {
+            "body_hash": "7da9f59a9ea8247d54333ef06623369e",
+            "loc": 10
+          },
+          "src/lib/error-page.ts:renderErrorPage:1:30": {
+            "body_hash": "c589b5b07cc34257933e196c72abf422",
+            "loc": 30
+          },
+          "src/lib/realtime.ts:getRealtimeConnection:7:18": {
+            "body_hash": "05a767915e50da1173c2592f0206b6dd",
+            "loc": 12
+          },
+          "src/lib/token-store.ts:listeners:7:11": {
+            "body_hash": "91fca55c72e02b6a56f720eabdaad55e",
+            "loc": 5
+          },
+          "src/lib/token-store.ts:getStoredTokens:13:24": {
+            "body_hash": "dac35d1e3f96367ef673a25d3531e7b1",
+            "loc": 12
+          },
+          "src/lib/token-store.ts:setStoredTokens:26:30": {
+            "body_hash": "2835a28f665448298286a992d8c6bc57",
+            "loc": 5
+          },
+          "src/lib/token-store.ts:clearStoredTokens:32:36": {
+            "body_hash": "a489a7e2a894ca4b898f2ec5791d2599",
+            "loc": 5
+          },
+          "src/lib/token-store.ts:subscribeTokenStore:38:41": {
+            "body_hash": "d14a8e7b98d69983af487192b8d0daf2",
+            "loc": 4
+          },
+          "src/lib/utils.ts:cn:4:6": {
+            "body_hash": "12d54a1199e958a649edf8b04f21a3e4",
+            "loc": 3
+          },
+          "src/router.tsx:getRouter:5:16": {
+            "body_hash": "33fd0a4441fc0741534055fff41e841b",
+            "loc": 12
+          },
+          "src/routes/__root.tsx:NotFoundComponent:16:36": {
+            "body_hash": "d70328445cc12c367e60600bb683685d",
+            "loc": 21
+          },
+          "src/routes/__root.tsx:ErrorComponent:38:69": {
+            "body_hash": "e7ab6368f16d737dbf29b44bd093202d",
+            "loc": 32
+          },
+          "src/routes/__root.tsx:RootShell:106:118": {
+            "body_hash": "1130dcd8d84ae529a1cf6f42d7fa8977",
+            "loc": 13
+          },
+          "src/routes/__root.tsx:RootComponent:120:136": {
+            "body_hash": "6bd900ccbe840bd641170e2debf049d9",
+            "loc": 17
+          },
+          "src/routes/auth.callback.tsx:AuthCallbackPage:9:26": {
+            "body_hash": "7987f0bb6a4cf63a88793b4bdb56c25b",
+            "loc": 18
+          },
+          "src/routes/auth.tsx:AuthPage:21:148": {
+            "body_hash": "0f9ffddc953abf61a676e685c4c9b09a",
+            "loc": 128
+          },
+          "src/routes/dhoma.$slug.tsx:RoomRoute:27:30": {
+            "body_hash": "1dde346dc616ad24c86b9a7b5b2eb4cd",
+            "loc": 4
+          },
+          "src/routes/dhoma.$slug.tsx:RoomPage:32:174": {
+            "body_hash": "55e0910ed97eee3ccdb6d2ffd40f34ce",
+            "loc": 143
+          },
+          "src/routes/fokus.tsx:FokusPage:21:39": {
+            "body_hash": "3f8293eeba5087c85130bb9f45451bbc",
+            "loc": 19
+          },
+          "src/routes/index.tsx:HomePage:38:217": {
+            "body_hash": "33161bae0a43503a9f37a615fac6c20c",
+            "loc": 180
+          },
+          "src/routes/index.tsx:RoomCard:219:262": {
+            "body_hash": "a6064727b97d2119a6384a2bb37cea00",
+            "loc": 44
+          },
+          "src/routes/index.tsx:Metric:264:287": {
+            "body_hash": "08945a9c9c9923075fdf4a126f2b0ee8",
+            "loc": 24
+          },
+          "src/routes/index.tsx:formatLatest:289:299": {
+            "body_hash": "c991b29b47677fea37ae085bcad83961",
+            "loc": 11
+          },
+          "src/routes/moderim.tsx:ModerimPage:37:87": {
+            "body_hash": "123adaddb14cba8d055b954d0ab17e2f",
+            "loc": 51
+          },
+          "src/routes/moderim.tsx:ReportsPanel:89:142": {
+            "body_hash": "4b307da3f91b9417c2c4bde956c3f49f",
+            "loc": 54
+          },
+          "src/routes/moderim.tsx:UsersPanel:144:231": {
+            "body_hash": "747d6943883769f0456144fcac15d436",
+            "loc": 88
+          },
+          "src/routes/profili.tsx:ProfilePage:18:102": {
+            "body_hash": "1c2b4df76fd0f3f8dbf4d4ae3f6a4b7b",
+            "loc": 85
+          },
+          "src/routes/reset-password.tsx:ResetPassword:15:66": {
+            "body_hash": "69437dec41c5cb7483409c5ae9ed88cd",
+            "loc": 52
+          },
+          "src/routes/tema.$messageId.tsx:ThreadPage:32:226": {
+            "body_hash": "4f4fec8f5ce26ead5fcc8898215079f8",
+            "loc": 195
+          },
+          "src/routes/tema.$messageId.tsx:ReplyBranch:228:301": {
+            "body_hash": "8b49e16ab032708c47b5a0814c069c64",
+            "loc": 74
+          },
+          "src/routes/tema.$messageId.tsx:countNodes:303:305": {
+            "body_hash": "b4fc7f4770d5a55cc982e5f4336d4b15",
+            "loc": 3
+          },
+          "src/routes/tema.$messageId.tsx:findLastReplyId:307:313": {
+            "body_hash": "a0c97f93de4915dab55e9706bb8b7a29",
+            "loc": 7
+          },
+          "src/start.ts:startInstance:20:23": {
+            "body_hash": "db0dd360dc8ee0cdd7ec5b4498bd22b3",
+            "loc": 4
+          }
+        },
+        "near_pairs": []
+      }
+    },
+    "files": {},
+    "holistic": {
+      "reviewed_at": "2026-06-09T21:26:14+00:00",
+      "file_count_at_review": 81,
+      "issue_count": 34,
+      "reviewed_files_count": 0,
+      "full_sweep_included": false
+    }
+  },
+  "lang_capabilities": {
+    "typescript": {
+      "fixers": [
+        "dead-useeffect",
+        "debug-logs",
+        "empty-if-chain",
+        "unused-imports",
+        "unused-params",
+        "unused-vars"
+      ],
+      "typecheck_cmd": "npx tsc --noEmit"
+    }
+  },
+  "zone_distribution": {
+    "production": 81,
+    "config": 2
+  },
+  "tool_hash": "2ead5ae7d4e6",
+  "scan_path": null,
+  "scan_completeness": {
+    "typescript": "full"
+  },
+  "potentials": {
+    "typescript": {
+      "logs": 82,
+      "unused": 82,
+      "exports": 0,
+      "deprecated": 0,
+      "structural": 81,
+      "flat_dirs": 11,
+      "props": 8,
+      "single_use": 25,
+      "coupling": 0,
+      "cycles": 82,
+      "orphaned": 82,
+      "patterns": 5,
+      "naming": 10,
+      "facade": 82,
+      "test_coverage": 734,
+      "smells": 83,
+      "react": 30,
+      "security": 81,
+      "subjective_review": 20,
+      "dupes": 126,
+      "stale_wontfix": 0,
+      "review": 10
+    }
+  },
+  "codebase_metrics": {
+    "typescript": {
+      "total_files": 83,
+      "total_loc": 9413,
+      "total_directories": 10
+    }
+  },
+  "dimension_scores": {
+    "Code quality": {
+      "score": 100.0,
+      "strict": 100.0,
+      "verified_strict_score": 100.0,
+      "checks": 500,
+      "failing": 0,
+      "tier": 3,
+      "detectors": {
+        "unused": {
+          "potential": 82,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "logs": {
+          "potential": 82,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "smells": {
+          "potential": 83,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "orphaned": {
+          "potential": 82,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "flat_dirs": {
+          "potential": 11,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "naming": {
+          "potential": 10,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "single_use": {
+          "potential": 25,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "facade": {
+          "potential": 82,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "props": {
+          "potential": 8,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "react": {
+          "potential": 30,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "patterns": {
+          "potential": 5,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        }
+      }
+    },
+    "Security": {
+      "score": 100.0,
+      "strict": 100.0,
+      "verified_strict_score": 100.0,
+      "checks": 163,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "cycles": {
+          "potential": 82,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        },
+        "security": {
+          "potential": 81,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        }
+      }
+    },
+    "File health": {
+      "score": 100.0,
+      "strict": 100.0,
+      "verified_strict_score": 100.0,
+      "checks": 81,
+      "failing": 0,
+      "tier": 3,
+      "detectors": {
+        "structural": {
+          "potential": 81,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        }
+      }
+    },
+    "Duplication": {
+      "score": 100.0,
+      "strict": 100.0,
+      "verified_strict_score": 100.0,
+      "checks": 126,
+      "failing": 0,
+      "tier": 3,
+      "detectors": {
+        "dupes": {
+          "potential": 126,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        }
+      }
+    },
+    "Test health": {
+      "score": 100.0,
+      "strict": 100.0,
+      "verified_strict_score": 100.0,
+      "checks": 734,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "test_coverage": {
+          "potential": 734,
+          "pass_rate": 1.0,
+          "failing": 0,
+          "weighted_failures": 0.0
+        }
+      }
+    },
+    "Abstraction fit": {
+      "score": 92.0,
+      "strict": 92.0,
+      "verified_strict_score": 92.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.92,
+          "failing": 0,
+          "weighted_failures": 0.8,
+          "assessment_score": 92.0,
+          "placeholder": false,
+          "dimension_key": "abstraction_fitness",
+          "configured_weight": 8.0,
+          "components": [
+            "Abstraction Leverage",
+            "Indirection Cost",
+            "Interface Honesty",
+            "Delegation Density",
+            "Definition Directness",
+            "Type Discipline"
+          ],
+          "component_scores": {
+            "Abstraction Leverage": 91.0,
+            "Indirection Cost": 94.0,
+            "Interface Honesty": 98.0,
+            "Delegation Density": 100.0,
+            "Definition Directness": 90.0,
+            "Type Discipline": 98.0
+          }
+        }
+      }
+    },
+    "AI generated debt": {
+      "score": 82.0,
+      "strict": 82.0,
+      "verified_strict_score": 82.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.82,
+          "failing": 0,
+          "weighted_failures": 1.8,
+          "assessment_score": 82.0,
+          "placeholder": false,
+          "dimension_key": "ai_generated_debt",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "API coherence": {
+      "score": 82.0,
+      "strict": 82.0,
+      "verified_strict_score": 82.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.82,
+          "failing": 0,
+          "weighted_failures": 1.8,
+          "assessment_score": 82.0,
+          "placeholder": false,
+          "dimension_key": "api_surface_coherence",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "Auth consistency": {
+      "score": 74.0,
+      "strict": 74.0,
+      "verified_strict_score": 74.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.74,
+          "failing": 0,
+          "weighted_failures": 2.6,
+          "assessment_score": 74.0,
+          "placeholder": false,
+          "dimension_key": "authorization_consistency",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "Contracts": {
+      "score": 82.0,
+      "strict": 82.0,
+      "verified_strict_score": 82.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.82,
+          "failing": 0,
+          "weighted_failures": 1.8,
+          "assessment_score": 82.0,
+          "placeholder": false,
+          "dimension_key": "contract_coherence",
+          "configured_weight": 12.0,
+          "components": []
+        }
+      }
+    },
+    "Convention drift": {
+      "score": 76.0,
+      "strict": 76.0,
+      "verified_strict_score": 76.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.76,
+          "failing": 0,
+          "weighted_failures": 2.4,
+          "assessment_score": 76.0,
+          "placeholder": false,
+          "dimension_key": "convention_outlier",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "Cross-module arch": {
+      "score": 72.0,
+      "strict": 72.0,
+      "verified_strict_score": 72.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.72,
+          "failing": 0,
+          "weighted_failures": 2.8,
+          "assessment_score": 72.0,
+          "placeholder": false,
+          "dimension_key": "cross_module_architecture",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "Dep health": {
+      "score": 72.0,
+      "strict": 72.0,
+      "verified_strict_score": 72.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.72,
+          "failing": 0,
+          "weighted_failures": 2.8,
+          "assessment_score": 72.0,
+          "placeholder": false,
+          "dimension_key": "dependency_health",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "Design coherence": {
+      "score": 72.0,
+      "strict": 72.0,
+      "verified_strict_score": 72.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.72,
+          "failing": 0,
+          "weighted_failures": 2.8,
+          "assessment_score": 72.0,
+          "placeholder": false,
+          "dimension_key": "design_coherence",
+          "configured_weight": 10.0,
+          "components": []
+        }
+      }
+    },
+    "Error consistency": {
+      "score": 74.0,
+      "strict": 74.0,
+      "verified_strict_score": 74.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.74,
+          "failing": 0,
+          "weighted_failures": 2.6,
+          "assessment_score": 74.0,
+          "placeholder": false,
+          "dimension_key": "error_consistency",
+          "configured_weight": 3.0,
+          "components": []
+        }
+      }
+    },
+    "High elegance": {
+      "score": 72.0,
+      "strict": 72.0,
+      "verified_strict_score": 72.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.72,
+          "failing": 0,
+          "weighted_failures": 2.8,
+          "assessment_score": 72.0,
+          "placeholder": false,
+          "dimension_key": "high_level_elegance",
+          "configured_weight": 22.0,
+          "components": []
+        }
+      }
+    },
+    "Stale migration": {
+      "score": 62.0,
+      "strict": 62.0,
+      "verified_strict_score": 62.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.62,
+          "failing": 0,
+          "weighted_failures": 3.8,
+          "assessment_score": 62.0,
+          "placeholder": false,
+          "dimension_key": "incomplete_migration",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "Init coupling": {
+      "score": 82.0,
+      "strict": 82.0,
+      "verified_strict_score": 82.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.82,
+          "failing": 0,
+          "weighted_failures": 1.8,
+          "assessment_score": 82.0,
+          "placeholder": false,
+          "dimension_key": "initialization_coupling",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "Logic clarity": {
+      "score": 82.0,
+      "strict": 82.0,
+      "verified_strict_score": 82.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.82,
+          "failing": 0,
+          "weighted_failures": 1.8,
+          "assessment_score": 82.0,
+          "placeholder": false,
+          "dimension_key": "logic_clarity",
+          "configured_weight": 6.0,
+          "components": []
+        }
+      }
+    },
+    "Low elegance": {
+      "score": 78.0,
+      "strict": 78.0,
+      "verified_strict_score": 78.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.78,
+          "failing": 0,
+          "weighted_failures": 2.2,
+          "assessment_score": 78.0,
+          "placeholder": false,
+          "dimension_key": "low_level_elegance",
+          "configured_weight": 12.0,
+          "components": []
+        }
+      }
+    },
+    "Mid elegance": {
+      "score": 78.0,
+      "strict": 78.0,
+      "verified_strict_score": 78.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.78,
+          "failing": 0,
+          "weighted_failures": 2.2,
+          "assessment_score": 78.0,
+          "placeholder": false,
+          "dimension_key": "mid_level_elegance",
+          "configured_weight": 22.0,
+          "components": []
+        }
+      }
+    },
+    "Naming quality": {
+      "score": 90.0,
+      "strict": 90.0,
+      "verified_strict_score": 90.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.9,
+          "failing": 0,
+          "weighted_failures": 1.0,
+          "assessment_score": 90.0,
+          "placeholder": false,
+          "dimension_key": "naming_quality",
+          "configured_weight": 2.0,
+          "components": []
+        }
+      }
+    },
+    "Structure nav": {
+      "score": 72.0,
+      "strict": 72.0,
+      "verified_strict_score": 72.0,
+      "checks": 10,
+      "failing": 0,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.72,
+          "failing": 0,
+          "weighted_failures": 2.8,
+          "assessment_score": 72.0,
+          "placeholder": false,
+          "dimension_key": "package_organization",
+          "configured_weight": 5.0,
+          "components": []
+        }
+      }
+    },
+    "Test strategy": {
+      "score": 62.0,
+      "strict": 62.0,
+      "verified_strict_score": 62.0,
+      "checks": 10,
+      "failing": 2,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.62,
+          "failing": 2,
+          "weighted_failures": 3.8,
+          "assessment_score": 62.0,
+          "placeholder": false,
+          "dimension_key": "test_strategy",
+          "configured_weight": 1.0,
+          "components": []
+        }
+      }
+    },
+    "Type safety": {
+      "score": 82.0,
+      "strict": 82.0,
+      "verified_strict_score": 82.0,
+      "checks": 10,
+      "failing": 2,
+      "tier": 4,
+      "detectors": {
+        "subjective_assessment": {
+          "potential": 10,
+          "pass_rate": 0.82,
+          "failing": 2,
+          "weighted_failures": 1.8,
+          "assessment_score": 82.0,
+          "placeholder": false,
+          "dimension_key": "type_safety",
+          "configured_weight": 12.0,
+          "components": []
+        }
+      }
+    }
+  },
+  "reminder_history": {
+    "auto_fixers_available": 1,
+    "zone_classification": 1,
+    "dry_run_first": 1,
+    "report_scores": 1
+  },
+  "concern_dismissals": {
+    "naming::src/components/ui::kebab-case": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "The detected minority kebab-case files are standard compound shadcn/Radix primitive names in a directory explicitly configured for shadcn components.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": []
+    },
+    "11034a3eae6cc0be": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "The setState-only effect is a purposeful reset of local optimistic UI after the backing message changes, not an avoidable responsibility split.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "react::src/components/MessageCard.tsx::setOptimisticUpvotes, setOptimisticVoted"
+      ]
+    },
+    "927debddde850f24": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "The module has a clear transport responsibility, and Promise-returning wrappers are an acceptable API shape here.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "smells::src/lib/api-client.ts::async_no_await",
+        "smells::src/lib/api-client.ts::hardcoded_url"
+      ]
+    },
+    "05355c5173d6beeb": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "The async wrapper pattern is consistent and simpler than adding extra service objects or dependency wrappers.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "smells::src/lib/sheshi.ts::async_no_await",
+        "smells::src/lib/sheshi.ts::magic_number"
+      ]
+    },
+    "c1cf4ca97964e98d": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "The function is long but has one coherent route responsibility, which the dimension rubric explicitly says to skip.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "smells::src/routes/index.tsx::high_cyclomatic_complexity",
+        "smells::src/routes/index.tsx::monster_function",
+        "smells::src/routes/index.tsx::nested_closure"
+      ]
+    },
+    "66799bce6a487619": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "The setState-only effect supports a form draft reset and does not indicate mixed responsibilities.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "react::src/routes/profili.tsx::setDisplayName",
+        "smells::src/routes/profili.tsx::nested_closure"
+      ]
+    },
+    "4a0b49805be7d086": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "The component is close to the design boundary, but the responsibilities are all route-local and understandable after one pass.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "smells::src/routes/tema.$messageId.tsx::high_cyclomatic_complexity",
+        "smells::src/routes/tema.$messageId.tsx::monster_function",
+        "smells::src/routes/tema.$messageId.tsx::nested_closure",
+        "structural::src/routes/tema.$messageId.tsx"
+      ]
+    },
+    "7cc3a37df9c338c5": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "The file is used through framework configuration rather than imports, and its body has one clear responsibility.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "orphaned::src/server.ts",
+        "smells::src/server.ts::async_no_await"
+      ]
+    },
+    "f49fa3feeb8ccc71": {
+      "dismissed_at": "2026-06-09T21:26:14+00:00",
+      "reasoning": "Generated framework output is not an authored mixed-responsibility module.",
+      "concern_type": "",
+      "concern_file": "",
+      "source_issue_ids": [
+        "cycles::src/routeTree.gen.ts::src/routeTree.gen.ts::src/router.tsx",
+        "single_use::src/routeTree.gen.ts",
+        "smells::src/routeTree.gen.ts::as_any_cast",
+        "smells::src/routeTree.gen.ts::ts_nocheck"
+      ]
+    }
+  },
+  "assessment_import_audit": [
+    {
+      "timestamp": "2026-06-09T21:26:14+00:00",
+      "mode": "trusted_internal",
+      "trusted": true,
+      "reason": "trusted internal run-batches import",
+      "override_used": false,
+      "attested_external": false,
+      "provisional": false,
+      "provisional_count": 0,
+      "attest": "",
+      "import_file": "/Users/albiidrizi/Documents/sheshi/.desloppify/subagents/runs/20260609_211433/holistic_issues_merged.json",
+      "packet_sha256": "bd898442ddfecca255fdab9493758625e01c0b13c6969537a9ee5b14e9bbf0e5"
+    }
+  ]
+}

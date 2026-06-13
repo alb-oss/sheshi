@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { apiJson } from "@/lib/api-client";
+import { apiNoContent } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
@@ -29,7 +29,7 @@ function ResetPassword() {
 
     setBusy(true);
     try {
-      await apiJson<void>("/api/auth/reset-password", {
+      await apiNoContent("/api/auth/reset-password", {
         method: "POST",
         body: { email, token, password },
       });

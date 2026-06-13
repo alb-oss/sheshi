@@ -6,14 +6,18 @@ namespace Sheshi.Api.Data;
 
 public static class DbSeeder
 {
-    // Exact slug/name/description strings ported from supabase/migrations.
+    // Keep the default surface deliberately small; more rooms should be product-managed, not auto-seeded.
     private static readonly (string Slug, string Name, string Description)[] SeedRooms =
     [
-        ("sheshi", "#sheshi", "Sheshi qendror — diskutim i përgjithshëm qytetar."),
-        ("vjosa-narta", "#vjosa-narta", "Mbrojtja e Vjosës dhe Nartës."),
-        ("tirana", "#tirana", "Çështje qytetare në Tiranë."),
-        ("shkodra", "#shkodra", "Çështje qytetare në Shkodër."),
-        ("korca", "#korca", "Çështje qytetare në Korçë."),
+        ("sheshi", "#sheshi", "Diskutimi kryesor publik."),
+    ];
+
+    private static readonly string[] LegacySeedRoomSlugs =
+    [
+        "vjosa-narta",
+        "tirana",
+        "shkodra",
+        "korca"
     ];
 
     public static async Task SeedAsync(IServiceProvider services)
@@ -29,10 +33,23 @@ public static class DbSeeder
         }
 
         var db = sp.GetRequiredService<AppDbContext>();
+        var legacyRooms = await db.Rooms
+            .Where(r => LegacySeedRoomSlugs.Contains(r.Slug))
+            .ToListAsync();
+        db.Rooms.RemoveRange(legacyRooms);
+
         foreach (var (slug, name, description) in SeedRooms)
         {
-            if (!await db.Rooms.AnyAsync(r => r.Slug == slug))
+            var room = await db.Rooms.SingleOrDefaultAsync(r => r.Slug == slug);
+            if (room is null)
+            {
                 db.Rooms.Add(new Room { Slug = slug, Name = name, Description = description });
+            }
+            else
+            {
+                room.Name = name;
+                room.Description = description;
+            }
         }
         await db.SaveChangesAsync();
 

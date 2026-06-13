@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { apiJson, getApiBaseUrl } from "@/lib/api-client";
+import { apiJson, apiNoContent, getApiBaseUrl } from "@/lib/api-client";
 import { setAuthTokens } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
@@ -42,7 +42,7 @@ function AuthPage() {
         body: { email, password, display_name: email.split("@")[0] },
       });
       await setAuthTokens({ accessToken: result.access_token, refreshToken: result.refresh_token });
-      navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
+      navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : sq.errors.generic);
     } finally {
@@ -60,7 +60,7 @@ function AuthPage() {
       return;
     }
     try {
-      await apiJson<void>("/api/auth/forgot-password", { method: "POST", body: { email } });
+      await apiNoContent("/api/auth/forgot-password", { method: "POST", body: { email } });
       toast.success("Link rivendosjeje u dërgua në email.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : sq.errors.generic);
@@ -124,11 +124,11 @@ function AuthPage() {
           </Button>
         </form>
 
-        <div className="mt-4 flex justify-between text-sm">
+        <div className="mt-4 flex flex-col gap-2 text-sm sm:flex-row sm:justify-between">
           <button
             type="button"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="text-muted-foreground hover:text-foreground"
+            className="inline-flex min-h-10 items-center rounded-sm text-muted-foreground hover:text-foreground"
           >
             {mode === "signin" ? sq.auth.newAccount : sq.auth.haveAccount}
           </button>
@@ -136,7 +136,7 @@ function AuthPage() {
             <button
               type="button"
               onClick={forgot}
-              className="text-muted-foreground hover:text-foreground"
+              className="inline-flex min-h-10 items-center rounded-sm text-muted-foreground hover:text-foreground sm:justify-end"
             >
               {sq.auth.forgot}
             </button>

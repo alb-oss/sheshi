@@ -1,0 +1,118 @@
+{
+  "batch": "mid_level_elegance",
+  "batch_index": 9,
+  "assessments": {
+    "mid_level_elegance": 78.0
+  },
+  "dimension_notes": {
+    "mid_level_elegance": {
+      "evidence": [
+        "[+] src/lib/api-client.ts centralizes base URL handling, bearer-token attachment, refresh-token retry, JSON/form request handling, and ApiError construction, so most frontend-to-backend handoffs enter through one predictable boundary.",
+        "[+] src/lib/sheshi.ts provides domain-level wrappers and frontend DTO shapes for rooms, messages, threads, voting, reports, and highlights; callers usually work with Sheshi concepts rather than raw fetch calls.",
+        "[+] server/Sheshi.Api/Program.cs configures System.Text.Json snake_case and enum conversion once, matching the frontend's snake_case DTO expectations and reducing per-endpoint mapping glue.",
+        "[+] server/Sheshi.Api/Features/Messages/MessageService.cs concentrates author/upvote/reply/voted enrichment in one collaborator reused by list, get, thread, and create message endpoints.",
+        "src/routes/index.tsx mostly uses the domain wrapper but still reaches down to apiJson for /api/rooms/presence, showing a small but visible leak in the otherwise clean frontend API layer.",
+        "src/routes/dhoma.$slug.tsx and src/routes/tema.$messageId.tsx both know SignalR event names, hub method names, join/leave lifecycle, handler cleanup, and startup error swallowing; src/lib/realtime.ts only hides connection creation.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs composes request parsing, validation, DB persistence, image storage, thread-root traversal, DTO enrichment, and realtime notification in one controller, while MessageService only owns enrichment."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "mid_level_elegance": {
+      "dimension_character": "The codebase has some solid seams: frontend HTTP mechanics are centralized, Sheshi API calls are mostly wrapped in a domain module, and backend DTO enrichment has an obvious home. The unevenness appears where lifecycle and orchestration cross boundaries: realtime protocol details leak into route components, and message write/read workflows are still controller-centered rather than composed from focused collaborators.",
+      "score_rationale": "This is better than the 70 anchor because a new developer can usually find the API boundary and understand DTO flow quickly. It falls below strong because the realtime and message orchestration seams require reading multiple layers and implicit protocols before making safe cross-module changes, which is recurring friction rather than a single local rough edge."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "realtime_lifecycle_leaks_into_routes",
+      "summary": "Realtime hub lifecycle and protocol details are duplicated in route components",
+      "related_files": [
+        "src/lib/realtime.ts",
+        "src/routes/dhoma.$slug.tsx",
+        "src/routes/tema.$messageId.tsx"
+      ],
+      "evidence": [
+        "src/lib/realtime.ts:7-23 only creates and starts a shared HubConnection.",
+        "src/routes/dhoma.$slug.tsx:90-115 manually starts the connection, subscribes to the literal \"changed\" event, invokes \"JoinRoom\" and \"LeaveRoom\", tracks a disposed flag, removes the handler, and clears a debounce timer.",
+        "src/routes/tema.$messageId.tsx:106-129 repeats the same lifecycle shape with \"JoinThread\" and \"LeaveThread\".",
+        "Both route effects suppress dependency linting around this orchestration, which makes future lifecycle changes easier to get wrong."
+      ],
+      "suggestion": "Move the hub protocol into src/lib/realtime.ts as small subscription helpers, for example subscribeToRoom(roomId, onChanged) and subscribeToThread(threadId, onChanged) returning cleanup functions; keep route-specific debounce/scroll behavior in the routes, but hide event names, invoke names, start handling, and leave/off cleanup behind that boundary.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "realtime_protocol_boundary_leak"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "message_controller_owns_workflow_orchestration",
+      "summary": "Message workflows are orchestrated inside the controller instead of a focused application service",
+      "related_files": [
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+        "server/Sheshi.Api/Features/Messages/MessageService.cs"
+      ],
+      "evidence": [
+        "MessagesController.cs:64-84 resolves a thread root, loads descendants, groups replies, collects descendants, enriches DTOs, and builds reply nodes inside the HTTP controller.",
+        "MessagesController.cs:87-139 handles mixed JSON/form parsing, auth/user checks, ban checks, body validation, room and parent validation, image storage, database insertion, realtime notification, and DTO enrichment in one endpoint.",
+        "MessagesController.cs:231-335 keeps thread traversal, descendant loading, node building, and form-to-request translation as private controller helpers, while MessageService.cs:7-59 only owns enrichment."
+      ],
+      "suggestion": "Keep HTTP-specific concerns in the controller, but move message use cases into MessageService or a MessageWorkflow service: GetThreadAsync(id, callerId), CreateMessageAsync(request, image, callerId), VoteAsync(id, callerId), and SoftDeleteAsync(id, callerId). Let that service own DB validation, thread-root calculation, storage calls, and realtime notification so the controller becomes a thin adapter from HTTP results to service outcomes.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "controller_centered_orchestration"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Boundary helpers exist for transport and DTO enrichment, but lifecycle-oriented workflows have not been given equally explicit collaborators.",
+      "The current design favors direct controller/page orchestration, which is simple initially but pushes protocol details into call sites as features grow."
+    ],
+    "likely_symptoms": [
+      "realtime_lifecycle_leaks_into_routes",
+      "message_controller_owns_workflow_orchestration"
+    ],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "mid_level_elegance": {
+      "add": [
+        {
+          "header": "Frontend API boundary is mostly centralized",
+          "description": "The api-client and sheshi modules give the frontend one main place for HTTP mechanics, token refresh, DTO typing, and domain-level calls. This makes most page-to-backend handoffs explicit and unsurprising.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Backend JSON shape configured once",
+          "description": "Program.cs applies snake_case and enum JSON policy globally, so controllers and DTO records do not need ad-hoc serialization mapping at each endpoint. That keeps the backend/frontend DTO boundary easy to reason about.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Message enrichment has an obvious collaborator",
+          "description": "MessageService owns author, vote, reply count, and caller-voted enrichment across several message endpoints. The pattern reduces repeated mapper queries at the controller boundary.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Realtime protocol leaks into routes",
+          "description": "The shared realtime module creates the connection but leaves event names, join/leave method names, startup handling, and cleanup choreography to route components. This makes the route-to-realtime seam harder to understand and change than the HTTP API seam.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Message workflows remain controller-centered",
+          "description": "MessageController coordinates persistence, validation, storage, thread traversal, enrichment, and notification while MessageService handles only enrichment. The HTTP layer therefore owns too much cross-module workflow state.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

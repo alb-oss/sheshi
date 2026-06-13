@@ -18,7 +18,7 @@ function AuthCallbackPage() {
       return;
     }
     setAuthTokens({ accessToken, refreshToken }).finally(() => {
-      navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
+      navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
     });
   }, [navigate]);
 

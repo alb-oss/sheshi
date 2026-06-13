@@ -16,9 +16,9 @@ import { Route as ModerimRouteImport } from './routes/moderim'
 import { Route as FokusRouteImport } from './routes/fokus'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RSlugRouteImport } from './routes/r.$slug'
+import { Route as TemaMessageIdRouteImport } from './routes/tema.$messageId'
+import { Route as DhomaSlugRouteImport } from './routes/dhoma.$slug'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as RSlugTMessageIdRouteImport } from './routes/r.$slug.t.$messageId'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -55,20 +55,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RSlugRoute = RSlugRouteImport.update({
-  id: '/r/$slug',
-  path: '/r/$slug',
+const TemaMessageIdRoute = TemaMessageIdRouteImport.update({
+  id: '/tema/$messageId',
+  path: '/tema/$messageId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DhomaSlugRoute = DhomaSlugRouteImport.update({
+  id: '/dhoma/$slug',
+  path: '/dhoma/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
   getParentRoute: () => AuthRoute,
-} as any)
-const RSlugTMessageIdRoute = RSlugTMessageIdRouteImport.update({
-  id: '/t/$messageId',
-  path: '/t/$messageId',
-  getParentRoute: () => RSlugRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -80,8 +80,8 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/r/$slug': typeof RSlugRouteWithChildren
-  '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
+  '/dhoma/$slug': typeof DhomaSlugRoute
+  '/tema/$messageId': typeof TemaMessageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -92,8 +92,8 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/r/$slug': typeof RSlugRouteWithChildren
-  '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
+  '/dhoma/$slug': typeof DhomaSlugRoute
+  '/tema/$messageId': typeof TemaMessageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,8 +105,8 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/r/$slug': typeof RSlugRouteWithChildren
-  '/r/$slug/t/$messageId': typeof RSlugTMessageIdRoute
+  '/dhoma/$slug': typeof DhomaSlugRoute
+  '/tema/$messageId': typeof TemaMessageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,8 +119,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sitemap.xml'
     | '/auth/callback'
-    | '/r/$slug'
-    | '/r/$slug/t/$messageId'
+    | '/dhoma/$slug'
+    | '/tema/$messageId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,8 +131,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sitemap.xml'
     | '/auth/callback'
-    | '/r/$slug'
-    | '/r/$slug/t/$messageId'
+    | '/dhoma/$slug'
+    | '/tema/$messageId'
   id:
     | '__root__'
     | '/'
@@ -143,8 +143,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sitemap.xml'
     | '/auth/callback'
-    | '/r/$slug'
-    | '/r/$slug/t/$messageId'
+    | '/dhoma/$slug'
+    | '/tema/$messageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -155,7 +155,8 @@ export interface RootRouteChildren {
   ProfiliRoute: typeof ProfiliRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  RSlugRoute: typeof RSlugRouteWithChildren
+  DhomaSlugRoute: typeof DhomaSlugRoute
+  TemaMessageIdRoute: typeof TemaMessageIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -209,11 +210,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/r/$slug': {
-      id: '/r/$slug'
-      path: '/r/$slug'
-      fullPath: '/r/$slug'
-      preLoaderRoute: typeof RSlugRouteImport
+    '/tema/$messageId': {
+      id: '/tema/$messageId'
+      path: '/tema/$messageId'
+      fullPath: '/tema/$messageId'
+      preLoaderRoute: typeof TemaMessageIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dhoma/$slug': {
+      id: '/dhoma/$slug'
+      path: '/dhoma/$slug'
+      fullPath: '/dhoma/$slug'
+      preLoaderRoute: typeof DhomaSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -222,13 +230,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
-    }
-    '/r/$slug/t/$messageId': {
-      id: '/r/$slug/t/$messageId'
-      path: '/t/$messageId'
-      fullPath: '/r/$slug/t/$messageId'
-      preLoaderRoute: typeof RSlugTMessageIdRouteImport
-      parentRoute: typeof RSlugRoute
     }
   }
 }
@@ -243,16 +244,6 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
-interface RSlugRouteChildren {
-  RSlugTMessageIdRoute: typeof RSlugTMessageIdRoute
-}
-
-const RSlugRouteChildren: RSlugRouteChildren = {
-  RSlugTMessageIdRoute: RSlugTMessageIdRoute,
-}
-
-const RSlugRouteWithChildren = RSlugRoute._addFileChildren(RSlugRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
@@ -261,7 +252,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProfiliRoute: ProfiliRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  RSlugRoute: RSlugRouteWithChildren,
+  DhomaSlugRoute: DhomaSlugRoute,
+  TemaMessageIdRoute: TemaMessageIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

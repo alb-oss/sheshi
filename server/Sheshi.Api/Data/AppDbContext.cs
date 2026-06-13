@@ -12,6 +12,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ModerationAction> ModerationActions => Set<ModerationAction>();
+    public DbSet<ModerationFlag> ModerationFlags => Set<ModerationFlag>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -46,5 +48,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         });
 
         b.Entity<RefreshToken>(e => { e.HasIndex(t => t.TokenHash); e.HasIndex(t => t.UserId); });
+
+        b.Entity<ModerationAction>(e =>
+        {
+            e.Property(a => a.ActionType).HasMaxLength(80);
+            e.Property(a => a.TargetType).HasMaxLength(80);
+            e.Property(a => a.Reason).HasMaxLength(500);
+            e.HasIndex(a => a.CreatedAt);
+            e.HasIndex(a => new { a.TargetType, a.TargetId });
+        });
+
+        b.Entity<ModerationFlag>(e =>
+        {
+            e.Property(f => f.RuleKey).HasMaxLength(120);
+            e.Property(f => f.Evidence).HasMaxLength(500);
+            e.HasOne(f => f.Message).WithMany().HasForeignKey(f => f.MessageId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Room>().WithMany().HasForeignKey(f => f.RoomId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(f => f.AuthorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<ApplicationUser>().WithMany().HasForeignKey(f => f.ResolvedById).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(f => new { f.Status, f.CreatedAt });
+            e.HasIndex(f => new { f.MessageId, f.RuleKey }).IsUnique();
+            e.HasIndex(f => new { f.RoomId, f.Status });
+            e.HasIndex(f => new { f.AuthorId, f.Status });
+        });
     }
 }

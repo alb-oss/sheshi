@@ -42,17 +42,22 @@ async function loadUserFromTokens() {
     return;
   }
 
+  const requestedAccessToken = tokens.accessToken;
   setState({ session: tokens });
   try {
     const user = await apiJson<ApiUser>("/api/me");
-    setState({ session: getStoredTokens(), user, isReady: true });
+    const currentTokens = getStoredTokens();
+    if (currentTokens?.accessToken !== requestedAccessToken) return;
+    setState({ session: currentTokens, user, isReady: true });
   } catch {
+    const currentTokens = getStoredTokens();
+    if (currentTokens?.accessToken !== requestedAccessToken) return;
     clearStoredTokens();
     setState({ session: null, user: null, isReady: true });
   }
 }
 
-function init() {
+function ensureAuthInitialized() {
   if (initialized || typeof window === "undefined") return;
   initialized = true;
   loadingUser = loadUserFromTokens();
@@ -62,7 +67,7 @@ function init() {
 }
 
 function subscribe(listener: () => void) {
-  init();
+  ensureAuthInitialized();
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -79,13 +84,17 @@ function getServerSnapshot(): AuthState {
 
 export function useAuth(): AuthState {
   useEffect(() => {
-    init();
+    ensureAuthInitialized();
   }, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-export function getAuthSnapshot(): AuthState {
-  init();
+export function initializeAuthAndGetSnapshot(): AuthState {
+  ensureAuthInitialized();
+  return state;
+}
+
+export function peekAuthSnapshot(): AuthState {
   return state;
 }
 

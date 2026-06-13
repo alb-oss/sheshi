@@ -1,10 +1,43 @@
-import { api, ApiError, apiForm, apiJson } from "@/lib/api-client";
+import { api, ApiError, apiForm, apiJson, apiNoContent } from "@/lib/api-client";
+
+export type SheshiErrorCode = "EMPTY" | "TOO_LONG" | "UNAUTH" | "RATE_LIMITED" | "INVALID_IMAGE";
+
+export class SheshiError extends Error {
+  code: SheshiErrorCode;
+  status?: number;
+
+  constructor(code: SheshiErrorCode, options: { cause?: unknown; status?: number } = {}) {
+    super(code, { cause: options.cause });
+    this.name = "SheshiError";
+    this.code = code;
+    this.status = options.status;
+  }
+}
+
+function toMessageMutationError(error: unknown): SheshiError | null {
+  if (!(error instanceof ApiError)) return null;
+  if (error.status === 401) return new SheshiError("UNAUTH", { cause: error, status: 401 });
+  if (error.status === 429) return new SheshiError("RATE_LIMITED", { cause: error, status: 429 });
+  const code = apiErrorCode(error);
+  if (code === "TOO_LONG") return new SheshiError("TOO_LONG", { cause: error, status: error.status });
+  if (code === "EMPTY") return new SheshiError("EMPTY", { cause: error, status: error.status });
+  if (code === "INVALID_IMAGE" || code === "UNSUPPORTED_IMAGE_TYPE" || code === "IMAGE_DIMENSIONS_TOO_LARGE" || code === "IMAGE_TOO_LARGE")
+    return new SheshiError("INVALID_IMAGE", { cause: error, status: error.status });
+  return null;
+}
+
+function apiErrorCode(error: ApiError) {
+  const payload = error.payload as { error?: string; errors?: string[] } | undefined;
+  return payload?.error ?? payload?.errors?.[0];
+}
 
 export interface Room {
   id: string;
   slug: string;
   name: string;
   description: string | null;
+  thread_count?: number;
+  latest_activity_at?: string | null;
 }
 
 export interface Profile {
@@ -29,7 +62,23 @@ export interface MessageRow {
   voted?: boolean;
 }
 
-export async function listRooms(): Promise<Room[]> {
+export interface ReplyNode {
+  message: MessageRow;
+  replies: ReplyNode[];
+  depth: number;
+}
+
+export interface CursorPage<T> {
+  items: T[];
+  next_cursor: string | null;
+}
+
+export interface ThreadData {
+  root: MessageRow;
+  replies: ReplyNode[];
+}
+
+export function listRooms(): Promise<Room[]> {
   return apiJson<Room[]>("/api/rooms");
 }
 
@@ -42,8 +91,24 @@ export async function getRoomBySlug(slug: string): Promise<Room | null> {
   }
 }
 
-export async function listMessages(roomId: string): Promise<MessageRow[]> {
-  return apiJson<MessageRow[]>(`/api/rooms/${roomId}/messages`);
+export function createRoom(input: { name: string; description?: string | null }): Promise<Room> {
+  return apiJson<Room>("/api/rooms", {
+    method: "POST",
+    body: {
+      name: input.name,
+      description: input.description || null,
+    },
+  });
+}
+
+export function listMessages(
+  roomId: string,
+  cursor?: string | null,
+  limit = 40,
+): Promise<CursorPage<MessageRow>> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  return apiJson<CursorPage<MessageRow>>(`/api/rooms/${roomId}/messages?${params.toString()}`);
 }
 
 export async function getMessage(id: string): Promise<MessageRow | null> {
@@ -55,8 +120,23 @@ export async function getMessage(id: string): Promise<MessageRow | null> {
   }
 }
 
-export async function listReplies(parentId: string): Promise<MessageRow[]> {
-  return apiJson<MessageRow[]>(`/api/messages/${parentId}/replies`);
+export function listReplies(
+  parentId: string,
+  cursor?: string | null,
+  limit = 80,
+): Promise<CursorPage<MessageRow>> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  return apiJson<CursorPage<MessageRow>>(`/api/messages/${parentId}/replies?${params.toString()}`);
+}
+
+export async function getThread(messageId: string): Promise<ThreadData | null> {
+  try {
+    return await apiJson<ThreadData>(`/api/threads/${messageId}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
 }
 
 export async function postMessage(input: {
@@ -64,10 +144,10 @@ export async function postMessage(input: {
   body: string;
   parent_id?: string | null;
   image?: File | null;
-}) {
+}): Promise<MessageRow> {
   const body = input.body.trim();
-  if (!body) throw new Error("EMPTY");
-  if (body.length > 2000) throw new Error("TOO_LONG");
+  if (!body && !input.image) throw new SheshiError("EMPTY");
+  if (body.length > 2000) throw new SheshiError("TOO_LONG");
 
   try {
     if (input.image) {
@@ -76,17 +156,16 @@ export async function postMessage(input: {
       if (input.parent_id) form.set("parent_id", input.parent_id);
       form.set("body", body);
       form.set("image", input.image);
-      await apiForm<MessageRow>("/api/messages", form);
-    } else {
-      await apiJson<MessageRow>("/api/messages", {
-        method: "POST",
-        body: { room_id: input.room_id, parent_id: input.parent_id ?? null, body },
-      });
+      return await apiForm<MessageRow>("/api/messages", form);
     }
+
+    return await apiJson<MessageRow>("/api/messages", {
+      method: "POST",
+      body: { room_id: input.room_id, parent_id: input.parent_id ?? null, body },
+    });
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) throw new Error("UNAUTH");
-    if (error instanceof ApiError && error.message === "TOO_LONG") throw new Error("TOO_LONG");
-    if (error instanceof ApiError && error.message === "EMPTY") throw new Error("EMPTY");
+    const sheshiError = toMessageMutationError(error);
+    if (sheshiError) throw sheshiError;
     throw error;
   }
 }
@@ -96,13 +175,14 @@ export async function toggleVote(messageId: string, currentlyVoted: boolean) {
     if (currentlyVoted) await api(`/api/messages/${messageId}/vote`, { method: "DELETE" });
     else await api(`/api/messages/${messageId}/vote`, { method: "PUT" });
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) throw new Error("UNAUTH");
+    if (error instanceof ApiError && error.status === 401) throw new SheshiError("UNAUTH", { cause: error, status: 401 });
+    if (error instanceof ApiError && error.status === 429) throw new SheshiError("RATE_LIMITED", { cause: error, status: 429 });
     throw error;
   }
 }
 
-export async function softDeleteMessage(id: string) {
-  await api(`/api/messages/${id}`, { method: "DELETE" });
+export function softDeleteMessage(id: string): Promise<void> {
+  return apiNoContent(`/api/messages/${id}`, { method: "DELETE" });
 }
 
 export type ReportReason = "spam" | "hate" | "doxxing" | "violence" | "other";
@@ -118,13 +198,13 @@ export async function submitReport(input: {
       body: JSON.stringify({ reason: input.reason, note: input.note || null }),
     });
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) throw new Error("UNAUTH");
+    if (error instanceof ApiError && error.status === 401) throw new SheshiError("UNAUTH", { cause: error, status: 401 });
     throw error;
   }
 }
 
 export type HighlightMode = "hot" | "top" | "replied";
 
-export async function listHighlights(mode: HighlightMode): Promise<MessageRow[]> {
+export function listHighlights(mode: HighlightMode): Promise<MessageRow[]> {
   return apiJson<MessageRow[]>(`/api/highlights?mode=${encodeURIComponent(mode)}`);
 }

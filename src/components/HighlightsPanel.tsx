@@ -124,8 +124,8 @@ export function HighlightsPanel({
               return (
                 <li key={m.id}>
                   <Link
-                    to="/r/$slug/t/$messageId"
-                    params={{ slug, messageId: m.id }}
+                    to="/tema/$messageId"
+                    params={{ messageId: m.id }}
                     className="group relative block rounded-sm px-2.5 py-2.5 hover:bg-card transition-colors"
                   >
                     <div className="flex gap-3">

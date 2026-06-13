@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
@@ -7,9 +7,9 @@ import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
 import { getRoomBySlug, listMessages, listRooms, type MessageRow, type Room } from "@/lib/sheshi";
-import { ensureRealtimeStarted } from "@/lib/realtime";
+import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
 
-export const Route = createFileRoute("/r/$slug")({
+export const Route = createFileRoute("/dhoma/$slug")({
   head: ({ params }) => ({
     meta: [
       { title: `#${params.slug} — Sheshi` },
@@ -25,14 +25,11 @@ export const Route = createFileRoute("/r/$slug")({
 });
 
 function RoomRoute() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  if (pathname.includes("/t/")) return <Outlet />;
-  return <RoomPage />;
+  const { slug } = Route.useParams();
+  return <RoomPage slug={slug} />;
 }
 
-function RoomPage() {
-  const { slug } = Route.useParams();
-  const navigate = useNavigate();
+function RoomPage({ slug }: { slug: string }) {
   const [room, setRoom] = useState<Room | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [messages, setMessages] = useState<MessageRow[]>([]);
@@ -41,13 +38,7 @@ function RoomPage() {
   const [loading, setLoading] = useState(true);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const lastIdRef = useRef<string | null>(null);
-
-  const scrollToBottom = (smooth = true) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
-  };
+  const firstIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     listRooms()
@@ -61,7 +52,9 @@ function RoomPage() {
     getRoomBySlug(slug).then((r) => {
       if (cancelled) return;
       if (!r) {
-        navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
+        setRoom(null);
+        setMessages([]);
+        setLoading(false);
         return;
       }
       setRoom(r);
@@ -69,24 +62,20 @@ function RoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug, navigate]);
+  }, [slug]);
 
   const reload = () => {
     if (!room) return;
     listMessages(room.id)
-      .then((rows) => {
-        const lastId = rows[rows.length - 1]?.id ?? null;
-        const wasAtBottom = (() => {
-          const el = scrollRef.current;
-          if (!el) return true;
-          return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
-        })();
-        const isNew = lastId && lastId !== lastIdRef.current;
+      .then((page) => {
+        const rows = page.items;
+        const firstId = rows[0]?.id ?? null;
+        const isNew = firstId && firstId !== firstIdRef.current;
         setMessages(rows);
-        lastIdRef.current = lastId;
-        // Always scroll on first load; otherwise scroll if user was near bottom
+        firstIdRef.current = firstId;
         requestAnimationFrame(() => {
-          if (loading || wasAtBottom || isNew) scrollToBottom(!loading);
+          if ((loading || isNew) && scrollRef.current)
+            scrollRef.current.scrollTo({ top: 0, behavior: loading ? "auto" : "smooth" });
         });
       })
       .catch(() => {})
@@ -110,7 +99,7 @@ function RoomPage() {
         if (disposed) return;
         handler = scheduleReload;
         connection.on("changed", handler);
-        void connection.invoke("JoinRoom", room.id);
+        void invokeRealtime("JoinRoom", room.id);
       })
       .catch(() => {});
     return () => {
@@ -118,7 +107,7 @@ function RoomPage() {
       connectionPromise
         .then((connection) => {
           if (handler) connection.off("changed", handler);
-          void connection.invoke("LeaveRoom", room.id);
+          void invokeRealtime("LeaveRoom", room.id);
         })
         .catch(() => {});
       if (refreshTimer.current) clearTimeout(refreshTimer.current);

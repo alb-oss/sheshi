@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { apiJson } from "@/lib/api-client";
+import { apiJson, apiNoContent } from "@/lib/api-client";
 import { getStoredTokens } from "@/lib/token-store";
 import { signOutLocal, useAuth, type ApiUser } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -47,7 +47,7 @@ function ProfilePage() {
     const refreshToken = getStoredTokens()?.refreshToken;
     try {
       if (refreshToken)
-        await apiJson<void>("/api/auth/logout", {
+        await apiNoContent("/api/auth/logout", {
           method: "POST",
           body: { refresh_token: refreshToken },
         });
@@ -55,7 +55,7 @@ function ProfilePage() {
       // Local sign-out should still proceed if the server session is already gone.
     }
     signOutLocal();
-    navigate({ to: "/r/$slug", params: { slug: "sheshi" } });
+    navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
   }
 
   return (

@@ -8,7 +8,7 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
 - **Phase 0–1 backend foundation** (both spec + quality review passed):
   - `docker-compose.yml` (Postgres 17 + Mailpit) and `.env.example`.
   - `server/` solution: `Sheshi.Api` (controllers, .NET 10) + `Sheshi.Api.Tests` + `Sheshi.sln`.
-  - 7 domain entities, `AppDbContext`, initial EF migration, role/room seeder (5 rooms + 3 roles, exact Albanian strings).
+  - 7 domain entities, `AppDbContext`, initial EF migration, role/room seeder (default room + 3 roles).
   - `/health` endpoint + Testcontainers smoke test (build green, 1/1 test pass).
   - Commits: `6af4071`, `cfc105d`, `447219f`, `1f8138d`, `7964f21`, `07d4ec1`.
   - Note: compose DB mapped to host port **55432** (host already uses 5432).
@@ -27,9 +27,9 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
   - Added config-gated OAuth provider discovery and external challenge/callback wiring for Google/Microsoft/Apple.
   - Added integration tests for token flow, profile updates, provider discovery, bad password rejection, and password reset.
 - **Phase 3 core API + authorization backend**:
-  - Added `/api/rooms`, `/api/rooms/{slug}`, room message list, message detail, replies, post, vote/unvote, soft-delete, report, and highlights endpoints.
+  - Added `/api/rooms`, `/api/rooms/{slug}`, signed-in room creation, room message list, message detail, replies, nested thread tree loading, post, vote/unvote, soft-delete, report, and highlights endpoints.
   - Added `MessageService` read-model enrichment for author, upvotes, reply counts, and per-user voted state.
-  - Ported key Supabase RLS/trigger rules into API/service checks: banned users cannot post/vote, votes only on top-level messages, one-level replies, and author/mod soft delete.
+  - Ported key Supabase RLS/trigger rules into API/service checks: banned users cannot post/vote, votes are one per user per message including replies, replies can nest, and author/mod soft delete.
   - Added integration tests for rooms, message/reply/vote/report/highlight flow, and authorization rules.
 - **Phase 4–6 realtime, image upload, moderation backend**:
   - Added SignalR `ChatHub`, room/thread groups, change notifications, presence tracker, and `/api/rooms/presence`.
@@ -46,9 +46,11 @@ Branch: `feat/dotnet-backend`. Full context: `docs/sheshi-dotnet-backend-master-
 - **Phase 8 polish in progress**:
   - Added config-only `SeedAdmin__Email`/`SeedAdmin__Password` startup bootstrap for a first admin account.
   - Aligned backend launch profile to `http://localhost:5080`, matching `.env.example` and `VITE_API_BASE_URL`.
+  - Converted the product surface to a fast Reddit-style flow: `/` is the public room directory with no redirect, room feeds live under `/dhoma/:slug`, thread pages live under `/tema/:messageId`, and stale `/r/*` routes were removed.
+  - Added nested Reddit-style replies with collapsible recursive rendering and optimistic upvotes for both top-level threads and replies.
 
 ## ☐ To do
-- Run final verification: `cd server && dotnet test`, repo-root `npm run build`, stale-reference scan.
+- Run final tests when ready: `cd server && dotnet test`.
 - Add/update `server/README.md`.
 - Optional manual local smoke: `docker compose up -d`, `dotnet run --project server/Sheshi.Api`, `npm run dev -- --host localhost --port 3001`.
 

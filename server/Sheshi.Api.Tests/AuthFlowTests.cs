@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sheshi.Api.Email;
@@ -106,6 +107,50 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Login_locks_account_after_repeated_bad_passwords()
+    {
+        var client = clientWithLowAuthLockout();
+        var email = $"lockout-{Guid.NewGuid():N}@example.com";
+
+        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email,
+            password = "Password123!",
+            display_name = "Lockout User"
+        });
+        registerResponse.EnsureSuccessStatusCode();
+
+        for (var i = 0; i < 3; i++)
+        {
+            var badLogin = await client.PostAsJsonAsync("/api/auth/login", new
+            {
+                email,
+                password = "WrongPassword123!"
+            });
+            badLogin.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        var lockedLogin = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = "Password123!"
+        });
+        lockedLogin.StatusCode.Should().Be(HttpStatusCode.Locked);
+
+        HttpClient clientWithLowAuthLockout() => factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Auth:Lockout:MaxFailedAccessAttempts"] = "3",
+                    ["Auth:Lockout:Minutes"] = "15"
+                });
+            });
+        }).CreateClient();
+    }
+
+    [Fact]
     public async Task Providers_endpoint_returns_only_configured_oauth_providers()
     {
         var client = factory.CreateClient();
@@ -139,6 +184,8 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
             display_name = "Reset User"
         });
         registerResponse.EnsureSuccessStatusCode();
+        var registered = await registerResponse.Content.ReadFromJsonAsync<AuthResponse>();
+        registered.Should().NotBeNull();
 
         var forgotUnknownResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
         {
@@ -177,6 +224,12 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
             password = "NewPassword123!"
         });
         newLoginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var revokedRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refresh_token = registered!.RefreshToken
+        });
+        revokedRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     private sealed record AuthResponse(

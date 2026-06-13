@@ -1,9 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +14,8 @@ using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Email;
 using Sheshi.Api.Features.Messages;
+using Sheshi.Api.Features.Moderation;
+using Sheshi.Api.Features.Rooms;
 using Sheshi.Api.Realtime;
 using Sheshi.Api.Storage;
 
@@ -30,13 +34,35 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
+builder.Services.Configure<ImageSafetyOptions>(builder.Configuration.GetSection("ImageSafety"));
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<MessageService>();
+builder.Services.AddScoped<IContentClassifier, NoopContentClassifier>();
+builder.Services.AddScoped<ModerationActionLogger>();
+builder.Services.AddScoped<ModerationMetricsService>();
+builder.Services.AddScoped<ModerationRuleEngine>();
+builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddScoped<RealtimeNotifier>();
 builder.Services.AddSignalR();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, ct) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString("0");
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new { error = "RATE_LIMITED" }, cancellationToken: ct);
+    };
+
+    AddFixedPolicy(options, builder.Configuration, "auth", "Auth", preferUser: false, defaultPermitLimit: 200, defaultWindowSeconds: 60);
+    AddFixedPolicy(options, builder.Configuration, "writes", "Writes", preferUser: true, defaultPermitLimit: 30, defaultWindowSeconds: 60);
+    AddFixedPolicy(options, builder.Configuration, "reports", "Reports", preferUser: true, defaultPermitLimit: 10, defaultWindowSeconds: 300);
+    AddFixedPolicy(options, builder.Configuration, "moderation", "Moderation", preferUser: true, defaultPermitLimit: 120, defaultWindowSeconds: 60);
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
@@ -56,8 +82,14 @@ builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
-        options.Password.RequiredLength = 6;
-        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 10;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = builder.Configuration.GetValue("Auth:Lockout:MaxFailedAccessAttempts", 5);
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(builder.Configuration.GetValue("Auth:Lockout:Minutes", 15));
     })
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<AppDbContext>()
@@ -141,13 +173,22 @@ if (!string.IsNullOrWhiteSpace(apple["ClientId"]) &&
 
 var app = builder.Build();
 
-// Apply migrations and seed roles/rooms on startup.
+// Apply migrations in dev by default. Production can opt in with Database:AutoMigrate=true.
 var startupLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
 try
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
+    var autoMigrate = app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:AutoMigrate");
+    if (autoMigrate)
+    {
+        await db.Database.MigrateAsync();
+    }
+    else
+    {
+        startupLogger.LogInformation("Skipping automatic database migrations. Set Database:AutoMigrate=true to opt in.");
+    }
+
     await DbSeeder.SeedAsync(app.Services);
 }
 catch (Exception ex)
@@ -173,8 +214,10 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
 app.UseCors("Frontend");
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();
@@ -202,6 +245,41 @@ static string[] GetAllowedOrigins(IConfiguration configuration)
         "http://localhost:8080",
         "http://127.0.0.1:8080"
     ];
+}
+
+static void AddFixedPolicy(
+    RateLimiterOptions options,
+    IConfiguration configuration,
+    string policyName,
+    string configName,
+    bool preferUser,
+    int defaultPermitLimit,
+    int defaultWindowSeconds)
+{
+    options.AddPolicy(policyName, context =>
+    {
+        var permitLimit = Math.Max(1, configuration.GetValue($"RateLimits:{configName}:PermitLimit", defaultPermitLimit));
+        var windowSeconds = Math.Max(1, configuration.GetValue($"RateLimits:{configName}:WindowSeconds", defaultWindowSeconds));
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: BuildPartitionKey(context, policyName, preferUser),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = TimeSpan.FromSeconds(windowSeconds),
+                QueueLimit = 0,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                AutoReplenishment = true
+            });
+    });
+}
+
+static string BuildPartitionKey(HttpContext context, string policyName, bool preferUser)
+{
+    var userId = preferUser ? context.User.GetUserId()?.ToString() : null;
+    if (!string.IsNullOrWhiteSpace(userId)) return $"{policyName}:user:{userId}";
+
+    var ip = context.Connection.RemoteIpAddress?.ToString();
+    return $"{policyName}:ip:{ip ?? "unknown"}";
 }
 
 public partial class Program;

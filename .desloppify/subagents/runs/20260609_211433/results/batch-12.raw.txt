@@ -1,0 +1,110 @@
+{
+  "batch": "authorization_consistency",
+  "batch_index": 12,
+  "assessments": {
+    "authorization_consistency": 74.0
+  },
+  "dimension_notes": {
+    "authorization_consistency": {
+      "evidence": [
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs protects message writes with [Authorize] and then consistently checks current user and banned status for create/upvote paths; delete additionally computes moderator/admin privilege before delegating to MessageService.",
+        "alb_sheshi/server/Sheshi.Api/Features/Moderation/ModerationController.cs applies [Authorize(Roles = \"moderator,admin\")] at the controller level and narrows role-changing to [Authorize(Roles = \"admin\")], so sibling moderation endpoints share one gate.",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs uses [Authorize(Roles = Roles.Admin)] for room creation while leaving list/get public, matching the integration test expectation in alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs.",
+        "alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs and RealtimeStorageModerationTests.cs explicitly exercise unauthenticated, normal user, moderator, admin, and banned-user authorization cases.",
+        "The repository also contains server/Sheshi.Api as the documented run target in server/README.md, and that copy differs materially from alb_sheshi/server/Sheshi.Api in authorization-adjacent implementation.",
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs protects POST /api/rooms with only [Authorize], while alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs requires Roles.Admin for the same route.",
+        "Role names are centralized in Domain/Roles, but ModerationController still uses literal role strings in Authorize attributes and frontend route gating repeats \"moderator\" and \"admin\" literals."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "authorization_consistency": {
+      "dimension_character": "The actively evolved API under alb_sheshi/server has a coherent authorization shape: public reads, authenticated writes, admin-only room creation, and moderator/admin moderation are easy to trace and backed by integration tests. The weakness is migration residue: the repository keeps a second documented server tree whose sibling endpoints have drifted, including a materially weaker room-creation rule.",
+      "score_rationale": "This lands above the 70 anchor because the main protected resources use consistent server-side gates and tests cover the important role boundaries. It stays below 80 because a developer cannot fully trust the repo-wide pattern when the documented top-level server copy disagrees with the nested copy on authorization behavior, and role literals still create small but recurring drift risk."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "stale_server_room_auth_drift",
+      "summary": "Duplicate server trees disagree on who may create rooms",
+      "related_files": [
+        "server/README.md",
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs"
+      ],
+      "evidence": [
+        "server/README.md instructs developers to run `dotnet run --project server/Sheshi.Api`, making the top-level server copy look canonical.",
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs line 35 uses `[Authorize]` on POST /api/rooms, allowing any authenticated user through the controller gate.",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs line 27 uses `[Authorize(Roles = Roles.Admin)]` for the same POST /api/rooms route.",
+        "alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs lines 39-66 codify the intended behavior: unauthenticated users get Unauthorized and normal authenticated users get Forbidden."
+      ],
+      "suggestion": "Remove one server tree from production review/build paths, or sync the documented `server/Sheshi.Api` copy so POST /api/rooms uses `[Authorize(Roles = Roles.Admin)]` and shares the same service/test contract as `alb_sheshi/server/Sheshi.Api`.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "stale_duplicate_api_tree"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "role_string_literal_drift",
+      "summary": "Role checks mix shared constants with magic role strings",
+      "related_files": [
+        "alb_sheshi/server/Sheshi.Api/Domain/Enums.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+        "src/routes/moderim.tsx",
+        "src/components/AppShell.tsx"
+      ],
+      "evidence": [
+        "alb_sheshi/server/Sheshi.Api/Domain/Enums.cs defines `Roles.User`, `Roles.Moderator`, and `Roles.Admin` constants.",
+        "alb_sheshi/server/Sheshi.Api/Features/Moderation/ModerationController.cs line 12 uses `[Authorize(Roles = \"moderator,admin\")]` and line 72 uses `[Authorize(Roles = \"admin\")]` instead of the shared role constants.",
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs repeats the same literal role strings at lines 11 and 70.",
+        "src/routes/moderim.tsx lines 39-40 and src/components/AppShell.tsx line 16 repeat frontend role literals for moderator/admin display gating."
+      ],
+      "suggestion": "Add const policy strings such as `Roles.ModeratorOrAdmin = Moderator + \",\" + Admin` and use `Roles.Admin`/`Roles.ModeratorOrAdmin` in Authorize attributes; mirror those names in a small frontend role helper so display gates and server gates use the same vocabulary.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "role_vocabulary_not_fully_migrated"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A partially migrated duplicate API tree leaves old and new authorization contracts side by side.",
+      "Role vocabulary was centralized in the backend domain model but not fully adopted by all attributes and frontend gates."
+    ],
+    "likely_symptoms": [
+      "role_string_literal_drift"
+    ],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "authorization_consistency": {
+      "add": [
+        {
+          "header": "Protected write pattern is test-backed",
+          "description": "Message, room, and moderation writes in the evolved API copy use server-side authorization checks and integration tests exercise unauthenticated, regular, moderator, admin, and banned-user cases. This gives developers a real contract to extend rather than relying on frontend-only checks.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Stale API tree weakens trust",
+          "description": "The repository keeps two server implementations with divergent authorization behavior while documentation still points at the top-level server path. That migration residue makes it unclear which protected-resource pattern a developer should copy.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Role constants only partly adopted",
+          "description": "Backend role constants exist, but some Authorize attributes and frontend gates still spell roles as literals. This is not currently a broad security hole, but it leaves permission vocabulary vulnerable to drift.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

@@ -70,5 +70,7 @@ export const sq = {
   errors: {
     generic: "Diçka shkoi keq. Provo sërish.",
     auth: "Kërkohet autentikim.",
+    rateLimited: "Shumë veprime në pak kohë. Provo pas pak.",
+    imageInvalid: "Imazhi nuk pranohet. Ngarko PNG, JPG ose WebP të vlefshëm.",
   },
 } as const;

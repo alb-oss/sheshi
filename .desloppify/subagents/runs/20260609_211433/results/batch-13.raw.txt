@@ -1,0 +1,96 @@
+{
+  "batch": "ai_generated_debt",
+  "batch_index": 13,
+  "assessments": {
+    "ai_generated_debt": 82.0
+  },
+  "dimension_notes": {
+    "ai_generated_debt": {
+      "evidence": [
+        "Application-facing files such as src/lib/sheshi.ts, src/lib/api-client.ts, src/components/MessageCard.tsx, and src/routes/tema.$messageId.tsx are mostly terse and purpose-driven, with little comment noise and no broad debug dumping.",
+        "Repeated try/catch blocks in src/lib/sheshi.ts, src/components/Composer.tsx, src/routes/index.tsx, and related UI files sit around network calls, auth failures, optimistic updates, or browser APIs, so they are boundary handling rather than defensive overengineering around pure expressions.",
+        "The few console.error calls in src/routes/__root.tsx, src/server.ts, and src/start.ts are error-boundary or SSR failure reporting, not entry/exit logging or full object debug dumps.",
+        "src/lib/config.server.ts has a high comment ratio, but the comments explain Cloudflare request-time env binding and client/server secret exposure constraints, so they explain why rather than restating code.",
+        "src/components/ui contains 46 shadcn-style wrapper files totaling 4360 lines, while app code outside src/components/ui imports only button, dialog, input, label, radio-group, sonner, tabs, and textarea.",
+        "Large unused template wrappers such as src/components/ui/sidebar.tsx and src/components/ui/chart.tsx remain in production paths; sidebar.tsx includes restating comments like 'Helper to toggle the sidebar' and 'This sets the cookie to keep the sidebar state' inside an orphaned 744-line component."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "ai_generated_debt": {
+      "dimension_character": "The active application code is mostly direct: names are domain-specific, comments are sparse, and error handling generally appears where external APIs, auth, browser storage, or SSR failures make it useful. A new team member would not have to filter much LLM-style ceremony in the core flows, but the component library directory carries a large amount of unused generated/template surface area.",
+      "score_rationale": "This is above the mixed/70 anchor because nosy logging, gratuitous docstrings, pure-expression try/catch, and generic handleData-style domain code are not systemic in the inspected production code. It stays below the strong/90 anchor because thousands of lines of unused shadcn wrappers, including restating comments in large orphaned files, create recurring generated-style noise for anyone searching or navigating the UI layer."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "unused_shadcn_template_surface",
+      "summary": "Unused generated UI wrappers add thousands of lines of template noise to production paths",
+      "related_files": [
+        "src/components/ui/sidebar.tsx",
+        "src/components/ui/chart.tsx",
+        "src/components/ui/carousel.tsx",
+        "src/components/ui/menubar.tsx",
+        "src/components/ui/form.tsx",
+        "components.json"
+      ],
+      "evidence": [
+        "components.json configures shadcn aliases for src/components/ui, and the directory contains 46 UI wrapper files totaling 4360 lines.",
+        "App code outside src/components/ui imports only button, dialog, input, label, radio-group, sonner, tabs, and textarea, leaving large wrappers such as sidebar.tsx, chart.tsx, carousel.tsx, menubar.tsx, and form.tsx unused.",
+        "src/components/ui/sidebar.tsx is an orphaned 744-line component with restating template comments such as 'Helper to toggle the sidebar', 'This sets the cookie to keep the sidebar state', and 'Random width between 50 to 90%'.",
+        "src/components/ui/chart.tsx is an orphaned 331-line component with generic helper comments such as 'Format: { THEME_NAME: CSS_SELECTOR }' and 'Helper to extract item config from a payload.'"
+      ],
+      "suggestion": "Delete the unused shadcn wrapper files from src/components/ui and keep only components imported by the app, plus any components intentionally planned for near-term use with a clear owner. If retaining a template component, remove restating comments from copied code so the remaining file reads as maintained project code.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "unpruned_generated_ui_template"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A broad shadcn component set was likely generated up front and not pruned after the app settled on a much smaller UI surface."
+    ],
+    "likely_symptoms": [
+      "unused_shadcn_template_surface"
+    ],
+    "possible_false_positives": [
+      "try/catch counts mostly reflect API, auth, browser, or SSR boundaries rather than defensive overengineering.",
+      "src/lib/config.server.ts has many comments but they document deployment and secret-handling constraints rather than restating implementation."
+    ]
+  },
+  "context_updates": {
+    "ai_generated_debt": {
+      "add": [
+        {
+          "header": "Core app code is low ceremony",
+          "description": "The main route, component, and API helper files are generally terse and focused, with few comments and no broad debug logging. Developers spend most attention on UI and network behavior rather than filtering boilerplate prose.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Boundary error handling is mostly justified",
+          "description": "The repeated try/catch shape appears around fetch calls, auth failures, optimistic UI rollback, browser APIs, and SSR failure normalization. Those are genuine API or runtime boundaries, so the pattern should not be treated as pure defensive overengineering.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Why comments explain deployment constraints",
+          "description": "High-comment files such as config.server.ts and error-capture.ts explain Cloudflare env binding, client/server secret exposure, and h3 SSR error behavior. These comments preserve operational context that is not obvious from the code alone.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Unpruned generated UI component set",
+          "description": "The UI directory still carries many unused shadcn-style wrappers, including large orphaned files with copied explanatory comments. This makes search and navigation noisier than the actual product surface requires.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

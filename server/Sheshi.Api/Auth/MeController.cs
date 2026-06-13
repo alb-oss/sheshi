@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Sheshi.Api.Domain;
 
 namespace Sheshi.Api.Auth;
@@ -20,6 +21,7 @@ public class MeController(
         return user is null ? Unauthorized() : Ok(await tokenService.CreateUserDtoAsync(user));
     }
 
+    [EnableRateLimiting("writes")]
     [HttpPatch]
     public async Task<ActionResult<UserDto>> Patch(UpdateProfileRequest request)
     {

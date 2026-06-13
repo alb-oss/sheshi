@@ -21,3 +21,9 @@ public record MessageDto(
 public record PostMessageRequest(Guid RoomId, Guid? ParentId, string Body);
 
 public record ReportMessageRequest(ReportReason Reason, string? Note);
+
+public record ThreadDto(MessageDto Root, IReadOnlyList<ReplyNodeDto> Replies);
+
+public record ReplyNodeDto(MessageDto Message, IReadOnlyList<ReplyNodeDto> Replies, int Depth);
+
+public record CursorPageDto<T>(IReadOnlyList<T> Items, string? NextCursor);

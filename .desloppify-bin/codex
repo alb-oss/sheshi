@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == "exec" ]]; then
+  shift
+  exec /opt/homebrew/bin/codex exec -c 'service_tier="fast"' "$@"
+fi
+
+exec /opt/homebrew/bin/codex "$@"

@@ -1,0 +1,126 @@
+{
+  "batch": "error_consistency",
+  "batch_index": 4,
+  "assessments": {
+    "error_consistency": 74.0
+  },
+  "dimension_notes": {
+    "error_consistency": {
+      "evidence": [
+        "src/lib/api-client.ts centralizes HTTP failure handling: api() throws ApiError for non-2xx responses, toApiError preserves status and parsed payload when possible, and apiJson/apiForm build on that single boundary.",
+        "src/lib/sheshi.ts deliberately maps 404 lookups to null in getRoomBySlug(), getMessage(), and getThread(), which makes not-found reads predictable at the domain layer.",
+        "src/server.ts and src/start.ts use top-level SSR error boundaries that log unexpected failures and return a consistent rendered error page, including a special normalization path for h3-swallowed HTTPError responses.",
+        "Several route/sidebar/background loaders swallow failures and render empty or not-found states: AppShell listRooms/presence catches do nothing, dhoma.$slug.tsx listMessages catches nothing then clears loading, tema.$messageId.tsx getThread catch sets thread null, and moderim.tsx report/user loads convert any failure to [].",
+        "src/lib/sheshi.ts converts ApiError status/payload into generic Error message sentinels such as UNAUTH, TOO_LONG, and EMPTY, while UI components compare err.message strings instead of using typed status or error codes."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "error_consistency": {
+      "dimension_character": "The codebase has a reasonably coherent HTTP boundary: API calls throw ApiError, not-found reads become null in a small set of read helpers, and top-level SSR failures are intentionally contained. The weaker part is the migrated frontend surface, where background loads often collapse failures into empty UI states and domain mutations sometimes downgrade structured ApiError context into bare Error message sentinels.",
+      "score_rationale": "This is better than the 60 anchor because a developer can learn the main API strategy quickly and many user-triggered mutations do surface errors through toasts or inline messages. It falls below the 80 anchor because related data-loading paths still mix silent swallowing, null-as-not-found, empty arrays, and generic toasts, so a developer cannot reliably predict whether a failed request will be visible, recoverable, or indistinguishable from empty data."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "error_consistency",
+      "identifier": "background_load_failures_render_empty",
+      "summary": "Background fetch failures are repeatedly converted into empty or not-found UI states",
+      "related_files": [
+        "src/components/AppShell.tsx",
+        "src/routes/dhoma.$slug.tsx",
+        "src/routes/tema.$messageId.tsx",
+        "src/routes/moderim.tsx",
+        "src/components/HighlightsPanel.tsx"
+      ],
+      "evidence": [
+        "src/components/AppShell.tsx catches listRooms(), presence fetches, realtime startup, and cleanup promises with empty catch handlers, leaving navigation/presence silently stale.",
+        "src/routes/dhoma.$slug.tsx reload() catches listMessages(room.id) with an empty handler and then finally sets loading false, so a failed message fetch can render the room as empty.",
+        "src/routes/tema.$messageId.tsx reload() catches any getThread(messageId) failure and sets thread to null, which is rendered as 'Tema nuk u gjet' even for network/server failures.",
+        "src/routes/moderim.tsx converts failed moderation report and user loads to setReports([]) and setUsers([]), making permission/server/network failures look like no moderation work exists.",
+        "src/components/HighlightsPanel.tsx catches listHighlights(mode) and sets items to [], so failed highlight loads are indistinguishable from no highlights."
+      ],
+      "suggestion": "Introduce a small, consistent load-state pattern for read surfaces, for example {status: 'loading'|'ready'|'error', data}, and use it in these loaders so failed reads render a retry/error state instead of empty data. Keep intentional optional side data, such as presence counts, as explicitly optional with a comment or helper like loadOptionalPresence().",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "silent_background_fetches"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "domain_errors_lose_api_context",
+      "summary": "Domain helpers replace structured ApiError context with bare Error message sentinels",
+      "related_files": [
+        "src/lib/sheshi.ts",
+        "src/components/Composer.tsx",
+        "src/components/MessageCard.tsx",
+        "src/components/ReportDialog.tsx"
+      ],
+      "evidence": [
+        "src/lib/sheshi.ts postMessage() throws new Error('EMPTY') and new Error('TOO_LONG') for local validation, then maps ApiError 401 to new Error('UNAUTH') and selected ApiError messages back to new Error('TOO_LONG') or new Error('EMPTY').",
+        "src/lib/sheshi.ts toggleVote() and submitReport() also map ApiError status 401 to new Error('UNAUTH'), discarding the original ApiError status, payload, and message context.",
+        "src/components/Composer.tsx handles postMessage errors by checking err instanceof Error && err.message === 'TOO_LONG', and src/components/MessageCard.tsx checks error.message === 'UNAUTH' for vote failures.",
+        "src/components/ReportDialog.tsx catches submitReport() failures without inspecting the lost UNAUTH sentinel, so authentication failures and server failures both become the generic error toast."
+      ],
+      "suggestion": "Replace the bare Error sentinels with a small exported SheshiError or union-like code helper that preserves cause/status, e.g. new SheshiError('UNAUTH', {cause: error, status: 401}). Update Composer, MessageCard, and ReportDialog to switch on error.code instead of message strings.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "string_sentinel_errors"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The code appears partly migrated from a monolithic frontend to routed/domain helpers; the newer API layer is structured, but older UI habits of swallowing background requests remain in several routed surfaces.",
+      "Domain helpers are trying to simplify UI handling, but they do it by converting structured ApiError values into string-message sentinels instead of preserving a typed code plus original cause."
+    ],
+    "likely_symptoms": [
+      "background_load_failures_render_empty",
+      "domain_errors_lose_api_context"
+    ],
+    "possible_false_positives": [
+      "UI library hooks that throw when used outside providers are intentional invariant checks, not mixed application error strategy.",
+      "Token-store JSON parse failures returning null are acceptable local-storage corruption handling rather than a propagation defect.",
+      "Top-level SSR catch/log/render behavior is an intentional boundary and should not be counted as swallowing."
+    ]
+  },
+  "context_updates": {
+    "error_consistency": {
+      "add": [
+        {
+          "header": "Central ApiError HTTP boundary",
+          "description": "HTTP failures pass through a single api() wrapper that throws ApiError with status and parsed payload where available. This gives most service calls a predictable failure shape before route/component code starts adapting it.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Null reserved for not-found reads",
+          "description": "Read helpers for room, message, and thread lookup intentionally convert 404 ApiError responses to null. That convention is understandable because callers render not-found states for those resource lookups.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "SSR has explicit error boundaries",
+          "description": "Server startup and request middleware handle unexpected SSR failures at the top level, including a documented h3 swallowed-error normalization path. This is a deliberate boundary rather than accidental catch-and-hide behavior.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Background loaders collapse failures",
+          "description": "Many non-form data loads treat failed requests as empty optional data, which makes outages and permission problems look like normal empty states. This creates the main unpredictability in developer-facing error behavior.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "String sentinel domain errors",
+          "description": "Some domain helpers translate structured ApiError failures into plain Error messages such as UNAUTH and TOO_LONG. That simplifies local UI checks but loses status, payload, and cause context across the boundary.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

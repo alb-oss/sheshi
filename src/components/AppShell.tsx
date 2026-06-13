@@ -7,13 +7,14 @@ import { listRooms, type Room } from "@/lib/sheshi";
 import { cn } from "@/lib/utils";
 import { apiJson } from "@/lib/api-client";
 import { ensureRealtimeStarted } from "@/lib/realtime";
+import { canModerate } from "@/lib/roles";
 
 export function AppShell({ children, right }: { children: ReactNode; right?: ReactNode }) {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [presence, setPresence] = useState<Record<string, number>>({});
   const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isMod = !!user?.roles?.some((role) => role === "moderator" || role === "admin");
+  const isMod = canModerate(user);
 
   useEffect(() => {
     listRooms()
@@ -44,13 +45,13 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
     };
   }, []);
 
-  const activeSlug = pathname.startsWith("/r/") ? pathname.split("/")[2] : null;
+  const activeSlug = pathname.startsWith("/dhoma/") ? pathname.split("/")[2] : null;
 
   return (
     <div className="flex flex-col h-dvh w-full overflow-hidden bg-background text-foreground">
       {/* Top header */}
       <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
-        <Link to="/" className="flex items-center gap-3 group">
+        <Link to="/" className="group flex min-h-10 items-center gap-3">
           <div
             className="w-6 h-6 bg-primary rounded-sm group-hover:scale-110 transition-transform"
             aria-hidden
@@ -67,7 +68,7 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
           {user ? (
             <Link
               to="/profili"
-              className="text-xs uppercase tracking-widest font-bold text-foreground/70 hover:text-foreground transition-colors"
+              className="inline-flex h-9 items-center rounded-sm px-2 text-xs font-bold uppercase tracking-widest text-foreground/70 transition-colors hover:bg-card hover:text-foreground"
             >
               {sq.nav.profile}
             </Link>
@@ -75,14 +76,14 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
           {isMod ? (
             <Link
               to="/moderim"
-              className="text-xs uppercase tracking-widest font-bold text-foreground/70 hover:text-foreground transition-colors"
+              className="inline-flex h-9 items-center rounded-sm px-2 text-xs font-bold uppercase tracking-widest text-foreground/70 transition-colors hover:bg-card hover:text-foreground"
             >
               {sq.nav.admin}
             </Link>
           ) : null}
           <Link
             to={user ? "/profili" : "/auth"}
-            className="px-4 py-1.5 bg-primary text-primary-foreground text-sm font-bold uppercase tracking-wide hover:bg-primary/85 transition-colors rounded-sm"
+            className="inline-flex h-9 items-center rounded-sm bg-primary px-4 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/85"
           >
             {user ? sq.auth.signOut : sq.auth.signIn}
           </Link>
@@ -103,7 +104,7 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
                 return (
                   <Link
                     key={r.id}
-                    to="/r/$slug"
+                    to="/dhoma/$slug"
                     params={{ slug: r.slug }}
                     className={cn(
                       "flex items-center justify-between group px-2 py-1.5 rounded-sm transition-colors",
@@ -149,13 +150,13 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
             to="/"
             icon={<Home className="h-5 w-5" />}
             label={sq.nav.rooms}
-            active={pathname === "/" || (pathname.startsWith("/r/") && !pathname.includes("/t/"))}
+            active={pathname === "/" || pathname.startsWith("/dhoma/") || pathname.startsWith("/tema/")}
           />
           <BottomLink
-            to="/r/sheshi"
+            to="/dhoma/sheshi"
             icon={<Radio className="h-5 w-5" />}
             label={sq.nav.live}
-            active={pathname === "/r/sheshi"}
+            active={pathname === "/dhoma/sheshi"}
           />
           <BottomLink
             to="/fokus"

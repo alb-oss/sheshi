@@ -322,16 +322,15 @@ Expected: `Migrations/` folder created. If `dotnet ef` missing: `dotnet tool ins
 
 **Step 3:** Apply: `dotnet ef database update` → expect tables created. Verify: `docker exec sheshi-db psql -U sheshi -c "\dt"` shows `Rooms`, `Messages`, `AspNetUsers`, etc.
 
-**Step 4:** Create `server/Sheshi.Api/Data/DbSeeder.cs` that, on startup, ensures roles (`user`, `moderator`, `admin`) and the 5 seed rooms exist (idempotent — match by slug):
+**Step 4:** Create `server/Sheshi.Api/Data/DbSeeder.cs` that, on startup, ensures roles (`user`, `moderator`, `admin`) and the default `sheshi` room exist (idempotent — match by slug):
 
 ```csharp
-// rooms: sheshi, vjosa-narta, tirana, shkodra, korca with the Albanian names/descriptions
-// from supabase/migrations (copy exact strings).
+// room: sheshi
 ```
 
 Call the seeder from `Program.cs` after `app` is built (scoped service, `await db.Database.MigrateAsync()` then seed).
 
-**Step 5:** Run `dotnet run`, confirm rooms exist: `docker exec sheshi-db psql -U sheshi -c "select slug,name from \"Rooms\";"` → 5 rows.
+**Step 5:** Run `dotnet run`, confirm rooms exist: `docker exec sheshi-db psql -U sheshi -c "select slug,name from \"Rooms\";"` → 1 row.
 
 **Step 6:** Commit. `git add -A && git commit -m "feat(api): initial EF migration + role/room seeder"`
 
@@ -339,7 +338,7 @@ Call the seeder from `Program.cs` after `app` is built (scoped service, `await d
 
 **Files:** Create `server/Sheshi.Api.Tests/ApiFactory.cs` (a `WebApplicationFactory<Program>` that boots a `PostgreSqlContainer`, overrides the connection string, migrates + seeds), and `server/Sheshi.Api.Tests/SmokeTests.cs`.
 
-**Step 1 (failing test):** `SmokeTests`: `GET /api/rooms` returns 200 with 5 rooms.
+**Step 1 (failing test):** `SmokeTests`: `GET /api/rooms` returns 200 with the default room.
 **Step 2:** Run `dotnet test` → FAIL (endpoint not built yet — this becomes the first green in Phase 3). *Note:* keep this test `[Fact(Skip=...)]`-free but expect it red until Task 3.1; alternatively assert only that the app starts (`GET /health` 200). Prefer a `/health` smoke first:
 
 Add `app.MapGet("/health", () => "ok");` to `Program.cs`; test asserts 200. Run `dotnet test` → PASS.
@@ -408,9 +407,10 @@ Make `Program` testable: add `public partial class Program;` at the bottom of `P
 **Files:** `server/Sheshi.Api/Features/Rooms/RoomsController.cs`, DTOs.
 
 - `GET /api/rooms` → ordered by name. `GET /api/rooms/{slug}` → 404 if missing.
-- Un-skip the Phase-1 smoke test (`GET /api/rooms` returns the 5 seeded rooms).
+- `POST /api/rooms` → signed-in users create public rooms.
+- Un-skip the Phase-1 smoke test (`GET /api/rooms` returns the single default `sheshi` room).
 
-**TDD:** list returns 5; get by unknown slug → 404. Commit `feat(api): rooms endpoints`.
+**TDD:** list returns `sheshi`; get by unknown slug → 404. Commit `feat(api): rooms endpoints`.
 
 ### Task 3.2: Message read model + stats projection
 
@@ -419,7 +419,7 @@ Make `Program` testable: add `public partial class Program;` at the bottom of `P
 `MessageDto` mirrors the frontend `MessageRow`: `id, room_id, author_id, parent_id, body, image_url, deleted_at, created_at, author{ id, username, display_name, avatar_url }, upvotes, reply_count, voted`. Use snake_case JSON (configure `JsonNamingPolicy.SnakeCaseLower` globally) so the frontend types are unchanged.
 
 `MessageService` methods (each computes upvotes via `Votes` count, reply_count via non-deleted children count, `voted` via the caller id — single batched query like today's `attachMeta`):
-- `ListRoomTopLevel(roomId, callerId)` — `parent_id == null`, latest 80, returned oldest→newest.
+- `ListRoomTopLevel(roomId, callerId)` — `parent_id == null`, latest 80, returned newest-first.
 - `GetById(id, callerId)`.
 - `ListReplies(parentId, callerId)` — ascending, ≤200.
 
@@ -430,7 +430,7 @@ Make `Program` testable: add `public partial class Program;` at the bottom of `P
 `POST /api/messages` (auth, multipart) `{ room_id, parent_id?, body, image? }`:
 - Reject if caller `IsBanned` → 403 (`is_banned` port).
 - Validate body trimmed length 1..2000 → 400 (`TOO_LONG`/`EMPTY` parity).
-- If `parent_id` set, it must exist and be top-level (no replies-to-replies beyond one level — match current UI which only threads one level; enforce parent's `ParentId == null`).
+- If `parent_id` set, it must exist in the same room. Replies can target replies.
 - Image handling deferred to Phase 5 (accept body-only now; ignore image field).
 - Insert; broadcast deferred to Phase 4.
 
@@ -440,10 +440,10 @@ Make `Program` testable: add `public partial class Program;` at the bottom of `P
 
 `PUT /api/messages/{id}/vote` and `DELETE /api/messages/{id}/vote` (auth):
 - Reject banned → 403.
-- Target must be top-level → 400 (`enforce_vote_on_main` port).
+- Target may be a top-level thread or any nested reply.
 - PUT idempotent (insert if absent); DELETE removes. One vote per (message,user).
 
-**TDD:** vote on reply → 400; banned → 403; double-PUT yields single vote; DELETE removes. Commit `feat(api): vote toggle with main-only + ban checks`.
+**TDD:** vote on nested reply → 204; banned → 403; double-PUT yields single vote; DELETE removes. Commit `feat(api): vote toggle with ban checks`.
 
 ### Task 3.5: Soft-delete (+ authorization)
 
@@ -565,7 +565,7 @@ Commit `feat(web): sheshi data layer calls .NET API`.
 ### Task 7.4: Auth routes
 
 - `auth.tsx`: email/password → `/api/auth/register|login`; Google button → redirect to `${API}/api/auth/external/google`; show only providers from `/api/auth/providers`; forgot → `/api/auth/forgot-password`.
-- New `src/routes/auth.callback.tsx`: parse `#access_token&refresh_token`, store, redirect to `/r/sheshi`.
+- New `src/routes/auth.callback.tsx`: parse `#access_token&refresh_token`, store, then show the main room.
 - `reset-password.tsx`: read `?token&email`, `POST /api/auth/reset-password`.
 - `profili.tsx`: load `/api/me`, save display name via `PATCH /api/me`, sign-out clears tokens (+ `POST /api/auth/logout`).
 
@@ -573,7 +573,7 @@ Commit `feat(web): auth/reset/profile routes on .NET API`.
 
 ### Task 7.5: SignalR in room & thread routes
 
-Create `src/lib/realtime.ts` (singleton `HubConnection` to `${API}/hub`, with `accessTokenFactory`). In `r.$slug.tsx` and `r.$slug.t.$messageId.tsx`, replace `supabase.channel(...)` with `JoinRoom/JoinThread` + an `on("changed", scheduleReload)` handler; keep the debounce. Leave groups on unmount.
+Create `src/lib/realtime.ts` (singleton `HubConnection` to `${API}/hub`, with `accessTokenFactory`). In room/thread routes, replace `supabase.channel(...)` with `JoinRoom/JoinThread` + an `on("changed", scheduleReload)` handler; keep the debounce. Leave groups on unmount.
 
 Commit `feat(web): realtime via SignalR`.
 

@@ -1,0 +1,1824 @@
+{
+  "assessments": {
+    "abstraction_fitness": {
+      "score": 92.0,
+      "components": [
+        "Abstraction Leverage",
+        "Indirection Cost",
+        "Interface Honesty",
+        "Delegation Density",
+        "Definition Directness",
+        "Type Discipline"
+      ],
+      "component_scores": {
+        "Abstraction Leverage": 91.0,
+        "Indirection Cost": 94.0,
+        "Interface Honesty": 98.0,
+        "Delegation Density": 100.0,
+        "Definition Directness": 90.0,
+        "Type Discipline": 98.0
+      }
+    },
+    "ai_generated_debt": 82.0,
+    "api_surface_coherence": 82.0,
+    "authorization_consistency": 74.0,
+    "contract_coherence": 82.0,
+    "convention_outlier": 76.0,
+    "cross_module_architecture": 72.0,
+    "dependency_health": 72.0,
+    "design_coherence": 72.0,
+    "error_consistency": 74.0,
+    "high_level_elegance": 72.0,
+    "incomplete_migration": 62.0,
+    "initialization_coupling": 82.0,
+    "logic_clarity": 82.0,
+    "low_level_elegance": 78.0,
+    "mid_level_elegance": 78.0,
+    "naming_quality": 90.0,
+    "package_organization": 72.0,
+    "test_strategy": 62.0,
+    "type_safety": 82.0
+  },
+  "dimension_notes": {
+    "cross_module_architecture": {
+      "evidence": [
+        "The live root TanStack app has a recognizable direction: routes and components import shared UI, auth, realtime, and API helpers; the helpers do not import routes or feature components.",
+        "The ASP.NET API inside each tree mostly keeps domain/data/auth/storage/realtime/features separated, with controllers consuming services or DbContext and domain models not depending back on features.",
+        "The detected cycle is `src/routeTree.gen.ts -> src/router.tsx`, but `routeTree.gen.ts` is explicitly TanStack Router generated code and imports `getRouter` only as a type, so this is a framework-generated typing artifact rather than a confirmed runtime architecture defect.",
+        "There are two substantial application/backend trees: root `src` plus `server`, and nested `alb_sheshi/frontend` plus `alb_sheshi/server`; both have package/project files and runnable-looking entry points.",
+        "The duplicated server trees are divergent, not archival mirrors: `alb_sheshi/server/Sheshi.Api/Program.cs` adds rate limiting, forwarded headers, JWT validation, production migration gating, and `RoomService`, while root `server/Sheshi.Api/Program.cs` lacks those changes.",
+        "The duplicated frontend trees are different architectures: root `src` is a TanStack Start app split into routes/components/lib/hooks, while `alb_sheshi/frontend/src/App.tsx` is a standalone Vite React app with a single large app shell and separate `api.ts` client."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "high_level_elegance": {
+      "evidence": [
+        "The active backend under server/Sheshi.Api is mostly decomposed by recognizable responsibilities: Auth, Data, Domain, Email, Features, Realtime, and Storage.",
+        "Backend feature areas such as server/Sheshi.Api/Features/Messages, Features/Rooms, and Features/Moderation keep controllers, DTOs, and service logic near their domain capability.",
+        "The frontend root src/ has a clear route/component/lib/hook split, and TanStack route files map directly to product routes like dhoma.$slug.tsx and tema.$messageId.tsx.",
+        "The repository also contains alb_sheshi/, which has its own frontend/package.json, frontend/src, server/Sheshi.sln, server/README.md, docker-compose.yml, and a divergent copy of the API.",
+        "diff -qr server alb_sheshi/server shows many production-source differences, including Program.cs, AuthController.cs, AppDbContext.cs, MessageService.cs, RoomsController.cs, ModerationController.cs, migrations, and tests.",
+        "The root package.json still names the frontend package tanstack_start_ts while alb_sheshi/frontend/package.json names another frontend package alb-sheshi-frontend, making the public project surface ambiguous.",
+        "docs/TODO.md says Supabase runtime was removed and documents a root server/frontend workflow, but it does not explain whether alb_sheshi is archival, alternate production, or stale migration output."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "convention_outlier": {
+      "evidence": [
+        "Root frontend modules follow predictable TanStack conventions: route files export `Route = createFileRoute(...)`, feature components use named component exports, and shared UI primitives live under `src/components/ui`.",
+        "`components.json` explicitly maps the shadcn UI alias to `src/components/ui`, so files such as `alert-dialog.tsx`, `dropdown-menu.tsx`, and `hover-card.tsx` match third-party component naming conventions rather than local drift.",
+        "The root backend uses a clear feature-folder convention under `server/Sheshi.Api/Features/{Messages,Rooms,Moderation}` with sibling `*Controller.cs`, `*Dtos.cs`, and service files where needed.",
+        "A second production-shaped tree exists under `alb_sheshi` with its own frontend package and server solution; many files duplicate root paths but differ in behavior and structure.",
+        "`server/README.md` instructs developers to run `dotnet run --project server/Sheshi.Api`, while `alb_sheshi/server/Sheshi.Api` also contains controllers, migrations, tests, and app settings."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "error_consistency": {
+      "evidence": [
+        "src/lib/api-client.ts centralizes HTTP failure handling: api() throws ApiError for non-2xx responses, toApiError preserves status and parsed payload when possible, and apiJson/apiForm build on that single boundary.",
+        "src/lib/sheshi.ts deliberately maps 404 lookups to null in getRoomBySlug(), getMessage(), and getThread(), which makes not-found reads predictable at the domain layer.",
+        "src/server.ts and src/start.ts use top-level SSR error boundaries that log unexpected failures and return a consistent rendered error page, including a special normalization path for h3-swallowed HTTPError responses.",
+        "Several route/sidebar/background loaders swallow failures and render empty or not-found states: AppShell listRooms/presence catches do nothing, dhoma.$slug.tsx listMessages catches nothing then clears loading, tema.$messageId.tsx getThread catch sets thread null, and moderim.tsx report/user loads convert any failure to [].",
+        "src/lib/sheshi.ts converts ApiError status/payload into generic Error message sentinels such as UNAUTH, TOO_LONG, and EMPTY, while UI components compare err.message strings instead of using typed status or error codes."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "naming_quality": {
+      "evidence": [
+        "src/lib/sheshi.ts:45-151 uses API helper names that map directly to product actions: listRooms, getRoomBySlug, createRoom, listMessages, postMessage, toggleVote, softDeleteMessage, submitReport.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs:28-89 uses controller action names that match HTTP behavior and domain intent: ListRoomMessages, GetMessage, ListReplies, GetThread, PostMessage.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs:231-307 keeps private tree-building helper names concrete: GetThreadRootIdAsync, ResolveRootAsync, LoadThreadDescendantsAsync, CollectDescendants, BuildReplyNodes.",
+        "src/components/ui/alert-dialog.tsx and src/components/ui/dropdown-menu.tsx use shadcn/Radix compound component filenames and exported symbols; the mechanical kebab-case outlier is a framework convention rather than local vocabulary drift.",
+        "src/components/Composer.tsx:123-145 has a local async function named doSubmit even though it validates and posts a message, then clears composer state and notifies callbacks."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The codebase is mostly predictable, but a few local UI handlers still use generic names like doSubmit where a new reader has to inspect the body to learn the actual domain action."
+    },
+    "abstraction_fitness": {
+      "evidence": [
+        "src/lib/api-client.ts:22-71 keeps HTTP behavior in three small layers: raw authenticated fetch with token refresh, JSON body/response handling, and FormData handling; each layer adds behavior rather than merely forwarding.",
+        "src/lib/sheshi.ts:45-154 mostly exposes typed endpoint helpers, but the wrappers translate backend concerns into app contracts where useful: 404s become null in getRoomBySlug/getMessage/getThread, createRoom normalizes description, postMessage trims/validates body and switches JSON versus FormData upload.",
+        "src/routes/tema.$messageId.tsx:228-300 has recursive ReplyBranch indirection, but it is structural rendering for a recursive tree with collapse behavior and depth-based indentation, not an arbitrary component wrapper chain.",
+        "src/components/ui/button.tsx:7-49 is a pass-through-shaped component, but the variant layer centralizes class-variance-authority styling and Radix Slot composition, so the indirection buys a consistent UI API.",
+        "Mechanical single-use findings for src/routeTree.gen.ts, route files, start.ts, and sonner.tsx align with TanStack routing, generated route registration, server entry, or root UI composition boundaries rather than avoidable one-implementation abstraction ecosystems.",
+        "holistic_context.abstractions reports no one-implementation interfaces, no delegation-heavy classes, no facade modules, no TypedDict violations, and only one generic pass-through utility wrapper, src/lib/utils.ts cn(), which is a common Tailwind merge helper."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The remaining drag is mostly size and directness tension rather than harmful abstraction: alb_sheshi/frontend/src/App.tsx is a large all-in-one feature surface, and several endpoint helpers are thin typed shells. Those are worth watching, but I did not find a clear abstraction-fitness defect where indirection routinely costs more than it returns.",
+      "sub_axes": {
+        "abstraction_leverage": 91.0,
+        "indirection_cost": 94.0,
+        "interface_honesty": 98.0,
+        "delegation_density": 100.0,
+        "definition_directness": 90.0,
+        "type_discipline": 98.0
+      }
+    },
+    "dependency_health": {
+      "evidence": [
+        "package.json has a cohesive main runtime stack around React 19, TanStack Start/Router/Query, Tailwind 4, SignalR, and shadcn/Radix primitives.",
+        "src/routeTree.gen.ts imports getRouter from src/router.tsx only as an import type inside generated TanStack Router module augmentation; the reported routeTree.gen.ts -> router.tsx cycle is generated/type-only and is not a runtime dependency cycle.",
+        "package.json includes direct dependencies @hookform/resolvers and zod, but rg found no source/config imports for either package outside package and lock files.",
+        "Many direct UI dependencies are only referenced by unused src/components/ui wrapper files, while production routes import a much smaller set: button, input, label, tabs, dialog, textarea, radio-group, and sonner.",
+        "The repository contains two separate frontend package manifests and locks: package.json/package-lock.json at the root and alb_sheshi/frontend/package.json/package-lock.json with overlapping React, Vite, TypeScript, SignalR, and lucide-react dependencies."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "low_level_elegance": {
+      "evidence": [
+        "Phase 1 positive: server/Sheshi.Api/Features/Messages/MessageService.cs keeps enrichment as a single direct sequence of grouped lookups followed by DTO projection; state is local to dictionaries and a final Select.",
+        "Phase 1 positive: server/Sheshi.Api/Features/Rooms/RoomsController.cs uses small local helpers such as ToDtosAsync, NormalizeName, and NormalizeSlug, with early exits and no defensive sprawl.",
+        "Phase 1 positive: server/Sheshi.Api/Features/Messages/MessagesController.cs has direct guard clauses in PostMessage and narrow private helpers for resolving roots, loading descendants, collecting replies, building nodes, and parsing multipart/json requests.",
+        "Phase 1 positive: src/lib/sheshi.ts keeps frontend API functions small and precise, with bounded validation in postMessage and 404 normalization localized to the few read helpers that need it.",
+        "Phase 1 neutral: current TanStack route files such as src/routes/dhoma.$slug.tsx and src/routes/tema.$messageId.tsx use inline reload/realtime callbacks; this creates some local callback density but most branches remain intention-revealing.",
+        "Phase 1 neutral: src/components/MessageCard.tsx keeps optimistic voting state local and explicit, though the inline reply action IIFE at lines 151-190 is a small extraction rough edge.",
+        "Phase 1 defect: alb_sheshi/frontend/src/App.tsx has one 1360-line component file where App owns route state, auth callbacks, room loading, thread loading, SignalR subscription, optimistic voting, persistence, rendering decisions, and modal orchestration in one local body.",
+        "Phase 1 defect: alb_sheshi/frontend/src/App.tsx contains duplicated reply/action/composer internals: ActionRow lines 899-934 and ReplyTree action row lines 963-989 repeat vote/reply/share/save rendering, while Composer lines 1009-1059 and ReplyComposer lines 1061-1085 repeat body/busy submission state."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "mid_level_elegance": {
+      "evidence": [
+        "[+] src/lib/api-client.ts centralizes base URL handling, bearer-token attachment, refresh-token retry, JSON/form request handling, and ApiError construction, so most frontend-to-backend handoffs enter through one predictable boundary.",
+        "[+] src/lib/sheshi.ts provides domain-level wrappers and frontend DTO shapes for rooms, messages, threads, voting, reports, and highlights; callers usually work with Sheshi concepts rather than raw fetch calls.",
+        "[+] server/Sheshi.Api/Program.cs configures System.Text.Json snake_case and enum conversion once, matching the frontend's snake_case DTO expectations and reducing per-endpoint mapping glue.",
+        "[+] server/Sheshi.Api/Features/Messages/MessageService.cs concentrates author/upvote/reply/voted enrichment in one collaborator reused by list, get, thread, and create message endpoints.",
+        "src/routes/index.tsx mostly uses the domain wrapper but still reaches down to apiJson for /api/rooms/presence, showing a small but visible leak in the otherwise clean frontend API layer.",
+        "src/routes/dhoma.$slug.tsx and src/routes/tema.$messageId.tsx both know SignalR event names, hub method names, join/leave lifecycle, handler cleanup, and startup error swallowing; src/lib/realtime.ts only hides connection creation.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs composes request parsing, validation, DB persistence, image storage, thread-root traversal, DTO enrichment, and realtime notification in one controller, while MessageService only owns enrichment."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "test_strategy": {
+      "evidence": [
+        "server/Sheshi.Api.Tests/ApiFactory.cs boots the ASP.NET API through WebApplicationFactory against a throwaway PostgreSQL Testcontainers database, so backend tests exercise migrations, seeding, routing, persistence, auth, and middleware together rather than only unit-level behavior.",
+        "server/Sheshi.Api.Tests/CoreApiTests.cs covers room creation, message/reply/thread traversal, voting, report validation, highlight retrieval, and authorization rules through HTTP calls.",
+        "server/Sheshi.Api.Tests/AuthFlowTests.cs covers register/login/refresh/logout/profile/password-reset flows with a captured IEmailSender test double.",
+        "server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs covers SignalR change notification, presence counts, multipart image upload, moderation role gates, report resolution, bans, and role grants.",
+        "package.json has build/lint/format scripts but no test script, no Vitest/Jest/Playwright/Testing Library dependency, and find/rg show no real frontend test files under src or alb_sheshi/frontend/src.",
+        "src/lib/api-client.ts, src/lib/sheshi.ts, src/hooks/use-auth.ts, src/lib/realtime.ts, src/components/Composer.tsx, src/components/MessageCard.tsx, and route components contain API retry, token persistence, realtime subscription, validation, optimistic vote, image upload, and navigation behavior with no frontend unit/component/integration tests.",
+        "alb_sheshi/frontend/src/App.tsx is a 1360 LOC all-in-one frontend with no adjacent tests or package-level test script, reinforcing that frontend behavior is manually validated."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "api_surface_coherence": {
+      "evidence": [
+        "src/lib/sheshi.ts exposes a mostly regular async domain wrapper surface: list/get/create/post/toggle/delete/report functions all return Promises and use typed DTO-like inputs for create/post/report.",
+        "src/lib/api-client.ts separates raw response access through api(path, options), JSON access through apiJson<T>(path, options), and multipart access through apiForm<T>(path, form, options), which gives callers predictable transport helpers.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs and alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs consistently expose controller actions as Task<ActionResult<T>> or Task<IActionResult> with CancellationToken parameters.",
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessageService.cs uses explicit result records for create/delete/report outcomes instead of throwing or overloading return types.",
+        "The same message-listing concept is exposed as Promise<MessageRow[]> from src/lib/sheshi.ts but as Promise<CursorPage<Message>> from alb_sheshi/frontend/src/api.ts, while the two server copies mirror that split with IReadOnlyList<MessageDto> versus CursorPageDto<MessageDto>.",
+        "alb_sheshi/frontend/src/api.ts places auth token first for write calls like createRoom(token, input), postMessage(token, input), upvote(token, id), but last/optional for read calls like messages(roomId, cursor, token), thread(id, token), highlights(mode, token)."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium",
+      "issues_preventing_higher_score": ""
+    },
+    "authorization_consistency": {
+      "evidence": [
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs protects message writes with [Authorize] and then consistently checks current user and banned status for create/upvote paths; delete additionally computes moderator/admin privilege before delegating to MessageService.",
+        "alb_sheshi/server/Sheshi.Api/Features/Moderation/ModerationController.cs applies [Authorize(Roles = \"moderator,admin\")] at the controller level and narrows role-changing to [Authorize(Roles = \"admin\")], so sibling moderation endpoints share one gate.",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs uses [Authorize(Roles = Roles.Admin)] for room creation while leaving list/get public, matching the integration test expectation in alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs.",
+        "alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs and RealtimeStorageModerationTests.cs explicitly exercise unauthenticated, normal user, moderator, admin, and banned-user authorization cases.",
+        "The repository also contains server/Sheshi.Api as the documented run target in server/README.md, and that copy differs materially from alb_sheshi/server/Sheshi.Api in authorization-adjacent implementation.",
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs protects POST /api/rooms with only [Authorize], while alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs requires Roles.Admin for the same route.",
+        "Role names are centralized in Domain/Roles, but ModerationController still uses literal role strings in Authorize attributes and frontend route gating repeats \"moderator\" and \"admin\" literals."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "ai_generated_debt": {
+      "evidence": [
+        "Application-facing files such as src/lib/sheshi.ts, src/lib/api-client.ts, src/components/MessageCard.tsx, and src/routes/tema.$messageId.tsx are mostly terse and purpose-driven, with little comment noise and no broad debug dumping.",
+        "Repeated try/catch blocks in src/lib/sheshi.ts, src/components/Composer.tsx, src/routes/index.tsx, and related UI files sit around network calls, auth failures, optimistic updates, or browser APIs, so they are boundary handling rather than defensive overengineering around pure expressions.",
+        "The few console.error calls in src/routes/__root.tsx, src/server.ts, and src/start.ts are error-boundary or SSR failure reporting, not entry/exit logging or full object debug dumps.",
+        "src/lib/config.server.ts has a high comment ratio, but the comments explain Cloudflare request-time env binding and client/server secret exposure constraints, so they explain why rather than restating code.",
+        "src/components/ui contains 46 shadcn-style wrapper files totaling 4360 lines, while app code outside src/components/ui imports only button, dialog, input, label, radio-group, sonner, tabs, and textarea.",
+        "Large unused template wrappers such as src/components/ui/sidebar.tsx and src/components/ui/chart.tsx remain in production paths; sidebar.tsx includes restating comments like 'Helper to toggle the sidebar' and 'This sets the cookie to keep the sidebar state' inside an orphaned 744-line component."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "incomplete_migration": {
+      "evidence": [
+        "The repository contains two runnable frontend surfaces: the root TanStack/Vite app in package.json with dev/build scripts at lines 6-12, and a separate alb_sheshi/frontend Vite app with its own dev/build scripts at alb_sheshi/frontend/package.json lines 6-9.",
+        "The two frontend trees expose different API-client contracts for the same backend: src/lib/api-client.ts exports low-level api/apiJson/apiForm helpers with automatic token refresh at lines 22-88, while alb_sheshi/frontend/src/api.ts exports an object-shaped endpoint facade at lines 47-79 with caller-supplied tokens and no refresh path.",
+        "The backend is also duplicated and divergent: server/Sheshi.Api/Domain/Message.cs has only ParentId/Parent for threads at lines 9-10, while alb_sheshi/server/Sheshi.Api/Domain/Message.cs adds RootMessageId and Depth at lines 9-12; only alb_sheshi/server has the 20260608125359_ThreadMetadata migration adding those columns.",
+        "docs/TODO.md records the .NET/Supabase migration as largely complete and explicitly says stale Supabase startup wiring was removed at lines 39-45, but also leaves final stale-reference scan and verification pending at lines 52-55."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "package_organization": {
+      "evidence": [
+        "holistic_context.structure shows the main TanStack app is predictably layered: src/routes imports src/components 14 times, src/components/ui 17 times, src/lib 15 times, src/hooks 8 times, and src/i18n 7 times; src/lib has avg_fan_in 9.8 and is imported across routes, components, hooks, and root startup files, so it behaves like a genuine shared core package rather than a misplaced straggler.",
+        "src/components has only 5 domain UI files and is imported exclusively by src/routes, which matches route-owned composition boundaries.",
+        "src/components/ui has 46 files and zero child directories, matching the flat_dirs detector fingerprint flat_dirs::src/components/ui, but components.json maps the shadcn ui alias directly to src/components/ui and the files are cohesive UI primitives rather than mixed domain responsibilities.",
+        "The repo also contains alb_sheshi/frontend/src with its own App.tsx, api.ts, types.ts, main.tsx, and styles.css, while the documented layout says the React app lives in root src/ and the backend in root server/.",
+        "alb_sheshi/frontend/src/App.tsx is a 1360-line standalone React app with custom routing, auth storage, SignalR setup, API calls, and UI composition, while root src/ decomposes the same product into routes, components, hooks, lib, and i18n packages.",
+        "server/ and alb_sheshi/server/ are both present and diff -qr reports many production file differences, while docs/sheshi-dotnet-backend-master-spec.md lines 121-131 specify a single root server/ folder."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "initialization_coupling": {
+      "evidence": [
+        "src/lib/config.server.ts:19-26 deliberately exposes getServerConfig() and reads process.env inside the function, matching the file comment that Cloudflare-bound env should not be captured at module scope.",
+        "src/lib/api-client.ts:13-15 exposes getApiBaseUrl() as a getter instead of a module-level API_BASE snapshot, avoiding stale public env reads for normal API calls.",
+        "src/router.tsx:5-16 creates a fresh QueryClient and router inside getRouter(), so router state is not a shared import-time singleton.",
+        "src/lib/token-store.ts:13-35 keeps browser localStorage access inside runtime functions guarded by typeof window, not at import time.",
+        "server/Sheshi.Api/Realtime/PresenceTracker.cs:7-75 is a DI singleton with explicit locking and snapshot copies, so its mutable state is encapsulated rather than spread through module globals.",
+        "src/server.ts:1 and src/lib/error-capture.ts:4-16 rely on importing error-capture for module-scope listener registration and a shared lastCapturedError slot.",
+        "server/Sheshi.Api/Program.cs:144-151 applies EF migrations and seed work unconditionally while building the host, making startup depend on DB write availability."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "design_coherence": {
+      "evidence": [
+        "The TanStack route files in src/routes generally keep route-level loading, local UI state, and page rendering together without creating extra indirection; src/routes/index.tsx is long enough to trigger a detector but remains a coherent home page with a small RoomCard helper.",
+        "src/lib/api-client.ts and src/lib/sheshi.ts form a straightforward API layer: api-client owns token refresh and response handling, while sheshi.ts exposes domain-specific calls with thin wrappers.",
+        "alb_sheshi/frontend/src/App.tsx is a 1360-line legacy-style single component/module that owns routing, auth persistence, theme, realtime subscriptions, room/thread fetching, optimistic voting, saving, sharing, dialogs, and most view components in one file.",
+        "src/components/ui/sidebar.tsx and src/components/ui/chart.tsx are large shadcn-style components with no importers found by repository search; this adds a broad unused surface that a new developer must mentally filter.",
+        "src/server.ts is intentionally reached through vite.config.ts tanstackStart.server.entry = \"server\", so the orphaned-file signal is a detector blind spot rather than a design defect.",
+        "src/routeTree.gen.ts is explicitly generated TanStack Router output with @ts-nocheck and route update casts; it should be excluded from design critique rather than refactored manually."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "contract_coherence": {
+      "evidence": [
+        "src/lib/sheshi.ts keeps read APIs honest: getRoomBySlug, getMessage, and getThread all advertise Promise<... | null> and convert only 404 ApiError responses to null while rethrowing other failures.",
+        "src/lib/token-store.ts separates read/write contracts clearly: getStoredTokens only reads localStorage and validates shape, while setStoredTokens and clearStoredTokens perform storage mutation and emit listener notifications.",
+        "src/lib/api-client.ts:49-58 declares apiJson<T> as Promise<T>, but line 57 returns undefined as T for every 204 response, so non-void call sites can receive a value excluded by the signature.",
+        "src/lib/realtime.ts:7-17 exports getRealtimeConnection as a getter, but the first call constructs and stores a HubConnection singleton; src/hooks/use-auth.ts:87-89 similarly names getAuthSnapshot like a read while init() can start token loading and subscribe to storage updates."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "logic_clarity": {
+      "evidence": [
+        "src/routes/dhoma.$slug.tsx uses a local cancelled flag before setting room state after getRoomBySlug resolves, showing the codebase has an established pattern for stale async route loads.",
+        "src/routes/tema.$messageId.tsx reload() starts getThread(messageId) and writes setThread(data) when it resolves, but the effect cleanup only guards realtime listener attachment, not the in-flight fetch.",
+        "src/hooks/use-auth.ts has global auth state and token-store subscriptions with no request identity check, so overlapping loadUserFromTokens calls can apply results after a newer token-store change.",
+        "src/lib/sheshi.ts contains multiple exported async wrappers that simply return apiJson/apiForm promises without awaiting; detector fingerprint smells::src/lib/sheshi.ts::async_no_await is confirmed for listRooms, createRoom, listMessages, listReplies, and listHighlights.",
+        "Most UI control flow is guard-clause based and easy to trace: loading/not-found/render branches in src/routes/tema.$messageId.tsx and src/routes/index.tsx are explicit, and defensive optional checks generally correspond to nullable route/user/API state."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    },
+    "type_safety": {
+      "evidence": [
+        "Root TypeScript is compiled with strict: true in tsconfig.json, and npm run build completed successfully, so the active frontend has a real type-checking baseline.",
+        "The .NET API project enables nullable reference types in server/Sheshi.Api/Sheshi.Api.csproj and dotnet build server/Sheshi.sln completed with 0 warnings and 0 errors.",
+        "server/Sheshi.Api/Program.cs configures JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower), so enum DTO properties can serialize to the same wire strings without weakening DTO types.",
+        "server/Sheshi.Api/Features/Messages/MessageDtos.cs defines MessageDto.Author, Upvotes, ReplyCount, and Voted as always-present fields, but src/lib/sheshi.ts marks the corresponding frontend fields author, upvotes, reply_count, and voted as optional.",
+        "server/Sheshi.Api/Features/Rooms/RoomDtos.cs defines RoomDto.ThreadCount as required and LatestActivityAt as present nullable, but src/lib/sheshi.ts marks thread_count and latest_activity_at optional.",
+        "server/Sheshi.Api/Features/Moderation/ModerationDtos.cs types ModReportDto.Reason and Status as string even though the domain already has ReportReason and ReportStatus enums; ModerationController manually lowers enum strings when projecting reports."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": ""
+    }
+  },
+  "dimension_judgment": {
+    "cross_module_architecture": {
+      "dimension_character": "Inside each individual implementation, dependency direction is generally understandable: UI flows down into shared clients, and API controllers/services point inward toward data and domain types. The repo-level architecture is much harder for a new developer to trust because two parallel frontend/backend implementations coexist and have drifted in behavior, security posture, migrations, and API client shape.",
+      "score_rationale": "This is above the mixed/60 anchor because the local module boundaries are mostly coherent and the only mechanical cycle is generated framework code. It lands below the solid/80 anchor because the duplicated active-looking roots create codebase-wide boundary ambiguity: common backend or frontend changes could easily be made in the wrong tree or only one of two divergent trees."
+    },
+    "high_level_elegance": {
+      "dimension_character": "Inside the active backend, ownership is fairly coherent: domain entities, feature controllers, realtime, storage, auth, and data all have understandable homes. The frontend is also navigable at a first pass, but the repository-level structure is undermined by a second full application tree under alb_sheshi that overlaps the same backend and frontend responsibilities while diverging from the root copies.",
+      "score_rationale": "This lands in the mixed-to-solid range: a developer working only in server/ and src/ can usually predict where to put changes, which pushes the score above significant drag. The duplicate alb_sheshi application root and stale public metadata make the top-level ownership contract hard to trust, so the codebase falls well short of the 90 anchor where each top-level package has an obvious, reliable purpose."
+    },
+    "convention_outlier": {
+      "dimension_character": "Within the current root app, conventions are mostly coherent: React routes, feature components, shadcn UI primitives, and ASP.NET feature folders each have recognizable local patterns. The main developer-facing problem is that a parallel `alb_sheshi` application tree duplicates the same domains with different implementation conventions, making it unclear which tree is canonical when searching or extending behavior.",
+      "score_rationale": "This is better than a fragmented codebase because the active root areas are internally consistent and the mechanical UI naming signal is explainable by shadcn conventions. It lands below the solid 80 anchor because the duplicated app/server roots create recurring navigation ambiguity across major production-looking areas, so developers cannot fully trust that one observed pattern holds everywhere."
+    },
+    "error_consistency": {
+      "dimension_character": "The codebase has a reasonably coherent HTTP boundary: API calls throw ApiError, not-found reads become null in a small set of read helpers, and top-level SSR failures are intentionally contained. The weaker part is the migrated frontend surface, where background loads often collapse failures into empty UI states and domain mutations sometimes downgrade structured ApiError context into bare Error message sentinels.",
+      "score_rationale": "This is better than the 60 anchor because a developer can learn the main API strategy quickly and many user-triggered mutations do surface errors through toasts or inline messages. It falls below the 80 anchor because related data-loading paths still mix silent swallowing, null-as-not-found, empty arrays, and generic toasts, so a developer cannot reliably predict whether a failed request will be visible, recoverable, or indistinguishable from empty data."
+    },
+    "naming_quality": {
+      "dimension_character": "Names generally let a new developer predict behavior quickly: frontend domain wrappers use list/get/create/post/toggle vocabulary, backend controllers mirror HTTP actions, and tree/thread helpers are concrete. The main naming weakness is isolated local UI handler naming, not a systemic vocabulary problem.",
+      "score_rationale": "This sits around the 90 anchor: a developer would trust most names, with only minor friction from local generic verbs. The mechanical filename concern does not lower the score because the kebab-case files are shadcn/Radix compound component conventions, not project-specific naming drift."
+    },
+    "abstraction_fitness": {
+      "dimension_character": "The TypeScript codebase is mostly direct and uses abstractions where they clarify boundaries: API helpers add auth, serialization, retry, validation, and domain-level return contracts, while UI wrappers centralize styling or required framework composition. There is little evidence of one-implementation interface ceremony, delegation-heavy class ecosystems, or facade modules that force developers through unpaid indirection.",
+      "score_rationale": "This lands in the strong range because a developer can usually see the value of each layer and mechanical concern signals mostly resolve to framework boundaries or deliberately useful shells. It falls short of exemplary because some surfaces, especially the older alb_sheshi frontend App.tsx and a few thin endpoint helpers, lean on direct monolithic composition or light typed shells rather than consistently crisp, feature-sized abstractions."
+    },
+    "dependency_health": {
+      "dimension_character": "The main dependency set has a recognizable purpose, but it has drift from a focused application dependency list into a stocked template kit. A developer would mostly understand the chosen stack, yet would hit friction deciding which package root is authoritative and which UI/form/chart dependencies are actually part of the app.",
+      "score_rationale": "This sits below the solid 80 anchor because the drift is recurring: unused direct dependencies, many unused shadcn/Radix component dependencies, and a second overlapping frontend package manifest create real maintenance ambiguity. It is not near the 60 anchor because the core runtime stack is still coherent and the only detected cycle is a generated type-only TanStack Router artifact rather than a meaningful runtime cycle."
+    },
+    "low_level_elegance": {
+      "dimension_character": "The backend and the newer src frontend generally serve developers well at the function level: guard clauses are common, helpers are local, and state mutation is usually explicit. The quality is uneven because a stale legacy frontend path still concentrates many unrelated local concerns and duplicated small internals in one file, so a developer cannot trust the same level of craft across the whole repository.",
+      "score_rationale": "This lands below the 80 solid-but-uneven anchor because the legacy App.tsx is not just large at the file-responsibility level; its function internals contain many local effects, handlers, and duplicated UI behaviors that make individual changes harder to trace. It stays well above 60 because the authored backend and current src app show recurring direct, proportionate internals rather than pervasive local complexity."
+    },
+    "mid_level_elegance": {
+      "dimension_character": "The codebase has some solid seams: frontend HTTP mechanics are centralized, Sheshi API calls are mostly wrapped in a domain module, and backend DTO enrichment has an obvious home. The unevenness appears where lifecycle and orchestration cross boundaries: realtime protocol details leak into route components, and message write/read workflows are still controller-centered rather than composed from focused collaborators.",
+      "score_rationale": "This is better than the 70 anchor because a new developer can usually find the API boundary and understand DTO flow quickly. It falls below strong because the realtime and message orchestration seams require reading multiple layers and implicit protocols before making safe cross-module changes, which is recurring friction rather than a single local rough edge."
+    },
+    "test_strategy": {
+      "dimension_character": "The backend test strategy is materially stronger than average for a small service: it favors HTTP-level and real database integration tests over brittle implementation-coupled unit tests, and it covers the core auth, messaging, moderation, realtime, and storage contracts. The frontend has the opposite profile: important client-side contracts around API retries, token state, composer validation, optimistic mutation, realtime reload behavior, and route flows have no automated harness at all.",
+      "score_rationale": "This lands in significant-drag territory rather than poor because the backend can be changed with some confidence and the existing tests are broad, contract-oriented, and not snapshot-heavy. The score is pulled down hard by the complete absence of frontend tests and the lack of any npm test entrypoint, which means a developer changing the visible product or client API layer cannot trust automation to catch regressions."
+    },
+    "api_surface_coherence": {
+      "dimension_character": "The active API surfaces are mostly coherent within each local area: transport helpers are small, most domain functions are async and typed, and server controllers use familiar ASP.NET action shapes. The main developer friction comes from duplicated legacy/current client-server surfaces that expose the same message and room concepts with different response envelopes and auth-token conventions.",
+      "score_rationale": "This sits in the solid-but-uneven range: a developer can usually predict how to call a function after seeing one sibling, especially in src/lib/sheshi.ts and the newer C# services. It does not reach strong territory because the repository contains two production-shaped API clients and server copies whose similar names mask different pagination and parameter contracts, so cross-area changes require checking each surface rather than trusting a single convention."
+    },
+    "authorization_consistency": {
+      "dimension_character": "The actively evolved API under alb_sheshi/server has a coherent authorization shape: public reads, authenticated writes, admin-only room creation, and moderator/admin moderation are easy to trace and backed by integration tests. The weakness is migration residue: the repository keeps a second documented server tree whose sibling endpoints have drifted, including a materially weaker room-creation rule.",
+      "score_rationale": "This lands above the 70 anchor because the main protected resources use consistent server-side gates and tests cover the important role boundaries. It stays below 80 because a developer cannot fully trust the repo-wide pattern when the documented top-level server copy disagrees with the nested copy on authorization behavior, and role literals still create small but recurring drift risk."
+    },
+    "ai_generated_debt": {
+      "dimension_character": "The active application code is mostly direct: names are domain-specific, comments are sparse, and error handling generally appears where external APIs, auth, browser storage, or SSR failures make it useful. A new team member would not have to filter much LLM-style ceremony in the core flows, but the component library directory carries a large amount of unused generated/template surface area.",
+      "score_rationale": "This is above the mixed/70 anchor because nosy logging, gratuitous docstrings, pure-expression try/catch, and generic handleData-style domain code are not systemic in the inspected production code. It stays below the strong/90 anchor because thousands of lines of unused shadcn wrappers, including restating comments in large orphaned files, create recurring generated-style noise for anyone searching or navigating the UI layer."
+    },
+    "incomplete_migration": {
+      "dimension_character": "The primary migration to the .NET backend is visible and much of the old Supabase surface appears intentionally removed, which helps establish the target direction. The problem is that the repository still carries parallel runnable app and backend trees with divergent API clients, data models, migrations, and startup behavior, so a developer cannot reliably tell which structural contract is canonical without reading both copies.",
+      "score_rationale": "This lands in the significant-drag range rather than merely uneven because the duplicate trees are not inert snippets: they each have build/run entry points and active production-shaped source. The score is pulled up by the documented migration plan and the coherent root app API-client pattern, but pulled down by codebase-wide dual-path confusion that directly matches the incomplete_migration rubric."
+    },
+    "package_organization": {
+      "dimension_character": "Inside the root TypeScript app, ownership is mostly navigable: routes compose screen-level behavior, components hold reusable product UI, hooks and lib are shared in predictable directions, and the shadcn ui flat directory is conventional rather than mixed. The main organizational drag is codebase-level duplication: a second alb_sheshi subtree contains a standalone frontend and a divergent backend copy despite the docs naming root src/ and server/ as the canonical layout.",
+      "score_rationale": "This lands above the mixed range because the active root app has coherent directory roles and the objective coupling matrix mostly supports those roles. It cannot score as solid because a developer cannot trust the repository layout alone to know whether root src/server or alb_sheshi/frontend/server is authoritative, and the duplicated implementations create search, ownership, and drift hazards."
+    },
+    "initialization_coupling": {
+      "dimension_character": "The codebase is mostly deliberate about initialization: config and storage reads are behind functions, router/query state is created per router instance, and server-side mutable presence state is held inside DI. The weaker spots are startup and SSR recovery paths where behavior depends on top-level execution rather than explicit lifecycle calls.",
+      "score_rationale": "This lands above the 80 anchor because most modules can be imported without hidden I/O or environment snapshots, and global state is usually either guarded or injected. It does not reach the 90 range because the SSR error-capture module has import-time side effects and the API host still performs DB migration/seed work as an unconditional boot dependency."
+    },
+    "design_coherence": {
+      "dimension_character": "The main src application has mostly direct, understandable route components and API helpers; the abstractions are ordinary and generally earned. The quality is uneven because the older alb_sheshi frontend keeps an entire SPA's orchestration and views in one App.tsx, and the active UI tree contains unused large component modules that look like available design surface but are not part of the product.",
+      "score_rationale": "This lands in the mixed-to-solid range: a developer working in the current src routes would usually understand the design quickly, but they cannot assume that pattern holds across the repository. The monolithic legacy App.tsx and large unused UI components create enough structural friction that the design decisions are not reliably coherent, but the clearer current route/API structure keeps this above the significant-drag anchor."
+    },
+    "contract_coherence": {
+      "dimension_character": "The codebase mostly has straightforward contracts: domain read helpers use explicit nullable returns for not-found cases, mutation helpers are named as mutations, and token storage exposes a clear read/write/subscribe split. The main unevenness is concentrated in infrastructural helpers where generic response types and getter-style lazy initialization make callers trust more than the implementation actually guarantees.",
+      "score_rationale": "This lands in the solid-but-uneven range: most feature-facing APIs behave as their names and signatures suggest, but the shared API client and singleton/auth helpers create recurring contract friction at subsystem boundaries. The issues are not pervasive enough to make the code hard to work in, but they do mean developers must inspect these helpers before relying on their apparent surface."
+    },
+    "logic_clarity": {
+      "dimension_character": "The main route and component logic is mostly direct: loading states, not-found states, auth guards, and conditional rendering are spelled out in straightforward guard clauses rather than clever branching. The weak spots are asynchronous control-flow edges where stale promises can still write state after newer navigation or auth changes, plus a thin API facade that marks synchronous pass-through wrappers as async.",
+      "score_rationale": "Against the global anchors this is solid but uneven: a developer can usually trace what happens locally, but cannot fully trust async flows under rapid route changes, sign-out/sign-in overlap, or concurrent reloads. The score sits just above 80 because the defects are real edge-case failures rather than pervasive logical opacity, and there are clear local fixes."
+    },
+    "type_safety": {
+      "dimension_character": "The codebase has a strong baseline: strict TypeScript, nullable-enabled C#, typed request/response records, and successful builds on both sides make annotations generally trustworthy. The main weakness is migration drift in API shape typing, where the root frontend still loosens server-guaranteed fields and moderation DTOs fall back to strings despite domain enums.",
+      "score_rationale": "This lands above the 80 anchor because the type systems are enabled and most public API paths are explicitly modeled. It does not reach the 90 range because developers can still encounter duplicated or weakened contract types around messages, rooms, and moderation enums, which means they cannot fully trust the frontend API model as documentation of runtime behavior."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "cross_module_architecture",
+      "identifier": "parallel_divergent_app_trees",
+      "summary": "Two divergent app/backend trees make ownership and change targets ambiguous",
+      "confidence": "high",
+      "suggestion": "Choose one implementation root as authoritative, move any needed changes from the other tree into it, and remove or clearly quarantine the non-authoritative tree outside production paths. At minimum, add a top-level README note and CI/build scripts that target only the canonical app/backend until the duplicate tree is deleted.",
+      "related_files": [
+        "package.json",
+        "src/lib/sheshi.ts",
+        "server/README.md",
+        "server/Sheshi.Api/Program.cs",
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "alb_sheshi/frontend/package.json",
+        "alb_sheshi/frontend/src/api.ts",
+        "alb_sheshi/server/README.md",
+        "alb_sheshi/server/Sheshi.Api/Program.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs"
+      ],
+      "evidence": [
+        "Root `package.json` defines a TanStack Start app using root `src`, while `alb_sheshi/frontend/package.json` defines a separate Vite React app using `alb_sheshi/frontend/src`.",
+        "Root `server/README.md` and nested `alb_sheshi/server/README.md` both instruct running `dotnet run --project server/Sheshi.Api`, even though the nested backend contains newer-looking implementation changes.",
+        "`alb_sheshi/server/Sheshi.Api/Program.cs` registers rate limiting, forwarded headers, JWT option validation, `RoomService`, and guarded migrations; root `server/Sheshi.Api/Program.cs` does not, so the same logical backend has different architectural behavior depending on which tree is edited or deployed.",
+        "`server/Sheshi.Api/Features/Rooms/RoomsController.cs` implements room creation and DTO enrichment directly against `AppDbContext`; `alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs` delegates to `RoomService` and applies rate limiting, showing feature-level architecture drift.",
+        "Root `src/lib/sheshi.ts` exposes API helpers used by route modules; `alb_sheshi/frontend/src/api.ts` exposes a separate API surface with different pagination/thread types, so frontend/backend contract changes must be duplicated or reconciled manually."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "duplicate_application_roots",
+      "summary": "The repo contains two divergent Sheshi application roots with overlapping ownership.",
+      "confidence": "high",
+      "suggestion": "Choose one production application root. Remove or clearly archive alb_sheshi outside the production scan path, or promote it as the canonical root and delete the overlapping root-level src/server copies; update README and compose/package entry points to name the chosen ownership boundary.",
+      "related_files": [
+        "server/Sheshi.Api/Program.cs",
+        "alb_sheshi/server/Sheshi.Api/Program.cs",
+        "package.json",
+        "alb_sheshi/frontend/package.json",
+        "alb_sheshi/docker-compose.yml"
+      ],
+      "evidence": [
+        "alb_sheshi/ contains its own frontend package, server solution, backend README, infra config, and docker-compose.yml while the repository root also contains package.json, src/, server/, and docker-compose.yml.",
+        "diff -qr server alb_sheshi/server reports divergent production files including Program.cs, AuthController.cs, AppDbContext.cs, MessageService.cs, RoomsController.cs, ModerationController.cs, migrations, and tests.",
+        "The root server/README.md tells developers to run dotnet run --project server/Sheshi.Api and npm run dev from the root, while alb_sheshi/server/README.md gives similar backend instructions for a nested tree."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "stale_project_contract_surface",
+      "summary": "Top-level project contracts do not clearly describe the canonical app structure.",
+      "confidence": "high",
+      "suggestion": "Add or update a root README that defines the canonical frontend, backend, docs, and archival/generated directories; rename the root package to the product name; either remove alb_sheshi docs or mark that subtree explicitly as non-production/archive.",
+      "related_files": [
+        "package.json",
+        "server/README.md",
+        "docs/TODO.md",
+        "alb_sheshi/server/README.md"
+      ],
+      "evidence": [
+        "The root package.json is still named tanstack_start_ts rather than Sheshi, while alb_sheshi/frontend/package.json names a second frontend package alb-sheshi-frontend.",
+        "There is no root README explaining the repository layout, which leaves server/README.md, docs/TODO.md, and alb_sheshi/server/README.md as partial and conflicting entry points.",
+        "docs/TODO.md documents the root .NET rewrite workflow and says stale Supabase wiring was removed, but it does not classify the nested alb_sheshi tree as active, archived, or generated."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "parallel_app_roots",
+      "summary": "Parallel root and `alb_sheshi` app trees expose divergent conventions for the same domains",
+      "confidence": "high",
+      "suggestion": "Choose one canonical app/server tree for production development. Move any still-needed changes from the other tree into the canonical location, then archive, delete, or clearly mark the non-canonical tree outside the production source path so developers do not have to infer which convention to follow.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "src/routes/index.tsx",
+        "alb_sheshi/frontend/src/App.tsx",
+        "server/README.md"
+      ],
+      "evidence": [
+        "`server/README.md` directs local backend work to `server/Sheshi.Api`, but `alb_sheshi/server/Sheshi.Api` contains a separate solution-shaped backend with controllers, migrations, tests, and appsettings.",
+        "`server/Sheshi.Api/Features/Rooms/RoomsController.cs` performs room normalization and persistence inline in the controller, while `alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs` delegates to `RoomService`, applies rate limiting attributes, and restricts create to admin role.",
+        "`src/routes/index.tsx` uses TanStack file routing and extracted route/component modules, while `alb_sheshi/frontend/src/App.tsx` implements routing, auth state, theme state, and UI composition in a single default-export App component.",
+        "The two backend trees have same relative file names but differ in DTO shape, e.g. `alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs` adds `RootMessageId`, `Depth`, and `CursorPageDto<T>` absent from the root `server` DTO file."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "naming::src/components/ui::kebab-case",
+      "reasoning": "The detected minority kebab-case files are standard compound shadcn/Radix primitive names in a directory explicitly configured for shadcn components."
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "background_load_failures_render_empty",
+      "summary": "Background fetch failures are repeatedly converted into empty or not-found UI states",
+      "confidence": "high",
+      "suggestion": "Introduce a small, consistent load-state pattern for read surfaces, for example {status: 'loading'|'ready'|'error', data}, and use it in these loaders so failed reads render a retry/error state instead of empty data. Keep intentional optional side data, such as presence counts, as explicitly optional with a comment or helper like loadOptionalPresence().",
+      "related_files": [
+        "src/components/AppShell.tsx",
+        "src/routes/dhoma.$slug.tsx",
+        "src/routes/tema.$messageId.tsx",
+        "src/routes/moderim.tsx",
+        "src/components/HighlightsPanel.tsx"
+      ],
+      "evidence": [
+        "src/components/AppShell.tsx catches listRooms(), presence fetches, realtime startup, and cleanup promises with empty catch handlers, leaving navigation/presence silently stale.",
+        "src/routes/dhoma.$slug.tsx reload() catches listMessages(room.id) with an empty handler and then finally sets loading false, so a failed message fetch can render the room as empty.",
+        "src/routes/tema.$messageId.tsx reload() catches any getThread(messageId) failure and sets thread to null, which is rendered as 'Tema nuk u gjet' even for network/server failures.",
+        "src/routes/moderim.tsx converts failed moderation report and user loads to setReports([]) and setUsers([]), making permission/server/network failures look like no moderation work exists.",
+        "src/components/HighlightsPanel.tsx catches listHighlights(mode) and sets items to [], so failed highlight loads are indistinguishable from no highlights."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "error_consistency",
+      "identifier": "domain_errors_lose_api_context",
+      "summary": "Domain helpers replace structured ApiError context with bare Error message sentinels",
+      "confidence": "high",
+      "suggestion": "Replace the bare Error sentinels with a small exported SheshiError or union-like code helper that preserves cause/status, e.g. new SheshiError('UNAUTH', {cause: error, status: 401}). Update Composer, MessageCard, and ReportDialog to switch on error.code instead of message strings.",
+      "related_files": [
+        "src/lib/sheshi.ts",
+        "src/components/Composer.tsx",
+        "src/components/MessageCard.tsx",
+        "src/components/ReportDialog.tsx"
+      ],
+      "evidence": [
+        "src/lib/sheshi.ts postMessage() throws new Error('EMPTY') and new Error('TOO_LONG') for local validation, then maps ApiError 401 to new Error('UNAUTH') and selected ApiError messages back to new Error('TOO_LONG') or new Error('EMPTY').",
+        "src/lib/sheshi.ts toggleVote() and submitReport() also map ApiError status 401 to new Error('UNAUTH'), discarding the original ApiError status, payload, and message context.",
+        "src/components/Composer.tsx handles postMessage errors by checking err instanceof Error && err.message === 'TOO_LONG', and src/components/MessageCard.tsx checks error.message === 'UNAUTH' for vote failures.",
+        "src/components/ReportDialog.tsx catches submitReport() failures without inspecting the lost UNAUTH sentinel, so authentication failures and server failures both become the generic error toast."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "naming_quality",
+      "identifier": "composer_do_submit_generic",
+      "summary": "Composer doSubmit hides that it posts a message and clears composer state",
+      "confidence": "medium",
+      "suggestion": "Rename doSubmit to submitMessage or submitComposerMessage, and update the two call sites in onSubmit and the Enter key handler.",
+      "related_files": [
+        "src/components/Composer.tsx"
+      ],
+      "evidence": [
+        "src/components/Composer.tsx:123 names the function doSubmit, a generic verb that does not identify the domain action.",
+        "src/components/Composer.tsx:127-131 posts a message, clears body/image state, clears reply context, and triggers onPosted, so the behavior is specifically message submission."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "unused_form_schema_deps",
+      "summary": "Form/schema packages are direct runtime dependencies without source usage",
+      "confidence": "high",
+      "suggestion": "Remove @hookform/resolvers and direct zod from package.json until route-level forms or schema validation actually use them; also remove react-hook-form if src/components/ui/form.tsx is unused or delete that wrapper with the unused UI cleanup.",
+      "related_files": [
+        "package.json",
+        "package-lock.json"
+      ],
+      "evidence": [
+        "package.json lists @hookform/resolvers and zod under dependencies.",
+        "rg found no imports of @hookform/resolvers or zod in src or alb_sheshi/frontend/src; occurrences are limited to package/lock files and transitive tool dependencies.",
+        "react-hook-form is only imported by src/components/ui/form.tsx, and that wrapper is not imported by the app's production routes/components."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "unused_ui_dependency_kit",
+      "summary": "A large shadcn/Radix dependency kit remains installed for unused UI wrappers",
+      "confidence": "medium",
+      "suggestion": "Prune unused src/components/ui wrappers and remove their matching direct dependencies, keeping only the UI primitives imported by app routes/components.",
+      "related_files": [
+        "package.json",
+        "src/components/ui/accordion.tsx",
+        "src/components/ui/calendar.tsx",
+        "src/components/ui/chart.tsx",
+        "src/components/ui/carousel.tsx",
+        "src/components/ui/menubar.tsx",
+        "src/components/ui/sidebar.tsx"
+      ],
+      "evidence": [
+        "package.json declares many Radix and companion UI packages such as @radix-ui/react-accordion, @radix-ui/react-alert-dialog, @radix-ui/react-context-menu, @radix-ui/react-menubar, react-day-picker, embla-carousel-react, recharts, input-otp, cmdk, react-resizable-panels, and vaul.",
+        "Production imports of components/ui are limited to button, input, label, tabs, dialog, textarea, radio-group, and sonner; rg did not show route/component imports for accordion, calendar, chart, carousel, command, context-menu, drawer, menubar, navigation-menu, sidebar, or similar stocked wrappers.",
+        "The unused wrapper files import their own third-party packages, keeping those packages in package.json even though the live app does not use the UI features."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "dual_frontend_manifests",
+      "summary": "Two frontend package roots carry overlapping dependencies with different declared versions",
+      "confidence": "high",
+      "suggestion": "Choose one authoritative frontend package root or convert the repository to an explicit workspace; align shared versions and move build-only tools such as Vite, TypeScript, and @vitejs/plugin-react out of alb_sheshi/frontend dependencies if that nested app remains.",
+      "related_files": [
+        "package.json",
+        "package-lock.json",
+        "alb_sheshi/frontend/package.json",
+        "alb_sheshi/frontend/package-lock.json"
+      ],
+      "evidence": [
+        "The root package.json and alb_sheshi/frontend/package.json both declare React, React DOM, SignalR, lucide-react, Vite-related tooling, and TypeScript-related tooling for frontend code.",
+        "Declared versions differ between roots: root has lucide-react ^0.575.0 while alb_sheshi/frontend has ^0.561.0; root devDependencies use @vitejs/plugin-react ^5.0.4 and vite ^7.3.1 while alb_sheshi/frontend dependencies use @vitejs/plugin-react ^5.1.1 and vite ^7.2.7.",
+        "Both locks currently resolve some overlaps to the same installed versions, but the divergent package.json ranges mean future installs can drift differently per root."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "low_level_elegance",
+      "identifier": "legacy_app_local_sprawl",
+      "summary": "Legacy App.tsx keeps too many local effects, handlers, and duplicated UI internals in one component body",
+      "confidence": "high",
+      "suggestion": "Retire this legacy app path if it is no longer production, or split the local internals into focused hooks/components: one hook for auth/route side effects, one hook for realtime room/thread refresh, and a single reusable action row/composer primitive used by both top-level threads and replies.",
+      "related_files": [
+        "alb_sheshi/frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "App owns route parsing reactions, theme persistence, auth callback handling, room loading, thread loading, SignalR subscription, optimistic voting, saved-message persistence, message submission, and page rendering in one component body around lines 137-507.",
+        "The same file repeats action-row logic in ActionRow at lines 899-934 and inside ReplyTree at lines 963-989, including vote, reply, share, and save controls with nearly identical props and class behavior.",
+        "Composer at lines 1009-1059 and ReplyComposer at lines 1061-1085 duplicate body/busy submit state and reset behavior instead of sharing one bounded composer primitive."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "realtime_lifecycle_leaks_into_routes",
+      "summary": "Realtime hub lifecycle and protocol details are duplicated in route components",
+      "confidence": "high",
+      "suggestion": "Move the hub protocol into src/lib/realtime.ts as small subscription helpers, for example subscribeToRoom(roomId, onChanged) and subscribeToThread(threadId, onChanged) returning cleanup functions; keep route-specific debounce/scroll behavior in the routes, but hide event names, invoke names, start handling, and leave/off cleanup behind that boundary.",
+      "related_files": [
+        "src/lib/realtime.ts",
+        "src/routes/dhoma.$slug.tsx",
+        "src/routes/tema.$messageId.tsx"
+      ],
+      "evidence": [
+        "src/lib/realtime.ts:7-23 only creates and starts a shared HubConnection.",
+        "src/routes/dhoma.$slug.tsx:90-115 manually starts the connection, subscribes to the literal \"changed\" event, invokes \"JoinRoom\" and \"LeaveRoom\", tracks a disposed flag, removes the handler, and clears a debounce timer.",
+        "src/routes/tema.$messageId.tsx:106-129 repeats the same lifecycle shape with \"JoinThread\" and \"LeaveThread\".",
+        "Both route effects suppress dependency linting around this orchestration, which makes future lifecycle changes easier to get wrong."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "mid_level_elegance",
+      "identifier": "message_controller_owns_workflow_orchestration",
+      "summary": "Message workflows are orchestrated inside the controller instead of a focused application service",
+      "confidence": "medium",
+      "suggestion": "Keep HTTP-specific concerns in the controller, but move message use cases into MessageService or a MessageWorkflow service: GetThreadAsync(id, callerId), CreateMessageAsync(request, image, callerId), VoteAsync(id, callerId), and SoftDeleteAsync(id, callerId). Let that service own DB validation, thread-root calculation, storage calls, and realtime notification so the controller becomes a thin adapter from HTTP results to service outcomes.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+        "server/Sheshi.Api/Features/Messages/MessageService.cs"
+      ],
+      "evidence": [
+        "MessagesController.cs:64-84 resolves a thread root, loads descendants, groups replies, collects descendants, enriches DTOs, and builds reply nodes inside the HTTP controller.",
+        "MessagesController.cs:87-139 handles mixed JSON/form parsing, auth/user checks, ban checks, body validation, room and parent validation, image storage, database insertion, realtime notification, and DTO enrichment in one endpoint.",
+        "MessagesController.cs:231-335 keeps thread traversal, descendant loading, node building, and form-to-request translation as private controller helpers, while MessageService.cs:7-59 only owns enrichment."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "frontend_has_no_test_harness",
+      "summary": "Frontend-critical API, auth, realtime, route, and component behavior has no automated test harness",
+      "confidence": "high",
+      "suggestion": "Add a frontend test setup and start with a small contract-focused suite: Vitest unit tests for api-client/sheshi/token-store/use-auth, React Testing Library tests for Composer and MessageCard user flows, and one route/integration test around thread reload/realtime subscription behavior. Add an npm test script so these run alongside lint/build.",
+      "related_files": [
+        "package.json",
+        "src/lib/api-client.ts",
+        "src/lib/sheshi.ts",
+        "src/hooks/use-auth.ts",
+        "src/lib/realtime.ts",
+        "src/components/Composer.tsx",
+        "src/components/MessageCard.tsx",
+        "src/routes/tema.$messageId.tsx",
+        "src/routes/index.tsx",
+        "src/routes/moderim.tsx",
+        "src/routes/dhoma.$slug.tsx"
+      ],
+      "evidence": [
+        "package.json defines dev/build/lint/format but no test script and has no frontend test dependencies such as Vitest, Testing Library, Playwright, or Jest.",
+        "src/lib/api-client.ts implements token injection, 401 refresh/retry, token clearing on refresh failure, JSON/form request helpers, and ApiError conversion without tests.",
+        "src/lib/sheshi.ts translates backend status/error payloads into UI-facing errors like UNAUTH, EMPTY, and TOO_LONG and switches between JSON and multipart posting, but there are no tests asserting those client contracts.",
+        "src/hooks/use-auth.ts owns global auth state through useSyncExternalStore, token subscriptions, and async /api/me loading, but no tests verify initialization, sign-out, refresh, or invalid-token behavior.",
+        "src/components/Composer.tsx and src/components/MessageCard.tsx contain validation, image constraints, imperative prefill/focus behavior, optimistic voting rollback, delete/report gates, and keyboard submit behavior with no component tests.",
+        "src/routes/tema.$messageId.tsx wires getThread, listRooms, SignalR changed handlers, JoinThread/LeaveThread, sessionStorage reply intent, nested reply rendering, collapse state, and scroll behavior with no route-level or integration test."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "legacy_frontend_monolith_untested",
+      "summary": "The duplicate alb_sheshi frontend keeps a large monolithic app path with no tests",
+      "confidence": "medium",
+      "suggestion": "Either mark alb_sheshi/frontend as archived/excluded if it is not an active production path, or give it the same minimal frontend test harness recommended for src so App-level API/auth/message flows are covered before further changes.",
+      "related_files": [
+        "alb_sheshi/frontend/package.json",
+        "alb_sheshi/frontend/src/App.tsx",
+        "alb_sheshi/frontend/src/api.ts"
+      ],
+      "evidence": [
+        "desloppify includes alb_sheshi/frontend/src/App.tsx in scope, and the file is a 1360 LOC frontend module with no adjacent test files.",
+        "alb_sheshi/frontend/src/api.ts is the client API boundary for that frontend, but there are no tests around its request/response contracts.",
+        "The repository contains server tests under both server/Sheshi.Api.Tests and alb_sheshi/server/Sheshi.Api.Tests, but no equivalent frontend test coverage under alb_sheshi/frontend."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "duplicate_message_pagination_shapes",
+      "summary": "Message listing APIs expose arrays in one app surface and cursor pages in the parallel app surface",
+      "confidence": "high",
+      "suggestion": "Pick one production API shape for message collections. Prefer the cursor-page envelope if pagination is the intended direction, then update the older src/lib/sheshi.ts/root server surface or clearly retire the duplicate legacy copy so developers do not have to infer which contract applies.",
+      "related_files": [
+        "src/lib/sheshi.ts",
+        "alb_sheshi/frontend/src/api.ts",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs"
+      ],
+      "evidence": [
+        "src/lib/sheshi.ts listMessages(roomId: string): Promise<MessageRow[]> calls /api/rooms/{roomId}/messages and returns a bare MessageRow array.",
+        "alb_sheshi/frontend/src/api.ts api.messages(roomId, cursor, token) calls the same endpoint family and returns Promise<CursorPage<Message>> with items and next_cursor.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs ListRoomMessages returns ActionResult<IReadOnlyList<MessageDto>>, while alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs ListRoomMessages returns ActionResult<CursorPageDto<MessageDto>>.",
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs defines CursorPageDto<T>, but the root server copy has no equivalent envelope for the same resource family."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "token_parameter_position_drift",
+      "summary": "Frontend API methods place auth tokens in different positions across similar calls",
+      "confidence": "medium",
+      "suggestion": "Normalize exported API method signatures around a single convention, such as api.messages({ roomId, cursor, token }) for optional query/auth parameters or token-first for every authenticated call. The object-argument shape is the simpler fix for reads because it removes positional placeholders.",
+      "related_files": [
+        "alb_sheshi/frontend/src/api.ts",
+        "alb_sheshi/frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "alb_sheshi/frontend/src/api.ts write methods put token first: createRoom(token, input), postMessage(token, input), upvote(token, id), removeUpvote(token, id).",
+        "Read methods in the same exported api object put token last and optional: messages(roomId, cursor, token), thread(id, token), highlights(mode, token), while me(token) is token-only.",
+        "Calling an authenticated paginated read requires a placeholder cursor argument, e.g. messages(roomId, null, token), which is easy to get wrong under edge cases where a caller has a token but no cursor."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "stale_server_room_auth_drift",
+      "summary": "Duplicate server trees disagree on who may create rooms",
+      "confidence": "high",
+      "suggestion": "Remove one server tree from production review/build paths, or sync the documented `server/Sheshi.Api` copy so POST /api/rooms uses `[Authorize(Roles = Roles.Admin)]` and shares the same service/test contract as `alb_sheshi/server/Sheshi.Api`.",
+      "related_files": [
+        "server/README.md",
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs"
+      ],
+      "evidence": [
+        "server/README.md instructs developers to run `dotnet run --project server/Sheshi.Api`, making the top-level server copy look canonical.",
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs line 35 uses `[Authorize]` on POST /api/rooms, allowing any authenticated user through the controller gate.",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs line 27 uses `[Authorize(Roles = Roles.Admin)]` for the same POST /api/rooms route.",
+        "alb_sheshi/server/Sheshi.Api.Tests/CoreApiTests.cs lines 39-66 codify the intended behavior: unauthenticated users get Unauthorized and normal authenticated users get Forbidden."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "authorization_consistency",
+      "identifier": "role_string_literal_drift",
+      "summary": "Role checks mix shared constants with magic role strings",
+      "confidence": "medium",
+      "suggestion": "Add const policy strings such as `Roles.ModeratorOrAdmin = Moderator + \",\" + Admin` and use `Roles.Admin`/`Roles.ModeratorOrAdmin` in Authorize attributes; mirror those names in a small frontend role helper so display gates and server gates use the same vocabulary.",
+      "related_files": [
+        "alb_sheshi/server/Sheshi.Api/Domain/Enums.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+        "src/routes/moderim.tsx",
+        "src/components/AppShell.tsx"
+      ],
+      "evidence": [
+        "alb_sheshi/server/Sheshi.Api/Domain/Enums.cs defines `Roles.User`, `Roles.Moderator`, and `Roles.Admin` constants.",
+        "alb_sheshi/server/Sheshi.Api/Features/Moderation/ModerationController.cs line 12 uses `[Authorize(Roles = \"moderator,admin\")]` and line 72 uses `[Authorize(Roles = \"admin\")]` instead of the shared role constants.",
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs repeats the same literal role strings at lines 11 and 70.",
+        "src/routes/moderim.tsx lines 39-40 and src/components/AppShell.tsx line 16 repeat frontend role literals for moderator/admin display gating."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "ai_generated_debt",
+      "identifier": "unused_shadcn_template_surface",
+      "summary": "Unused generated UI wrappers add thousands of lines of template noise to production paths",
+      "confidence": "high",
+      "suggestion": "Delete the unused shadcn wrapper files from src/components/ui and keep only components imported by the app, plus any components intentionally planned for near-term use with a clear owner. If retaining a template component, remove restating comments from copied code so the remaining file reads as maintained project code.",
+      "related_files": [
+        "src/components/ui/sidebar.tsx",
+        "src/components/ui/chart.tsx",
+        "src/components/ui/carousel.tsx",
+        "src/components/ui/menubar.tsx",
+        "src/components/ui/form.tsx",
+        "components.json"
+      ],
+      "evidence": [
+        "components.json configures shadcn aliases for src/components/ui, and the directory contains 46 UI wrapper files totaling 4360 lines.",
+        "App code outside src/components/ui imports only button, dialog, input, label, radio-group, sonner, tabs, and textarea, leaving large wrappers such as sidebar.tsx, chart.tsx, carousel.tsx, menubar.tsx, and form.tsx unused.",
+        "src/components/ui/sidebar.tsx is an orphaned 744-line component with restating template comments such as 'Helper to toggle the sidebar', 'This sets the cookie to keep the sidebar state', and 'Random width between 50 to 90%'.",
+        "src/components/ui/chart.tsx is an orphaned 331-line component with generic helper comments such as 'Format: { THEME_NAME: CSS_SELECTOR }' and 'Helper to extract item config from a payload.'"
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "incomplete_migration",
+      "identifier": "parallel_runnable_app_trees",
+      "summary": "Two runnable app/backend trees preserve divergent migration states and API contracts",
+      "confidence": "high",
+      "suggestion": "Choose one canonical application tree, then remove or archive the other outside the production source tree. If alb_sheshi is the newer target, move its missing backend/frontend changes into the root tree and delete the duplicate packages; if the root tree is canonical, delete alb_sheshi or mark it explicitly out of scope so future migrations and API changes have one place to land.",
+      "related_files": [
+        "package.json",
+        "alb_sheshi/frontend/package.json",
+        "src/lib/api-client.ts",
+        "alb_sheshi/frontend/src/api.ts",
+        "server/Sheshi.Api/Domain/Message.cs",
+        "alb_sheshi/server/Sheshi.Api/Domain/Message.cs",
+        "alb_sheshi/server/Sheshi.Api/Migrations/20260608125359_ThreadMetadata.cs"
+      ],
+      "evidence": [
+        "Root package.json exposes the root app as the normal Vite/TanStack surface with dev/build scripts at lines 6-12, while alb_sheshi/frontend/package.json exposes a separate frontend with its own dev/build scripts at lines 6-9.",
+        "src/lib/api-client.ts defines the root API contract as api/apiJson/apiForm with stored bearer tokens and refresh-on-401 at lines 22-88; alb_sheshi/frontend/src/api.ts defines a separate endpoint object whose methods require tokens to be passed at call sites at lines 47-79.",
+        "server/Sheshi.Api/Domain/Message.cs lacks RootMessageId and Depth, while alb_sheshi/server/Sheshi.Api/Domain/Message.cs includes both fields; alb_sheshi/server/Sheshi.Api/Migrations/20260608125359_ThreadMetadata.cs adds the corresponding columns and indexes, and no matching migration exists under server/Sheshi.Api/Migrations."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change"
+    },
+    {
+      "dimension": "package_organization",
+      "identifier": "duplicate_app_trees",
+      "summary": "A divergent alb_sheshi subtree duplicates the canonical frontend/backend layout",
+      "confidence": "high",
+      "suggestion": "Stage the reorg around one canonical app. First decide whether root src/ and server/ are authoritative, which the docs already imply. Move any still-needed alb_sheshi/frontend behavior into target folders under root src/ only: route views into src/routes, shared product components into src/components, API/auth/realtime helpers into src/lib and src/hooks, and strings into src/i18n. Then reconcile backend-only deltas from alb_sheshi/server into server/ feature folders, preserving server/Sheshi.Api as the only backend project. After parity is verified, delete or archive alb_sheshi/ outside the production tree and update package scripts/docs to mention only root npm run build, npm run dev -- --host localhost --port 3001, dotnet test from server, and dotnet run --project server/Sheshi.Api. Validate with npm run build, npm run lint, cd server && dotnet test, and rg \"alb_sheshi|frontend/src/App|frontend/src/api\" docs package.json server src to catch stale references.",
+      "related_files": [
+        "docs/sheshi-dotnet-backend-master-spec.md",
+        "alb_sheshi/frontend/src/App.tsx",
+        "alb_sheshi/frontend/src/api.ts",
+        "src/lib/sheshi.ts",
+        "server/README.md",
+        "alb_sheshi/server/README.md"
+      ],
+      "evidence": [
+        "docs/sheshi-dotnet-backend-master-spec.md lines 121-131 documents the repo layout as root src/ for the React app and root server/ for the .NET backend.",
+        "alb_sheshi/frontend/src/App.tsx lines 1-45 define a separate standalone React application with local route parsing and app-wide state instead of using the root src/routes, src/components, src/hooks, and src/lib layout.",
+        "alb_sheshi/frontend/src/api.ts lines 1-87 defines a separate API client and route helpers for the same /api/rooms, /api/messages, /api/auth, /api/highlights surface that root src/lib/sheshi.ts and src/lib/api-client.ts own.",
+        "diff -qr server alb_sheshi/server reports many differing production files, including AuthController.cs, MessageService.cs, ModerationController.cs, Program.cs, migrations, README.md, and tests."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "error_capture_import_side_effect",
+      "summary": "SSR error capture depends on importing a module for global listener registration",
+      "confidence": "high",
+      "suggestion": "Replace the side-effect import with an explicit installErrorCapture() export from src/lib/error-capture.ts, call it once from src/server.ts before getServerEntry() can import the TanStack server entry, and keep consumeLastCapturedError as the read API. This preserves behavior while making the boot-order requirement visible at the call site.",
+      "related_files": [
+        "src/server.ts",
+        "src/lib/error-capture.ts"
+      ],
+      "evidence": [
+        "src/server.ts:1 imports ./lib/error-capture solely for side effects, then imports consumeLastCapturedError from the same module at src/server.ts:3.",
+        "src/lib/error-capture.ts:11-16 registers globalThis error and unhandledrejection listeners at module scope.",
+        "src/lib/error-capture.ts:4-8 stores the most recent captured error in a single module-level lastCapturedError slot."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "unconditional_startup_migration",
+      "summary": "API startup always performs database migration and seed work before serving requests",
+      "confidence": "medium",
+      "suggestion": "Gate MigrateAsync behind a Database:AutoMigrate setting or development/test environment check, while keeping idempotent seed behavior explicit. The alternate alb_sheshi/server/Sheshi.Api/Program.cs:218-231 already shows the intended pattern: dev migrates by default and production opts in.",
+      "related_files": [
+        "server/Sheshi.Api/Program.cs",
+        "server/Sheshi.Api.Tests/ApiFactory.cs"
+      ],
+      "evidence": [
+        "server/Sheshi.Api/Program.cs:144-151 creates a service scope, resolves AppDbContext, runs db.Database.MigrateAsync(), and calls DbSeeder.SeedAsync(app.Services) on every host boot.",
+        "server/Sheshi.Api.Tests/ApiFactory.cs:9-12 documents that tests rely on the app startup pipeline applying migrations and seeding automatically, so host construction is coupled to a writable database."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "unused_chart_component_surface",
+      "summary": "Large unused chart component adds unearned UI surface",
+      "confidence": "high",
+      "suggestion": "Delete src/components/ui/chart.tsx and the unused Recharts dependency path if no near-term chart feature owns it; otherwise add the feature import that makes this component part of the active product surface.",
+      "related_files": [
+        "src/components/ui/chart.tsx"
+      ],
+      "evidence": [
+        "Repository search found no imports of src/components/ui/chart.tsx, while the file defines ChartContainer, ChartStyle, ChartTooltipContent, ChartLegendContent, and Recharts-specific payload helpers.",
+        "The app has no visible chart feature in the inspected route files, so this module reads as retained scaffold rather than an earned abstraction."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "unused_sidebar_component_surface",
+      "summary": "Large unused sidebar module obscures the actual navigation design",
+      "confidence": "high",
+      "suggestion": "Remove src/components/ui/sidebar.tsx if the app has standardized on AppShell, or wire AppShell to this sidebar system and delete the competing unused navigation primitives.",
+      "related_files": [
+        "src/components/ui/sidebar.tsx"
+      ],
+      "evidence": [
+        "Repository search found no imports of src/components/ui/sidebar.tsx.",
+        "The file is 744 lines and owns provider state, cookies, keyboard shortcuts, mobile Sheet behavior, layout primitives, menu variants, actions, badges, skeletons, and submenus.",
+        "The active app navigation appears to use AppShell/route-level layout rather than this sidebar system, so a new developer has to determine whether this large component family is real or leftover."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "legacy_app_monolith",
+      "summary": "Legacy App.tsx mixes application orchestration and most views in one file",
+      "confidence": "high",
+      "suggestion": "Split along existing boundaries without adding new abstractions: move route/view components such as Home, RoomView, ThreadView, AuthPage, and Profile into focused sibling files, and keep App.tsx responsible for top-level state orchestration until repeated state patterns justify hooks.",
+      "related_files": [
+        "alb_sheshi/frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "App() owns route parsing, history navigation, theme persistence, auth persistence, provider loading, callback handling, room/highlight/presence loading, SignalR setup, room message paging, thread loading, optimistic voting, saving, sharing, message submission, auth modal state, create-room modal state, and toast state.",
+        "The same file also defines TopBar, RoomRail, Home, RoomView, ThreadView, ThreadCard, ActionRow, ReplyTree, Composer, ReplyComposer, FocusPanel, AuthPage, Profile, CreateRoomDialog, Dialog, and data-ranking helpers.",
+        "A new team member cannot understand ownership in 30 seconds because changing one workflow requires scanning a 1360-line module with both app orchestration and UI implementation."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "11034a3eae6cc0be",
+      "reasoning": "The setState-only effect is a purposeful reset of local optimistic UI after the backing message changes, not an avoidable responsibility split."
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "927debddde850f24",
+      "reasoning": "The module has a clear transport responsibility, and Promise-returning wrappers are an acceptable API shape here."
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "05355c5173d6beeb",
+      "reasoning": "The async wrapper pattern is consistent and simpler than adding extra service objects or dependency wrappers."
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "c1cf4ca97964e98d",
+      "reasoning": "The function is long but has one coherent route responsibility, which the dimension rubric explicitly says to skip."
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "66799bce6a487619",
+      "reasoning": "The setState-only effect supports a form draft reset and does not indicate mixed responsibilities."
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "4a0b49805be7d086",
+      "reasoning": "The component is close to the design boundary, but the responsibilities are all route-local and understandable after one pass."
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "7cc3a37df9c338c5",
+      "reasoning": "The file is used through framework configuration rather than imports, and its body has one clear responsibility."
+    },
+    {
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "f49fa3feeb8ccc71",
+      "reasoning": "Generated framework output is not an authored mixed-responsibility module."
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "api_json_204_type_lie",
+      "summary": "apiJson<T> can return undefined despite promising Promise<T>",
+      "confidence": "high",
+      "suggestion": "Split the contract into explicit helpers, for example keep apiJson<T>() for JSON responses that must parse a body and add apiNoContent() or apiJson<T | void>() overloads for 204-capable endpoints. Remove the blanket undefined as T cast so non-void callers cannot silently accept no-content responses.",
+      "related_files": [
+        "src/lib/api-client.ts"
+      ],
+      "evidence": [
+        "src/lib/api-client.ts:49 declares export async function apiJson<T>(...): Promise<T>.",
+        "src/lib/api-client.ts:57 returns undefined as T whenever the HTTP response status is 204.",
+        "Callers use both apiJson<void> for no-content endpoints and apiJson<ApiUser>/apiJson<Room[]> for data endpoints, so the helper's public contract does not encode which calls may return no body."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "getter_names_hide_initialization",
+      "summary": "Getter-style exports hide initialization side effects",
+      "confidence": "medium",
+      "suggestion": "Rename the side-effecting entry points to make initialization explicit, such as ensureRealtimeConnection() and initializeAuthAndGetSnapshot(), or split each into a pure peek/get function plus an ensure/init function used by callers that want construction.",
+      "related_files": [
+        "src/lib/realtime.ts",
+        "src/hooks/use-auth.ts"
+      ],
+      "evidence": [
+        "src/lib/realtime.ts:7 exports getRealtimeConnection(), but lines 10-15 construct and cache a new HubConnection on the first call.",
+        "src/hooks/use-auth.ts:87 exports getAuthSnapshot(), but line 88 calls init(), and init() at lines 55-61 can start loadUserFromTokens() and subscribe to token-store changes.",
+        "Pure getters elsewhere, such as src/lib/token-store.ts:13 getStoredTokens(), only read and return state, so these exported get* APIs are surprising by comparison."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "stale_thread_reload",
+      "summary": "Thread reload can apply a stale getThread result after navigation changes messageId",
+      "confidence": "high",
+      "suggestion": "Move reload into the effect or pass it a request token/cancelled flag, and check that flag before setThread, lastReplyIdRef writes, scroll scheduling, and setLoading(false).",
+      "related_files": [
+        "src/routes/tema.$messageId.tsx"
+      ],
+      "evidence": [
+        "reload() closes over messageId and calls getThread(messageId).then(... setThread(data) ...) at lines 70-90.",
+        "The effect at lines 106-129 reruns for joinedThreadId/messageId/userId and sets disposed only for realtime handler attachment/removal; reload() itself has no disposed/request-id check before setThread(data).",
+        "A similar route fetch in src/routes/dhoma.$slug.tsx lines 49-65 uses a cancelled flag before setting state, so this route is an outlier from an existing safer pattern."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "auth_load_race",
+      "summary": "Overlapping auth loads can restore a user after tokens were replaced or cleared",
+      "confidence": "high",
+      "suggestion": "Capture the access token used for the load and, after await, compare it with the current stored token before setting user; ignore stale completions or use a monotonically increasing load id.",
+      "related_files": [
+        "src/hooks/use-auth.ts",
+        "src/lib/token-store.ts"
+      ],
+      "evidence": [
+        "loadUserFromTokens() captures tokens at lines 38-45, awaits apiJson('/api/me') at line 47, then writes user state using getStoredTokens() at line 48 without verifying the stored tokens still match the request that just completed.",
+        "clearStoredTokens() and setStoredTokens() synchronously emit token-store listeners at src/lib/token-store.ts lines 26-35, which can start a newer loadUserFromTokens while an older one is still in flight.",
+        "If an older /api/me request resolves after signOutLocal() or another token update, it can set { session: null, user, isReady: true }, producing an inconsistent authenticated user with no session."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "logic_clarity",
+      "identifier": "async_facade_without_await",
+      "summary": "API facade wrappers are marked async even when they only return another promise",
+      "confidence": "medium",
+      "suggestion": "Remove async from the pure pass-through wrappers and return Promise<T> directly, reserving async for functions that await to transform errors or branch on results.",
+      "related_files": [
+        "src/lib/sheshi.ts"
+      ],
+      "evidence": [
+        "listRooms(), createRoom(), listMessages(), listReplies(), and listHighlights are declared async but their bodies only return apiJson(...) directly at lines 45-46, 58-65, 68-69, 81-82, and 160-161.",
+        "These functions do not contain framework-required async signatures or local try/catch logic; neighboring functions such as getRoomBySlug() and getMessage() use async because they actually await to translate 404s to null.",
+        "Mechanical concern confirmed: smells::src/lib/sheshi.ts::async_no_await."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "frontend_api_optional_drift",
+      "summary": "Root frontend API models mark server-guaranteed response fields as optional",
+      "confidence": "high",
+      "suggestion": "Tighten src/lib/sheshi.ts to match the server DTOs: make Room.thread_count required, latest_activity_at present nullable, and MessageRow.author/upvotes/reply_count/voted required. Keep null only where the backend record is nullable.",
+      "related_files": [
+        "src/lib/sheshi.ts",
+        "server/Sheshi.Api/Features/Messages/MessageDtos.cs",
+        "server/Sheshi.Api/Features/Rooms/RoomDtos.cs",
+        "alb_sheshi/frontend/src/types.ts"
+      ],
+      "evidence": [
+        "src/lib/sheshi.ts lines 8-9 declare Room.thread_count? and latest_activity_at?, while server/Sheshi.Api/Features/Rooms/RoomDtos.cs lines 3-9 returns ThreadCount as a required int and LatestActivityAt as a present nullable DateTimeOffset.",
+        "src/lib/sheshi.ts lines 28-31 declare MessageRow.author?, upvotes?, reply_count?, and voted?, while server/Sheshi.Api/Features/Messages/MessageDtos.cs lines 16-19 returns Author, Upvotes, ReplyCount, and Voted as present DTO fields.",
+        "alb_sheshi/frontend/src/types.ts lines 17-24 and 33-48 show the migrated frontend already models the same fields as required, so the root frontend type is a stale looser variant."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "moderation_enum_dto_weakened",
+      "summary": "Moderation report DTO weakens domain enums into raw strings",
+      "confidence": "high",
+      "suggestion": "Change ModReportDto.Reason to ReportReason and Status to ReportStatus, import Sheshi.Api.Domain in ModerationDtos.cs, and pass r.Reason/r.Status directly from ModerationController.",
+      "related_files": [
+        "server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+        "server/Sheshi.Api/Domain/Enums.cs",
+        "server/Sheshi.Api/Program.cs"
+      ],
+      "evidence": [
+        "server/Sheshi.Api/Domain/Enums.cs defines ReportReason and ReportStatus, but server/Sheshi.Api/Features/Moderation/ModerationDtos.cs lines 7 and 9 expose Reason and Status as string.",
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs lines 30-32 manually projects r.Reason and r.Status through ToString().ToLowerInvariant(), bypassing the enum-typed API shape.",
+        "server/Sheshi.Api/Program.cs line 27 already registers JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower), so enum-typed DTO properties would preserve the same snake-case wire format."
+      ],
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "review_quality": {
+    "batch_count": 20,
+    "dimension_coverage": 0.05,
+    "evidence_density": 3.967,
+    "high_score_missing_issue_note": 0
+  },
+  "context_updates": {
+    "cross_module_architecture": {
+      "add": [
+        {
+          "header": "Clear local frontend dependency direction",
+          "description": "The root frontend is easy to reason about within its own tree because route files consume components and shared lib helpers, while shared helpers do not depend back on route modules. This gives local changes a predictable direction despite the broader repo duplication.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Backend layers mostly point inward",
+          "description": "The API projects generally keep controllers, services, data, domain, storage, auth, and realtime in recognizable buckets. Controllers depend on services/data/domain, while domain types stay free of feature/controller dependencies.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Generated route cycle is benign",
+          "description": "The reported route tree cycle comes from TanStack Router generated code and a type-only reference to the router factory, so it is better treated as framework noise than as a hand-authored boundary violation.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Parallel implementation roots have drifted",
+          "description": "Root and nested frontend/backend trees are both runnable-looking but contain different architecture and behavior. This makes the true ownership boundary unclear and raises the chance of common changes landing in only one implementation.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "high_level_elegance": {
+      "add": [
+        {
+          "header": "Backend folders match runtime capabilities",
+          "description": "The active API tree has predictable domain ownership: Auth owns identity flows, Features owns product endpoints, Realtime owns SignalR/presence, Storage owns image persistence, and Domain owns entities. That structure lets backend changes stay mostly inside the capability they affect.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend routes expose product topology",
+          "description": "The active frontend route files map cleanly to visible product areas such as rooms, threads, auth, moderation, profile, focus, and sitemap. This gives a new engineer a useful first navigation model before reading component internals.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Nested alb_sheshi blurs canonical ownership",
+          "description": "The repository contains a second full application tree with its own frontend, backend, infra, docs, and divergent server code. Because it is not excluded or clearly labeled archival, it weakens trust in which top-level packages are authoritative.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Public project metadata lags structure",
+          "description": "The root package name and available docs do not form one clear contract for the current Sheshi app layout. This makes runtime reality discoverable only after comparing package files, READMEs, and duplicate directories.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "convention_outlier": {
+      "add": [
+        {
+          "header": "Root frontend conventions are cohesive",
+          "description": "The current `src` frontend separates file routes, feature components, hooks, library API helpers, and shadcn UI primitives in predictable places. This lets developers transfer patterns across route and component modules without learning a new local style per file.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Shadcn UI naming is intentional",
+          "description": "The kebab-case compound filenames under `src/components/ui` come from the configured shadcn primitive layer, where multi-word component families naturally use names like `alert-dialog` and `dropdown-menu`. Treating that as naming drift would push against the external convention developers already expect.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel app roots obscure canonical code",
+          "description": "The repository contains both root `src`/`server` code and an `alb_sheshi` app/server tree with overlapping domains but divergent implementation patterns. Because both trees look production-shaped and differ behaviorally, developers must inspect project wiring before trusting a convention they find.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Backend feature folders are locally predictable",
+          "description": "Inside the root backend, feature folders group controllers, DTOs, and services by domain instead of scattering related API code across unrelated directories. This supports navigation once the developer is in the canonical `server/Sheshi.Api` tree.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    },
+    "error_consistency": {
+      "add": [
+        {
+          "header": "Central ApiError HTTP boundary",
+          "description": "HTTP failures pass through a single api() wrapper that throws ApiError with status and parsed payload where available. This gives most service calls a predictable failure shape before route/component code starts adapting it.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Null reserved for not-found reads",
+          "description": "Read helpers for room, message, and thread lookup intentionally convert 404 ApiError responses to null. That convention is understandable because callers render not-found states for those resource lookups.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "SSR has explicit error boundaries",
+          "description": "Server startup and request middleware handle unexpected SSR failures at the top level, including a documented h3 swallowed-error normalization path. This is a deliberate boundary rather than accidental catch-and-hide behavior.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Background loaders collapse failures",
+          "description": "Many non-form data loads treat failed requests as empty optional data, which makes outages and permission problems look like normal empty states. This creates the main unpredictability in developer-facing error behavior.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "String sentinel domain errors",
+          "description": "Some domain helpers translate structured ApiError failures into plain Error messages such as UNAUTH and TOO_LONG. That simplifies local UI checks but loses status, payload, and cause context across the boundary.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "naming_quality": {
+      "add": [
+        {
+          "header": "Domain API verbs are predictable",
+          "description": "The frontend Sheshi API wrapper consistently uses list/get/create/post/toggle/softDelete/submit names that map to user-visible domain actions. This lets callers infer both resource and behavior without opening the helper.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Backend action names mirror routes",
+          "description": "Controller methods use conventional HTTP-domain names such as ListRoomMessages, GetMessage, GetThread, and PostMessage. The names line up with route attributes and make endpoint intent easy to scan.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Compound UI filenames follow shadcn",
+          "description": "Multiword files in src/components/ui use kebab-case because they mirror shadcn/Radix component naming. The convention is localized and recognizable, so it helps navigation more than it harms consistency.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    },
+    "abstraction_fitness": {
+      "add": [
+        {
+          "header": "API helpers earn their layer",
+          "description": "The main HTTP client and domain API module add auth refresh, JSON/FormData translation, error normalization, validation, and null-on-404 contracts, so callers are shielded from backend protocol details without navigating empty pass-through wrappers.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Framework single-use files are intentional",
+          "description": "The single-use route, generated route tree, server entry, and root toaster files correspond to framework lifecycle and composition boundaries. Their one-import shape does not indicate avoidable abstraction ceremony.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Little interface ceremony",
+          "description": "The inspected TypeScript uses concrete exported shapes and component props instead of broad one-implementation service interfaces or delegation-heavy classes. Developers do not have to chase interface ecosystems to find runtime behavior.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Monolithic legacy frontend remains direct",
+          "description": "alb_sheshi/frontend/src/App.tsx concentrates many concerns in one component, which is a decomposition issue more than an abstraction-fitness defect. It reduces indirection, but future changes may pressure extraction into earned feature modules.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "dependency_health": {
+      "add": [
+        {
+          "header": "Core web stack is coherent",
+          "description": "The live application centers on React 19, TanStack Start/Router/Query, Tailwind 4, SignalR, and Radix-backed shadcn primitives, so the main technology choices are understandable despite cleanup needs.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Generated router cycle is type-only",
+          "description": "The mechanical cycle is from TanStack Router's generated routeTree.gen.ts importing getRouter only as an import type for module augmentation. That does not create runtime circular loading risk and should not drive dependency-health scoring.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Template UI dependencies remain stocked",
+          "description": "The package manifest still carries many Radix/shadcn companion packages because unused generated UI wrapper files remain in src/components/ui. This makes dependency intent harder to read and keeps the installed tree broader than the app behavior requires.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Duplicate frontend manifests can drift",
+          "description": "The root app and alb_sheshi/frontend each maintain package.json and package-lock.json with overlapping frontend dependencies but different declared ranges. Without a workspace or single authoritative manifest, future installs can resolve different tool and runtime versions.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "low_level_elegance": {
+      "add": [
+        {
+          "header": "Backend helpers stay local and direct",
+          "description": "Controller and service helpers are extracted at the point where they simplify one operation: DTO enrichment, room normalization, thread traversal, and request parsing. That keeps control flow readable without creating a separate abstraction layer to navigate.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend API wrappers are proportionate",
+          "description": "The current src/lib/sheshi.ts functions mostly do one transport operation plus the smallest needed normalization. This gives callers predictable behavior without forcing them through broad client abstractions.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Legacy frontend retains local sprawl",
+          "description": "The older alb_sheshi frontend has not been reduced to the cleaner component and hook style used in the current src app. Its internals combine side effects, rendering, optimistic state, and repeated interaction controls, so low-level readability depends heavily on which tree a developer is editing.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "mid_level_elegance": {
+      "add": [
+        {
+          "header": "Frontend API boundary is mostly centralized",
+          "description": "The api-client and sheshi modules give the frontend one main place for HTTP mechanics, token refresh, DTO typing, and domain-level calls. This makes most page-to-backend handoffs explicit and unsurprising.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Backend JSON shape configured once",
+          "description": "Program.cs applies snake_case and enum JSON policy globally, so controllers and DTO records do not need ad-hoc serialization mapping at each endpoint. That keeps the backend/frontend DTO boundary easy to reason about.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Message enrichment has an obvious collaborator",
+          "description": "MessageService owns author, vote, reply count, and caller-voted enrichment across several message endpoints. The pattern reduces repeated mapper queries at the controller boundary.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Realtime protocol leaks into routes",
+          "description": "The shared realtime module creates the connection but leaves event names, join/leave method names, startup handling, and cleanup choreography to route components. This makes the route-to-realtime seam harder to understand and change than the HTTP API seam.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Message workflows remain controller-centered",
+          "description": "MessageController coordinates persistence, validation, storage, thread traversal, enrichment, and notification while MessageService handles only enrichment. The HTTP layer therefore owns too much cross-module workflow state.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "test_strategy": {
+      "add": [
+        {
+          "header": "Backend integration tests use real boundaries",
+          "description": "The ASP.NET test suite boots the application through WebApplicationFactory against Testcontainers PostgreSQL, so the tests validate HTTP routing, EF mappings, migrations, seeded roles, auth, and persistence together. This gives backend developers meaningful confidence without coupling tests to controller internals.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Backend covers core product flows",
+          "description": "Existing server tests exercise auth lifecycle, profile updates, rooms, messages, replies, voting, reports, highlights, moderation, SignalR notifications, presence, and multipart uploads. The coverage is concentrated on behavior users and API clients depend on.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "No snapshot testing dependency observed",
+          "description": "The current test portfolio is assertion-based HTTP and model verification, not snapshot-driven. That avoids the common fragility where large serialized outputs become the main oracle.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend has no automated test layer",
+          "description": "The React client contains stateful API, auth, realtime, route, and component behavior but the package has no test script or frontend testing dependencies. Developers changing the client must rely on build/lint and manual exploration rather than automated regression checks.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Generated router output should be skipped",
+          "description": "src/routeTree.gen.ts is generated TanStack router output, so its detector signal is not strategically important coverage debt. Tests should target routes and navigation behavior, not the generated tree file itself.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "api_surface_coherence": {
+      "add": [
+        {
+          "header": "Consistent async domain wrappers",
+          "description": "The main src/lib/sheshi.ts client surface gives developers a regular async vocabulary for rooms, messages, threads, votes, deletes, reports, and highlights. Most operations return typed Promises and keep create/post/report payloads in input objects rather than long parameter lists.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Layered transport helper shapes",
+          "description": "src/lib/api-client.ts gives raw, JSON, and multipart calls distinct helper names, which keeps most endpoint wrappers from hand-rolling fetch behavior. That separation makes the common JSON path predictable while still leaving an escape hatch for file upload and raw no-content responses.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Typed service result records",
+          "description": "The newer alb_sheshi server services use explicit result records for create/delete/report outcomes, making controller failure handling visible without overloading null or exception behavior. This improves API honesty at the service-controller boundary.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel API surface drift",
+          "description": "The repository carries root and alb_sheshi client/server surfaces for the same room/message domain, and those surfaces have diverged on pagination envelopes, DTO fields, and token placement. Developers have to check which copy they are touching before assuming the contract.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "authorization_consistency": {
+      "add": [
+        {
+          "header": "Protected write pattern is test-backed",
+          "description": "Message, room, and moderation writes in the evolved API copy use server-side authorization checks and integration tests exercise unauthenticated, regular, moderator, admin, and banned-user cases. This gives developers a real contract to extend rather than relying on frontend-only checks.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Stale API tree weakens trust",
+          "description": "The repository keeps two server implementations with divergent authorization behavior while documentation still points at the top-level server path. That migration residue makes it unclear which protected-resource pattern a developer should copy.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Role constants only partly adopted",
+          "description": "Backend role constants exist, but some Authorize attributes and frontend gates still spell roles as literals. This is not currently a broad security hole, but it leaves permission vocabulary vulnerable to drift.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "ai_generated_debt": {
+      "add": [
+        {
+          "header": "Core app code is low ceremony",
+          "description": "The main route, component, and API helper files are generally terse and focused, with few comments and no broad debug logging. Developers spend most attention on UI and network behavior rather than filtering boilerplate prose.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Boundary error handling is mostly justified",
+          "description": "The repeated try/catch shape appears around fetch calls, auth failures, optimistic UI rollback, browser APIs, and SSR failure normalization. Those are genuine API or runtime boundaries, so the pattern should not be treated as pure defensive overengineering.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Why comments explain deployment constraints",
+          "description": "High-comment files such as config.server.ts and error-capture.ts explain Cloudflare env binding, client/server secret exposure, and h3 SSR error behavior. These comments preserve operational context that is not obvious from the code alone.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Unpruned generated UI component set",
+          "description": "The UI directory still carries many unused shadcn-style wrappers, including large orphaned files with copied explanatory comments. This makes search and navigation noisier than the actual product surface requires.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "incomplete_migration": {
+      "add": [
+        {
+          "header": "Supabase removal has a documented target",
+          "description": "The docs identify the intended migration direction and record Supabase SDK/runtime wiring removal, so the old platform migration is not completely untracked. That lowers ambiguity around the intended backend direction even though duplicate app trees remain.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel runnable trees blur migration ownership",
+          "description": "Both root and alb_sheshi contain runnable frontend/backend source with different API-client shapes and backend schema states. This makes future work structurally ambiguous because developers have to decide which tree owns a migration fix before they can safely change behavior.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "package_organization": {
+      "add": [
+        {
+          "header": "Root app layers are predictable",
+          "description": "The objective coupling matrix supports the root src/ split: routes depend on product components, UI primitives, hooks, i18n, and lib, while shared lib code is consumed broadly with high fan-in. This gives developers a useful default path for finding route behavior versus shared infrastructure.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Shadcn UI flatness is conventional",
+          "description": "src/components/ui is large, but components.json explicitly points the shadcn ui alias at that folder and the files are cohesive primitive wrappers. The flat directory is less navigationally ideal at 46 files, but it is not strong evidence of mixed ownership.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel alb_sheshi tree blurs authority",
+          "description": "The documented layout names root src/ and server/ as canonical, yet alb_sheshi contains another frontend and divergent server copy. That makes ownership hard to infer from paths and invites fixes to land in the wrong implementation.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "initialization_coupling": {
+      "add": [
+        {
+          "header": "Config reads avoid stale env snapshots",
+          "description": "Server config and API base URL are exposed as getter functions rather than module-level captured constants, which keeps imports cheap and avoids fragile env timing in tests and worker-style runtimes.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Browser storage stays runtime guarded",
+          "description": "Token persistence reads localStorage only inside functions with typeof window checks, so SSR imports do not immediately touch browser-only APIs.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Router state is per instance",
+          "description": "getRouter() constructs QueryClient and router together instead of exporting a shared singleton, reducing cross-request and cross-test state bleed.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Presence state lives behind DI",
+          "description": "PresenceTracker is a singleton, but it is registered through ASP.NET DI and protects internal dictionaries with a lock and snapshot copies, making the shared state boundary explicit.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "SSR error capture is import-driven",
+          "description": "The error recovery path depends on importing a module that installs global listeners at module scope, so the required boot order is real but hidden in import syntax.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Database work is embedded in API boot",
+          "description": "The primary server host runs migrations and seeding during startup, which makes host construction depend on database availability and migration permissions before the app can serve requests.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "design_coherence": {
+      "add": [
+        {
+          "header": "Route pages are mostly focused",
+          "description": "The current src/routes files generally keep one route workflow per file and use small local helpers where that improves scanability. This gives developers a clear place to make page-level changes without extra ceremony.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "API layer has simple ownership",
+          "description": "api-client owns transport concerns while sheshi.ts owns domain endpoint names and types. The split is direct enough that developers can predict where token refresh, 404 handling, and message operations live.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Legacy frontend is a monolith",
+          "description": "alb_sheshi/frontend/src/App.tsx concentrates orchestration, routing, data loading, realtime behavior, and nearly all views in one module. That makes the older frontend much harder to explain or modify than the current route-based src tree.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Unused shadcn surface remains",
+          "description": "Large ui modules such as sidebar and chart are present without importers, so the component folder advertises capabilities the product does not currently use. This creates design noise even when the active components are straightforward.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Generated route tree is detector noise",
+          "description": "routeTree.gen.ts is generated TanStack Router wiring and should not be judged like authored design code. Its casts, ts-nocheck, and single importer are framework output rather than a signal to refactor.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "contract_coherence": {
+      "add": [
+        {
+          "header": "Not-found reads advertise null",
+          "description": "The main domain read helpers make the 404-to-null behavior explicit in their return types, so callers can distinguish absence from other API failures without reading every implementation.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Token storage verbs match effects",
+          "description": "The token-store module keeps read, write, clear, and subscribe responsibilities separated behind names that accurately describe their side effects.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Infrastructure helpers overstate contracts",
+          "description": "The shared API and singleton/auth helpers favor convenience over precise contracts, which is why their signatures and getter names hide important runtime behavior at subsystem boundaries.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "logic_clarity": {
+      "add": [
+        {
+          "header": "Guard clauses keep route states readable",
+          "description": "Primary UI routes tend to use explicit loading, empty, not-found, and auth guard branches, so ordinary render flow is easy to trace without reconstructing nested conditionals.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Async stale-guard pattern is inconsistent",
+          "description": "Some route fetches protect state writes after parameter changes, while thread and auth flows still allow older async completions to win; developers cannot assume route loaders share the same concurrency invariant.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "API facade mixes awaited and pass-through async",
+          "description": "The API layer uses async appropriately for error translation paths, but several exported wrappers are async only by declaration, which adds small ambiguity about where asynchronous branching actually happens.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    },
+    "type_safety": {
+      "add": [
+        {
+          "header": "Strict compilers on both active stacks",
+          "description": "The active TypeScript app uses strict mode and the .NET API enables nullable reference types, and both production builds complete cleanly. This gives developers a solid baseline where most type annotations are enforced rather than decorative.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "DTO records model most API contracts",
+          "description": "The backend generally uses explicit request and response records instead of loose dictionaries or dynamic payloads. That keeps controller contracts readable and lets nullable and enum decisions stay visible at API boundaries.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel frontend API models drift",
+          "description": "The root frontend and alb_sheshi frontend carry separate hand-written API model definitions, and the migrated copy is stricter for several message and room fields. This creates a type-safety maintenance risk because one side can silently preserve stale optionality.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Moderation enums are weakened at DTO edge",
+          "description": "Moderation report output converts domain enums into strings even though global JSON options already support enum string serialization. That small boundary shortcut makes the API contract less precise than the domain model.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  },
+  "review_scope": {
+    "reviewed_files_count": 0,
+    "successful_batch_count": 20,
+    "full_sweep_included": false,
+    "total_files": 81,
+    "imported_dimensions": [
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "contract_coherence",
+      "convention_outlier",
+      "cross_module_architecture",
+      "dependency_health",
+      "design_coherence",
+      "error_consistency",
+      "high_level_elegance",
+      "incomplete_migration",
+      "initialization_coupling",
+      "logic_clarity",
+      "low_level_elegance",
+      "mid_level_elegance",
+      "naming_quality",
+      "package_organization",
+      "test_strategy",
+      "type_safety"
+    ]
+  },
+  "provenance": {
+    "kind": "blind_review_batch_import",
+    "blind": true,
+    "runner": "codex",
+    "run_stamp": "20260609_211433",
+    "created_at": "2026-06-09T21:26:14+00:00",
+    "batch_count": 20,
+    "batch_indexes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "packet_path": "/Users/albiidrizi/Documents/sheshi/.desloppify/review_packet_blind.json",
+    "packet_sha256": "bd898442ddfecca255fdab9493758625e01c0b13c6969537a9ee5b14e9bbf0e5"
+  },
+  "assessment_coverage": {
+    "scored_dimensions": [
+      "naming_quality",
+      "logic_clarity",
+      "type_safety",
+      "contract_coherence",
+      "error_consistency",
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "high_level_elegance",
+      "mid_level_elegance",
+      "low_level_elegance",
+      "cross_module_architecture",
+      "initialization_coupling",
+      "convention_outlier",
+      "dependency_health",
+      "test_strategy",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "incomplete_migration",
+      "package_organization",
+      "design_coherence"
+    ],
+    "selected_dimensions": [
+      "naming_quality",
+      "logic_clarity",
+      "type_safety",
+      "contract_coherence",
+      "error_consistency",
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "high_level_elegance",
+      "mid_level_elegance",
+      "low_level_elegance",
+      "cross_module_architecture",
+      "initialization_coupling",
+      "convention_outlier",
+      "dependency_health",
+      "test_strategy",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "incomplete_migration",
+      "package_organization",
+      "design_coherence"
+    ],
+    "imported_dimensions": [
+      "abstraction_fitness",
+      "ai_generated_debt",
+      "api_surface_coherence",
+      "authorization_consistency",
+      "contract_coherence",
+      "convention_outlier",
+      "cross_module_architecture",
+      "dependency_health",
+      "design_coherence",
+      "error_consistency",
+      "high_level_elegance",
+      "incomplete_migration",
+      "initialization_coupling",
+      "logic_clarity",
+      "low_level_elegance",
+      "mid_level_elegance",
+      "naming_quality",
+      "package_organization",
+      "test_strategy",
+      "type_safety"
+    ],
+    "missing_dimensions": []
+  }
+}

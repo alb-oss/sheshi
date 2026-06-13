@@ -1,13 +1,14 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { CornerDownRight, ImagePlus, SendHorizontal, X } from "lucide-react";
 import { sq } from "@/i18n/sq";
-import { postMessage } from "@/lib/sheshi";
+import { postMessage, SheshiError } from "@/lib/sheshi";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const LEADING_REPLY_MENTIONS = /^(@[A-Za-z0-9._-]+\s*)+/;
 
 interface Props {
   roomId: string;
@@ -21,7 +22,6 @@ interface Props {
 
 export interface ComposerHandle {
   focus: () => void;
-  prefill: (text: string) => void;
 }
 
 export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
@@ -45,22 +45,6 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
 
   useImperativeHandle(ref, () => ({
     focus: () => textareaRef.current?.focus(),
-    prefill: (text: string) => {
-      setBody((prev) => {
-        const token = text.trim();
-        if (token && prev.split(/\s+/).includes(token)) return prev;
-        const needsSpace = prev && !prev.endsWith(" ") && !prev.endsWith("\n");
-        const next = prev ? prev + (needsSpace ? " " : "") + text : text;
-        return next;
-      });
-      requestAnimationFrame(() => {
-        const el = textareaRef.current;
-        if (!el) return;
-        el.focus();
-        const len = el.value.length;
-        el.setSelectionRange(len, len);
-      });
-    },
   }));
 
   // Autosize
@@ -82,6 +66,11 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     setImagePreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [image]);
+
+  useEffect(() => {
+    if (!replyContext) return;
+    setBody((current) => stripLeadingReplyMentions(current));
+  }, [replyContext?.label]);
 
   function clearImage() {
     setImage(null);
@@ -121,18 +110,25 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   }
 
   async function doSubmit() {
-    if (!body.trim() || posting) return;
+    const bodyToPost = replyContext ? stripLeadingReplyMentions(body) : body;
+    if ((!bodyToPost.trim() && !image) || posting) return;
     setPosting(true);
     try {
-      await postMessage({ room_id: roomId, body, parent_id: parentId, image });
+      await postMessage({ room_id: roomId, body: bodyToPost, parent_id: parentId, image });
       setBody("");
       clearImage();
       onClearReplyContext?.();
       onPosted?.();
     } catch (err: unknown) {
       const msg =
-        err instanceof Error && err.message === "TOO_LONG"
+        err instanceof SheshiError && err.code === "TOO_LONG"
           ? "Tepër i gjatë (>2000)"
+          : err instanceof SheshiError && err.code === "UNAUTH"
+            ? sq.errors.auth
+          : err instanceof SheshiError && err.code === "RATE_LIMITED"
+            ? sq.errors.rateLimited
+          : err instanceof SheshiError && err.code === "INVALID_IMAGE"
+            ? sq.errors.imageInvalid
           : sq.errors.generic;
       toast.error(msg);
     } finally {
@@ -146,34 +142,36 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   }
 
   const over = body.length > 1800;
-  const canSend = !!body.trim() && !posting;
+  const canSend = (!!body.trim() || !!image) && !posting;
 
   return (
-    <form onSubmit={onSubmit} className="border-t border-border bg-background px-3 sm:px-4 py-3">
+    <form onSubmit={onSubmit} className="border-t border-border bg-background px-2 py-2 sm:px-4 sm:py-3">
       <div className="bg-card border border-border rounded-sm focus-within:border-primary/60 transition-colors">
         {replyContext && (
-          <div className="flex items-center justify-between gap-3 border-b border-border bg-primary/5 px-3.5 py-2">
-            <div className="flex min-w-0 items-center gap-2 text-xs">
+          <div className="flex items-start justify-between gap-2 border-b border-border bg-primary/5 px-3 py-2 sm:items-center sm:gap-3 sm:px-3.5">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-              <span className="shrink-0 font-bold uppercase tracking-widest text-primary">
+              <span className="min-w-0 truncate font-bold uppercase tracking-widest text-primary">
                 Përgjigje për {replyContext.label}
               </span>
               {replyContext.excerpt ? (
                 <span className="truncate text-foreground/45">— {replyContext.excerpt}</span>
               ) : null}
             </div>
-            <button
-              type="button"
-              onClick={onClearReplyContext}
-              aria-label="Anulo përgjigjen"
-              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-foreground/45 transition-colors hover:bg-background hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            {onClearReplyContext ? (
+              <button
+                type="button"
+                onClick={onClearReplyContext}
+                aria-label="Anulo përgjigjen"
+                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-foreground/45 transition-colors hover:bg-background hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
           </div>
         )}
         {image && (
-          <div className="flex items-center justify-between gap-3 border-b border-border bg-background/60 px-3.5 py-2">
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-background/60 px-3 py-2 sm:px-3.5">
             <div className="flex min-w-0 items-center gap-3">
               {imagePreviewUrl ? (
                 <img
@@ -208,7 +206,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
           onChange={(e) => setBody(e.target.value)}
           placeholder={placeholder || sq.chat.placeholder}
           maxLength={2000}
-          className="block w-full bg-transparent border-none outline-none text-[15px] leading-relaxed py-3 px-3.5 resize-none text-foreground placeholder:text-foreground/40 min-h-[48px] max-h-[200px] overflow-y-auto no-scrollbar"
+          className="block w-full bg-transparent border-none outline-none text-base leading-relaxed py-2.5 px-3 resize-none text-foreground placeholder:text-foreground/40 min-h-[44px] max-h-[200px] overflow-y-auto no-scrollbar sm:px-3.5 sm:py-3 sm:text-[15px] sm:min-h-[48px]"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
@@ -216,11 +214,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             }
           }}
         />
-        <div className="flex items-center justify-between gap-3 px-2.5 pb-2 pt-1">
-          <span className="text-[10px] uppercase tracking-widest font-bold text-foreground/30">
-            Enter për të postuar · Shift+Enter rresht i ri
-          </span>
-          <div className="flex items-center gap-3">
+        <div className="flex items-center px-2.5 pb-2 pt-1">
+          <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
             <input
               ref={imageInputRef}
               type="file"
@@ -232,7 +227,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
               type="button"
               onClick={() => imageInputRef.current?.click()}
               aria-label="Shto imazh"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-background hover:text-primary"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-background hover:text-primary"
             >
               <ImagePlus className="h-4 w-4" />
             </button>
@@ -249,11 +244,11 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
               disabled={!canSend}
               aria-label={sq.chat.send}
               className={cn(
-                "inline-flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest transition-colors shrink-0",
+                "inline-flex h-9 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-sm bg-primary px-3 text-xs font-bold uppercase tracking-widest text-primary-foreground transition-colors sm:px-3",
                 canSend ? "hover:bg-primary/85" : "opacity-40 cursor-not-allowed",
               )}
             >
-              <span>{sq.chat.send}</span>
+              <span className="hidden sm:inline">{sq.chat.send}</span>
               <SendHorizontal className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -262,3 +257,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     </form>
   );
 });
+
+function stripLeadingReplyMentions(value: string) {
+  return value.replace(LEADING_REPLY_MENTIONS, "");
+}

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Email;
@@ -18,6 +19,7 @@ public class AuthController(
     IEmailSender emailSender,
     IConfiguration configuration) : ControllerBase
 {
+    [EnableRateLimiting("auth")]
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken ct)
     {
@@ -42,6 +44,7 @@ public class AuthController(
         return Ok(await tokenService.CreateAuthResponseAsync(user, ct));
     }
 
+    [EnableRateLimiting("auth")]
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken ct)
     {
@@ -49,12 +52,24 @@ public class AuthController(
         if (email is null) return Unauthorized();
 
         var user = await userManager.FindByEmailAsync(email);
-        if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
+        if (user is null)
             return Unauthorized();
+        if (user.IsBanned) return Forbid();
+        if (await userManager.IsLockedOutAsync(user)) return StatusCode(StatusCodes.Status423Locked);
+
+        if (!await userManager.CheckPasswordAsync(user, request.Password))
+        {
+            await userManager.AccessFailedAsync(user);
+            return Unauthorized();
+        }
+
+        if (await userManager.GetAccessFailedCountAsync(user) > 0)
+            await userManager.ResetAccessFailedCountAsync(user);
 
         return Ok(await tokenService.CreateAuthResponseAsync(user, ct));
     }
 
+    [EnableRateLimiting("auth")]
     [HttpPost("refresh")]
     public async Task<ActionResult<AuthResponse>> Refresh(RefreshRequest request, CancellationToken ct)
     {
@@ -65,6 +80,7 @@ public class AuthController(
     }
 
     [Authorize]
+    [EnableRateLimiting("auth")]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken ct)
     {
@@ -74,6 +90,7 @@ public class AuthController(
         return NoContent();
     }
 
+    [EnableRateLimiting("auth")]
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request, CancellationToken ct)
     {
@@ -94,8 +111,9 @@ public class AuthController(
         return Ok();
     }
 
+    [EnableRateLimiting("auth")]
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken ct)
     {
         var email = NormalizeEmail(request.Email);
         if (email is null || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.Password))
@@ -105,9 +123,10 @@ public class AuthController(
         if (user is null) return BadRequest(new { error = "INVALID_RESET_REQUEST" });
 
         var result = await userManager.ResetPasswordAsync(user, request.Token, request.Password);
-        return result.Succeeded
-            ? NoContent()
-            : BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+        if (!result.Succeeded) return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+
+        await tokenService.RevokeAllRefreshTokensAsync(user.Id, ct);
+        return NoContent();
     }
 
     [HttpGet("providers")]

@@ -54,8 +54,18 @@ export async function apiJson<T>(path: string, options: ApiOptions = {}): Promis
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) throw new ApiError(204, "EMPTY_RESPONSE");
   return response.json() as Promise<T>;
+}
+
+export async function apiNoContent(path: string, options: ApiOptions = {}): Promise<void> {
+  const headers = new Headers(options.headers);
+  if (options.body !== undefined) headers.set("Content-Type", "application/json");
+  await api(path, {
+    ...options,
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
 }
 
 export async function apiForm<T>(

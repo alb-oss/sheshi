@@ -59,6 +59,19 @@ public class TokenService(
         return true;
     }
 
+    public async Task<int> RevokeAllRefreshTokensAsync(Guid userId, CancellationToken ct = default)
+    {
+        var activeTokens = await db.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null && t.ExpiresAt > DateTimeOffset.UtcNow)
+            .ToListAsync(ct);
+
+        foreach (var token in activeTokens)
+            token.RevokedAt = DateTimeOffset.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+        return activeTokens.Count;
+    }
+
     public async Task<UserDto> CreateUserDtoAsync(ApplicationUser user)
     {
         var roles = await userManager.GetRolesAsync(user);
@@ -80,8 +93,6 @@ public class TokenService(
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            new(ClaimTypes.Email, user.Email ?? ""),
             new(ClaimTypes.Name, user.DisplayName ?? user.UserName ?? "")
         };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

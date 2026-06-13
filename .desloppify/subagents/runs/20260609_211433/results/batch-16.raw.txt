@@ -1,0 +1,120 @@
+{
+  "batch": "initialization_coupling",
+  "batch_index": 16,
+  "assessments": {
+    "initialization_coupling": 82.0
+  },
+  "dimension_notes": {
+    "initialization_coupling": {
+      "evidence": [
+        "src/lib/config.server.ts:19-26 deliberately exposes getServerConfig() and reads process.env inside the function, matching the file comment that Cloudflare-bound env should not be captured at module scope.",
+        "src/lib/api-client.ts:13-15 exposes getApiBaseUrl() as a getter instead of a module-level API_BASE snapshot, avoiding stale public env reads for normal API calls.",
+        "src/router.tsx:5-16 creates a fresh QueryClient and router inside getRouter(), so router state is not a shared import-time singleton.",
+        "src/lib/token-store.ts:13-35 keeps browser localStorage access inside runtime functions guarded by typeof window, not at import time.",
+        "server/Sheshi.Api/Realtime/PresenceTracker.cs:7-75 is a DI singleton with explicit locking and snapshot copies, so its mutable state is encapsulated rather than spread through module globals.",
+        "src/server.ts:1 and src/lib/error-capture.ts:4-16 rely on importing error-capture for module-scope listener registration and a shared lastCapturedError slot.",
+        "server/Sheshi.Api/Program.cs:144-151 applies EF migrations and seed work unconditionally while building the host, making startup depend on DB write availability."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "initialization_coupling": {
+      "dimension_character": "The codebase is mostly deliberate about initialization: config and storage reads are behind functions, router/query state is created per router instance, and server-side mutable presence state is held inside DI. The weaker spots are startup and SSR recovery paths where behavior depends on top-level execution rather than explicit lifecycle calls.",
+      "score_rationale": "This lands above the 80 anchor because most modules can be imported without hidden I/O or environment snapshots, and global state is usually either guarded or injected. It does not reach the 90 range because the SSR error-capture module has import-time side effects and the API host still performs DB migration/seed work as an unconditional boot dependency."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "error_capture_import_side_effect",
+      "summary": "SSR error capture depends on importing a module for global listener registration",
+      "related_files": [
+        "src/server.ts",
+        "src/lib/error-capture.ts"
+      ],
+      "evidence": [
+        "src/server.ts:1 imports ./lib/error-capture solely for side effects, then imports consumeLastCapturedError from the same module at src/server.ts:3.",
+        "src/lib/error-capture.ts:11-16 registers globalThis error and unhandledrejection listeners at module scope.",
+        "src/lib/error-capture.ts:4-8 stores the most recent captured error in a single module-level lastCapturedError slot."
+      ],
+      "suggestion": "Replace the side-effect import with an explicit installErrorCapture() export from src/lib/error-capture.ts, call it once from src/server.ts before getServerEntry() can import the TanStack server entry, and keep consumeLastCapturedError as the read API. This preserves behavior while making the boot-order requirement visible at the call site.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "initialization_coupling",
+      "identifier": "unconditional_startup_migration",
+      "summary": "API startup always performs database migration and seed work before serving requests",
+      "related_files": [
+        "server/Sheshi.Api/Program.cs",
+        "server/Sheshi.Api.Tests/ApiFactory.cs"
+      ],
+      "evidence": [
+        "server/Sheshi.Api/Program.cs:144-151 creates a service scope, resolves AppDbContext, runs db.Database.MigrateAsync(), and calls DbSeeder.SeedAsync(app.Services) on every host boot.",
+        "server/Sheshi.Api.Tests/ApiFactory.cs:9-12 documents that tests rely on the app startup pipeline applying migrations and seeding automatically, so host construction is coupled to a writable database."
+      ],
+      "suggestion": "Gate MigrateAsync behind a Database:AutoMigrate setting or development/test environment check, while keeping idempotent seed behavior explicit. The alternate alb_sheshi/server/Sheshi.Api/Program.cs:218-231 already shows the intended pattern: dev migrates by default and production opts in.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "startup_work_embedded_in_host_boot"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A few lifecycle actions are encoded as top-level module or host startup behavior instead of named initialization steps.",
+      "The migrated backend appears to have partially cleaned up production migration gating in alb_sheshi while the documented server/ path still has the older unconditional boot behavior."
+    ],
+    "likely_symptoms": [
+      "error_capture_import_side_effect",
+      "unconditional_startup_migration"
+    ],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "initialization_coupling": {
+      "add": [
+        {
+          "header": "Config reads avoid stale env snapshots",
+          "description": "Server config and API base URL are exposed as getter functions rather than module-level captured constants, which keeps imports cheap and avoids fragile env timing in tests and worker-style runtimes.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Browser storage stays runtime guarded",
+          "description": "Token persistence reads localStorage only inside functions with typeof window checks, so SSR imports do not immediately touch browser-only APIs.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Router state is per instance",
+          "description": "getRouter() constructs QueryClient and router together instead of exporting a shared singleton, reducing cross-request and cross-test state bleed.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Presence state lives behind DI",
+          "description": "PresenceTracker is a singleton, but it is registered through ASP.NET DI and protects internal dictionaries with a lock and snapshot copies, making the shared state boundary explicit.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "SSR error capture is import-driven",
+          "description": "The error recovery path depends on importing a module that installs global listeners at module scope, so the required boot order is real but hidden in import syntax.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Database work is embedded in API boot",
+          "description": "The primary server host runs migrations and seeding during startup, which makes host construction depend on database availability and migration permissions before the app can serve requests.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

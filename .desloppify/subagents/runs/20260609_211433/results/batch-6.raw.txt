@@ -1,0 +1,79 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 6,
+  "assessments": {
+    "abstraction_fitness": 92.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "src/lib/api-client.ts:22-71 keeps HTTP behavior in three small layers: raw authenticated fetch with token refresh, JSON body/response handling, and FormData handling; each layer adds behavior rather than merely forwarding.",
+        "src/lib/sheshi.ts:45-154 mostly exposes typed endpoint helpers, but the wrappers translate backend concerns into app contracts where useful: 404s become null in getRoomBySlug/getMessage/getThread, createRoom normalizes description, postMessage trims/validates body and switches JSON versus FormData upload.",
+        "src/routes/tema.$messageId.tsx:228-300 has recursive ReplyBranch indirection, but it is structural rendering for a recursive tree with collapse behavior and depth-based indentation, not an arbitrary component wrapper chain.",
+        "src/components/ui/button.tsx:7-49 is a pass-through-shaped component, but the variant layer centralizes class-variance-authority styling and Radix Slot composition, so the indirection buys a consistent UI API.",
+        "Mechanical single-use findings for src/routeTree.gen.ts, route files, start.ts, and sonner.tsx align with TanStack routing, generated route registration, server entry, or root UI composition boundaries rather than avoidable one-implementation abstraction ecosystems.",
+        "holistic_context.abstractions reports no one-implementation interfaces, no delegation-heavy classes, no facade modules, no TypedDict violations, and only one generic pass-through utility wrapper, src/lib/utils.ts cn(), which is a common Tailwind merge helper."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The remaining drag is mostly size and directness tension rather than harmful abstraction: alb_sheshi/frontend/src/App.tsx is a large all-in-one feature surface, and several endpoint helpers are thin typed shells. Those are worth watching, but I did not find a clear abstraction-fitness defect where indirection routinely costs more than it returns.",
+      "sub_axes": {
+        "abstraction_leverage": 91.0,
+        "indirection_cost": 94.0,
+        "interface_honesty": 98.0,
+        "delegation_density": 100.0,
+        "definition_directness": 90.0,
+        "type_discipline": 98.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "dimension_character": "The TypeScript codebase is mostly direct and uses abstractions where they clarify boundaries: API helpers add auth, serialization, retry, validation, and domain-level return contracts, while UI wrappers centralize styling or required framework composition. There is little evidence of one-implementation interface ceremony, delegation-heavy class ecosystems, or facade modules that force developers through unpaid indirection.",
+      "score_rationale": "This lands in the strong range because a developer can usually see the value of each layer and mechanical concern signals mostly resolve to framework boundaries or deliberately useful shells. It falls short of exemplary because some surfaces, especially the older alb_sheshi frontend App.tsx and a few thin endpoint helpers, lean on direct monolithic composition or light typed shells rather than consistently crisp, feature-sized abstractions."
+    }
+  },
+  "issues": [],
+  "retrospective": {
+    "root_causes": [
+      "The main abstraction risk is not excessive indirection but uneven decomposition between the newer routed app and the older all-in-one frontend."
+    ],
+    "likely_symptoms": [],
+    "possible_false_positives": [
+      "single_use::src/routeTree.gen.ts is generated router infrastructure rather than avoidable single-use abstraction.",
+      "single_use route modules are TanStack file-route boundaries rather than evidence of unnecessary wrapper files.",
+      "structural::src/components/ui/sidebar.tsx and other shadcn-style UI files are component-library composition surfaces, not one-off abstraction ecosystems."
+    ]
+  },
+  "context_updates": {
+    "abstraction_fitness": {
+      "add": [
+        {
+          "header": "API helpers earn their layer",
+          "description": "The main HTTP client and domain API module add auth refresh, JSON/FormData translation, error normalization, validation, and null-on-404 contracts, so callers are shielded from backend protocol details without navigating empty pass-through wrappers.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Framework single-use files are intentional",
+          "description": "The single-use route, generated route tree, server entry, and root toaster files correspond to framework lifecycle and composition boundaries. Their one-import shape does not indicate avoidable abstraction ceremony.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Little interface ceremony",
+          "description": "The inspected TypeScript uses concrete exported shapes and component props instead of broad one-implementation service interfaces or delegation-heavy classes. Developers do not have to chase interface ecosystems to find runtime behavior.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Monolithic legacy frontend remains direct",
+          "description": "alb_sheshi/frontend/src/App.tsx concentrates many concerns in one component, which is a decomposition issue more than an abstraction-fitness defect. It reduces indirection, but future changes may pressure extraction into earned feature modules.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

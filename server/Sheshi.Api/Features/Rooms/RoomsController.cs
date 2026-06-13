@@ -1,34 +1,38 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Sheshi.Api.Data;
+using Microsoft.AspNetCore.RateLimiting;
+using Sheshi.Api.Domain;
+using Sheshi.Api.Features.Moderation;
 
 namespace Sheshi.Api.Features.Rooms;
 
 [ApiController]
 [Route("api/rooms")]
-public class RoomsController(AppDbContext db) : ControllerBase
+public class RoomsController(RoomService rooms, ModerationActionLogger actionLogger) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<RoomDto>>> List(CancellationToken ct)
     {
-        var rooms = await db.Rooms
-            .AsNoTracking()
-            .OrderBy(r => r.Name)
-            .Select(r => new RoomDto(r.Id, r.Slug, r.Name, r.Description))
-            .ToListAsync(ct);
-
-        return Ok(rooms);
+        return Ok(await rooms.ListAsync(ct));
     }
 
     [HttpGet("{slug}")]
     public async Task<ActionResult<RoomDto>> GetBySlug(string slug, CancellationToken ct)
     {
-        var room = await db.Rooms
-            .AsNoTracking()
-            .Where(r => r.Slug == slug)
-            .Select(r => new RoomDto(r.Id, r.Slug, r.Name, r.Description))
-            .SingleOrDefaultAsync(ct);
-
+        var room = await rooms.GetBySlugAsync(slug, ct);
         return room is null ? NotFound() : Ok(room);
+    }
+
+    [Authorize(Roles = Roles.Admin)]
+    [EnableRateLimiting("moderation")]
+    [HttpPost]
+    public async Task<ActionResult<RoomDto>> Create(CreateRoomRequest request, CancellationToken ct)
+    {
+        var result = await rooms.CreateAsync(request, ct);
+        if (result.Error == "ROOM_EXISTS") return Conflict(new { error = result.Error });
+        if (result.Error is not null) return BadRequest(new { error = result.Error });
+
+        await actionLogger.LogAsync(User, ModerationActionTypes.RoomCreated, "room", result.Entity!.Id, ct: ct);
+        return CreatedAtAction(nameof(GetBySlug), new { slug = result.Entity.Slug }, result.Dto);
     }
 }

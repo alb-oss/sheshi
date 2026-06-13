@@ -63,7 +63,7 @@ ASP.NET Identity replaces Supabase `auth.users` **and** the `user_roles` table.
 
 `message_stats` (upvotes + reply_count) → computed via LINQ aggregation in the
 service layer (not a DB view). EF Core migrations recreate the schema; a seeder
-inserts the 5 rooms (`sheshi`, `vjosa-narta`, `tirana`, `shkodra`, `korca`). The two
+inserts the single default `sheshi` room. The two
 Postgres triggers become service-layer logic (see §6).
 
 ## 3. REST API surface
@@ -80,8 +80,9 @@ All under `/api`, JSON, `Authorization: Bearer`.
 | `GET /auth/external/{provider}` → `/auth/external/callback` | Google/Apple/Microsoft OAuth | anon |
 | `GET /me` · `PATCH /me` | current profile; edit display_name | user |
 | `GET /rooms` · `GET /rooms/{slug}` | list / fetch room | anon |
+| `POST /rooms` | create public room | user |
 | `GET /rooms/{id}/messages` | top-level, latest 80 | anon |
-| `GET /messages/{id}` · `GET /messages/{id}/replies` | thread parent + replies | anon |
+| `GET /messages/{id}` · `GET /messages/{id}/replies` · `GET /threads/{id}` | message, direct replies, nested thread tree | anon |
 | `POST /messages` | post message/reply (multipart if image) | user |
 | `DELETE /messages/{id}` | soft-delete (author or mod) | user |
 | `PUT /messages/{id}/vote` · `DELETE …/vote` | toggle upvote | user |
@@ -163,8 +164,8 @@ upload path/limits. `.env.example` documents everything. CORS allows the Vite de
 
 xUnit + `WebApplicationFactory` integration tests against a throwaway Postgres
 (Testcontainers or compose DB): auth round-trip; post/vote/report flows; the §6
-authorization rules (banned can't post, can't vote on replies, can't self-unban,
-mod-only endpoints reject normal users); highlights ranking.
+authorization rules (banned can't post/vote, reply votes work, nested replies render,
+can't self-unban, mod-only endpoints reject normal users); highlights ranking.
 
 ## 12. Out of scope / flagged
 

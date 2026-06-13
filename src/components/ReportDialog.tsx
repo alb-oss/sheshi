@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { submitReport, type ReportReason } from "@/lib/sheshi";
+import { SheshiError, submitReport, type ReportReason } from "@/lib/sheshi";
 import { toast } from "sonner";
 
 interface Props {
@@ -36,8 +36,14 @@ export function ReportDialog({ open, onOpenChange, messageId }: Props) {
       onOpenChange(false);
       setNote("");
       setReason("spam");
-    } catch {
-      toast.error(sq.errors.generic);
+    } catch (error) {
+      toast.error(
+        error instanceof SheshiError && error.code === "UNAUTH"
+          ? sq.errors.auth
+          : error instanceof SheshiError && error.code === "RATE_LIMITED"
+            ? sq.errors.rateLimited
+          : sq.errors.generic,
+      );
     } finally {
       setSubmitting(false);
     }
