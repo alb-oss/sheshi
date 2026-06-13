@@ -1,2 +1,15 @@
-**/bin/
-**/obj/
+# Re-include the solution file (root .gitignore ignores *.sln)
+!Sheshi.sln
+
+# .NET build artifacts
+bin/
+obj/
+Sheshi.Api/uploads/
+
+# User-specific files
+*.user
+*.suo
+
+# Rider / VS
+.idea/
+.vs/

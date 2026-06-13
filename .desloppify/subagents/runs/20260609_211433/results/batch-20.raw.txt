@@ -1,0 +1,112 @@
+{
+  "batch": "type_safety",
+  "batch_index": 20,
+  "assessments": {
+    "type_safety": 82.0
+  },
+  "dimension_notes": {
+    "type_safety": {
+      "evidence": [
+        "Root TypeScript is compiled with strict: true in tsconfig.json, and npm run build completed successfully, so the active frontend has a real type-checking baseline.",
+        "The .NET API project enables nullable reference types in server/Sheshi.Api/Sheshi.Api.csproj and dotnet build server/Sheshi.sln completed with 0 warnings and 0 errors.",
+        "server/Sheshi.Api/Program.cs configures JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower), so enum DTO properties can serialize to the same wire strings without weakening DTO types.",
+        "server/Sheshi.Api/Features/Messages/MessageDtos.cs defines MessageDto.Author, Upvotes, ReplyCount, and Voted as always-present fields, but src/lib/sheshi.ts marks the corresponding frontend fields author, upvotes, reply_count, and voted as optional.",
+        "server/Sheshi.Api/Features/Rooms/RoomDtos.cs defines RoomDto.ThreadCount as required and LatestActivityAt as present nullable, but src/lib/sheshi.ts marks thread_count and latest_activity_at optional.",
+        "server/Sheshi.Api/Features/Moderation/ModerationDtos.cs types ModReportDto.Reason and Status as string even though the domain already has ReportReason and ReportStatus enums; ModerationController manually lowers enum strings when projecting reports."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "type_safety": {
+      "dimension_character": "The codebase has a strong baseline: strict TypeScript, nullable-enabled C#, typed request/response records, and successful builds on both sides make annotations generally trustworthy. The main weakness is migration drift in API shape typing, where the root frontend still loosens server-guaranteed fields and moderation DTOs fall back to strings despite domain enums.",
+      "score_rationale": "This lands above the 80 anchor because the type systems are enabled and most public API paths are explicitly modeled. It does not reach the 90 range because developers can still encounter duplicated or weakened contract types around messages, rooms, and moderation enums, which means they cannot fully trust the frontend API model as documentation of runtime behavior."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "type_safety",
+      "identifier": "frontend_api_optional_drift",
+      "summary": "Root frontend API models mark server-guaranteed response fields as optional",
+      "related_files": [
+        "src/lib/sheshi.ts",
+        "server/Sheshi.Api/Features/Messages/MessageDtos.cs",
+        "server/Sheshi.Api/Features/Rooms/RoomDtos.cs",
+        "alb_sheshi/frontend/src/types.ts"
+      ],
+      "evidence": [
+        "src/lib/sheshi.ts lines 8-9 declare Room.thread_count? and latest_activity_at?, while server/Sheshi.Api/Features/Rooms/RoomDtos.cs lines 3-9 returns ThreadCount as a required int and LatestActivityAt as a present nullable DateTimeOffset.",
+        "src/lib/sheshi.ts lines 28-31 declare MessageRow.author?, upvotes?, reply_count?, and voted?, while server/Sheshi.Api/Features/Messages/MessageDtos.cs lines 16-19 returns Author, Upvotes, ReplyCount, and Voted as present DTO fields.",
+        "alb_sheshi/frontend/src/types.ts lines 17-24 and 33-48 show the migrated frontend already models the same fields as required, so the root frontend type is a stale looser variant."
+      ],
+      "suggestion": "Tighten src/lib/sheshi.ts to match the server DTOs: make Room.thread_count required, latest_activity_at present nullable, and MessageRow.author/upvotes/reply_count/voted required. Keep null only where the backend record is nullable.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "parallel_frontend_api_types"
+    },
+    {
+      "dimension": "type_safety",
+      "identifier": "moderation_enum_dto_weakened",
+      "summary": "Moderation report DTO weakens domain enums into raw strings",
+      "related_files": [
+        "server/Sheshi.Api/Features/Moderation/ModerationDtos.cs",
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs",
+        "server/Sheshi.Api/Domain/Enums.cs",
+        "server/Sheshi.Api/Program.cs"
+      ],
+      "evidence": [
+        "server/Sheshi.Api/Domain/Enums.cs defines ReportReason and ReportStatus, but server/Sheshi.Api/Features/Moderation/ModerationDtos.cs lines 7 and 9 expose Reason and Status as string.",
+        "server/Sheshi.Api/Features/Moderation/ModerationController.cs lines 30-32 manually projects r.Reason and r.Status through ToString().ToLowerInvariant(), bypassing the enum-typed API shape.",
+        "server/Sheshi.Api/Program.cs line 27 already registers JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower), so enum-typed DTO properties would preserve the same snake-case wire format."
+      ],
+      "suggestion": "Change ModReportDto.Reason to ReportReason and Status to ReportStatus, import Sheshi.Api.Domain in ModerationDtos.cs, and pass r.Reason/r.Status directly from ModerationController.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "enum_string_boundary_drift"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "parallel_frontend_api_types",
+      "enum_string_boundary_drift"
+    ],
+    "likely_symptoms": [
+      "frontend_api_optional_drift"
+    ],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "type_safety": {
+      "add": [
+        {
+          "header": "Strict compilers on both active stacks",
+          "description": "The active TypeScript app uses strict mode and the .NET API enables nullable reference types, and both production builds complete cleanly. This gives developers a solid baseline where most type annotations are enforced rather than decorative.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "DTO records model most API contracts",
+          "description": "The backend generally uses explicit request and response records instead of loose dictionaries or dynamic payloads. That keeps controller contracts readable and lets nullable and enum decisions stay visible at API boundaries.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel frontend API models drift",
+          "description": "The root frontend and alb_sheshi frontend carry separate hand-written API model definitions, and the migrated copy is stricter for several message and room fields. This creates a type-safety maintenance risk because one side can silently preserve stale optionality.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Moderation enums are weakened at DTO edge",
+          "description": "Moderation report output converts domain enums into strings even though global JSON options already support enum string serialization. That small boundary shortcut makes the API contract less precise than the domain model.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

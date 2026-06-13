@@ -1,0 +1,89 @@
+{
+  "batch": "package_organization",
+  "batch_index": 15,
+  "assessments": {
+    "package_organization": 72.0
+  },
+  "dimension_notes": {
+    "package_organization": {
+      "evidence": [
+        "holistic_context.structure shows the main TanStack app is predictably layered: src/routes imports src/components 14 times, src/components/ui 17 times, src/lib 15 times, src/hooks 8 times, and src/i18n 7 times; src/lib has avg_fan_in 9.8 and is imported across routes, components, hooks, and root startup files, so it behaves like a genuine shared core package rather than a misplaced straggler.",
+        "src/components has only 5 domain UI files and is imported exclusively by src/routes, which matches route-owned composition boundaries.",
+        "src/components/ui has 46 files and zero child directories, matching the flat_dirs detector fingerprint flat_dirs::src/components/ui, but components.json maps the shadcn ui alias directly to src/components/ui and the files are cohesive UI primitives rather than mixed domain responsibilities.",
+        "The repo also contains alb_sheshi/frontend/src with its own App.tsx, api.ts, types.ts, main.tsx, and styles.css, while the documented layout says the React app lives in root src/ and the backend in root server/.",
+        "alb_sheshi/frontend/src/App.tsx is a 1360-line standalone React app with custom routing, auth storage, SignalR setup, API calls, and UI composition, while root src/ decomposes the same product into routes, components, hooks, lib, and i18n packages.",
+        "server/ and alb_sheshi/server/ are both present and diff -qr reports many production file differences, while docs/sheshi-dotnet-backend-master-spec.md lines 121-131 specify a single root server/ folder."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "package_organization": {
+      "dimension_character": "Inside the root TypeScript app, ownership is mostly navigable: routes compose screen-level behavior, components hold reusable product UI, hooks and lib are shared in predictable directions, and the shadcn ui flat directory is conventional rather than mixed. The main organizational drag is codebase-level duplication: a second alb_sheshi subtree contains a standalone frontend and a divergent backend copy despite the docs naming root src/ and server/ as the canonical layout.",
+      "score_rationale": "This lands above the mixed range because the active root app has coherent directory roles and the objective coupling matrix mostly supports those roles. It cannot score as solid because a developer cannot trust the repository layout alone to know whether root src/server or alb_sheshi/frontend/server is authoritative, and the duplicated implementations create search, ownership, and drift hazards."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "package_organization",
+      "identifier": "duplicate_app_trees",
+      "summary": "A divergent alb_sheshi subtree duplicates the canonical frontend/backend layout",
+      "related_files": [
+        "docs/sheshi-dotnet-backend-master-spec.md",
+        "alb_sheshi/frontend/src/App.tsx",
+        "alb_sheshi/frontend/src/api.ts",
+        "src/lib/sheshi.ts",
+        "server/README.md",
+        "alb_sheshi/server/README.md"
+      ],
+      "evidence": [
+        "docs/sheshi-dotnet-backend-master-spec.md lines 121-131 documents the repo layout as root src/ for the React app and root server/ for the .NET backend.",
+        "alb_sheshi/frontend/src/App.tsx lines 1-45 define a separate standalone React application with local route parsing and app-wide state instead of using the root src/routes, src/components, src/hooks, and src/lib layout.",
+        "alb_sheshi/frontend/src/api.ts lines 1-87 defines a separate API client and route helpers for the same /api/rooms, /api/messages, /api/auth, /api/highlights surface that root src/lib/sheshi.ts and src/lib/api-client.ts own.",
+        "diff -qr server alb_sheshi/server reports many differing production files, including AuthController.cs, MessageService.cs, ModerationController.cs, Program.cs, migrations, README.md, and tests."
+      ],
+      "suggestion": "Stage the reorg around one canonical app. First decide whether root src/ and server/ are authoritative, which the docs already imply. Move any still-needed alb_sheshi/frontend behavior into target folders under root src/ only: route views into src/routes, shared product components into src/components, API/auth/realtime helpers into src/lib and src/hooks, and strings into src/i18n. Then reconcile backend-only deltas from alb_sheshi/server into server/ feature folders, preserving server/Sheshi.Api as the only backend project. After parity is verified, delete or archive alb_sheshi/ outside the production tree and update package scripts/docs to mention only root npm run build, npm run dev -- --host localhost --port 3001, dotnet test from server, and dotnet run --project server/Sheshi.Api. Validate with npm run build, npm run lint, cd server && dotnet test, and rg \"alb_sheshi|frontend/src/App|frontend/src/api\" docs package.json server src to catch stale references.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "root_cause_cluster": "parallel_project_roots"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A migration or scaffold appears to have left a parallel alb_sheshi project tree beside the documented root app instead of promoting one location to canonical ownership."
+    ],
+    "likely_symptoms": [
+      "duplicate_app_trees"
+    ],
+    "possible_false_positives": [
+      "flat_dirs::src/components/ui is likely a shadcn/ui convention rather than a package organization defect because components.json aliases ui to src/components/ui and the directory contains cohesive UI primitives."
+    ]
+  },
+  "context_updates": {
+    "package_organization": {
+      "add": [
+        {
+          "header": "Root app layers are predictable",
+          "description": "The objective coupling matrix supports the root src/ split: routes depend on product components, UI primitives, hooks, i18n, and lib, while shared lib code is consumed broadly with high fan-in. This gives developers a useful default path for finding route behavior versus shared infrastructure.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Shadcn UI flatness is conventional",
+          "description": "src/components/ui is large, but components.json explicitly points the shadcn ui alias at that folder and the files are cohesive primitive wrappers. The flat directory is less navigationally ideal at 46 files, but it is not strong evidence of mixed ownership.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel alb_sheshi tree blurs authority",
+          "description": "The documented layout names root src/ and server/ as canonical, yet alb_sheshi contains another frontend and divergent server copy. That makes ownership hard to infer from paths and invites fixes to land in the wrong implementation.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

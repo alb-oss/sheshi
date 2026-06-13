@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace Sheshi.Api.Realtime;
 
@@ -8,7 +7,6 @@ namespace Sheshi.Api.Realtime;
 public class PresenceController(PresenceTracker presenceTracker) : ControllerBase
 {
     [HttpGet]
-    [EnableRateLimiting("reads")]
     public ActionResult<IReadOnlyDictionary<string, int>> Get()
     {
         var snapshot = presenceTracker.Snapshot()

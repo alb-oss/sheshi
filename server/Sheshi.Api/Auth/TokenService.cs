@@ -39,34 +39,14 @@ public class TokenService(
     {
         var hash = HashRefreshToken(rawToken);
         var token = await db.RefreshTokens.SingleOrDefaultAsync(t => t.TokenHash == hash, ct);
-        if (token is null) return null;
-
-        if (!token.IsActive)
-        {
-            // A revoked/expired token being replayed may be stolen: kill every
-            // active session for this user instead of just rejecting the call.
-            await RevokeAllForUserAsync(token.UserId, ct);
-            return null;
-        }
+        if (token is null || !token.IsActive) return null;
 
         var user = await userManager.FindByIdAsync(token.UserId.ToString());
-        if (user is null || user.IsBanned) return null;
+        if (user is null) return null;
 
-        // Atomic revoke: only the request that flips RevokedAt from null wins.
-        // A concurrent rotation of the same token matches 0 rows and bails,
-        // so a token can never fork into two valid sessions.
-        var revoked = await db.RefreshTokens
-            .Where(t => t.Id == token.Id && t.RevokedAt == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, DateTimeOffset.UtcNow), ct);
-        if (revoked == 0) return null;
-
+        token.RevokedAt = DateTimeOffset.UtcNow;
         return await CreateAuthResponseAsync(user, ct);
     }
-
-    public Task<int> RevokeAllForUserAsync(Guid userId, CancellationToken ct = default) =>
-        db.RefreshTokens
-            .Where(t => t.UserId == userId && t.RevokedAt == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, DateTimeOffset.UtcNow), ct);
 
     public async Task<bool> RevokeRefreshTokenAsync(string rawToken, CancellationToken ct = default)
     {
@@ -77,6 +57,19 @@ public class TokenService(
         token.RevokedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
         return true;
+    }
+
+    public async Task<int> RevokeAllRefreshTokensAsync(Guid userId, CancellationToken ct = default)
+    {
+        var activeTokens = await db.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null && t.ExpiresAt > DateTimeOffset.UtcNow)
+            .ToListAsync(ct);
+
+        foreach (var token in activeTokens)
+            token.RevokedAt = DateTimeOffset.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+        return activeTokens.Count;
     }
 
     public async Task<UserDto> CreateUserDtoAsync(ApplicationUser user)
@@ -100,8 +93,6 @@ public class TokenService(
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            new(ClaimTypes.Email, user.Email ?? ""),
             new(ClaimTypes.Name, user.DisplayName ?? user.UserName ?? "")
         };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

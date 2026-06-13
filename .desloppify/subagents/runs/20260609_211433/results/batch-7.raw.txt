@@ -1,0 +1,133 @@
+{
+  "batch": "dependency_health",
+  "batch_index": 7,
+  "assessments": {
+    "dependency_health": 72.0
+  },
+  "dimension_notes": {
+    "dependency_health": {
+      "evidence": [
+        "package.json has a cohesive main runtime stack around React 19, TanStack Start/Router/Query, Tailwind 4, SignalR, and shadcn/Radix primitives.",
+        "src/routeTree.gen.ts imports getRouter from src/router.tsx only as an import type inside generated TanStack Router module augmentation; the reported routeTree.gen.ts -> router.tsx cycle is generated/type-only and is not a runtime dependency cycle.",
+        "package.json includes direct dependencies @hookform/resolvers and zod, but rg found no source/config imports for either package outside package and lock files.",
+        "Many direct UI dependencies are only referenced by unused src/components/ui wrapper files, while production routes import a much smaller set: button, input, label, tabs, dialog, textarea, radio-group, and sonner.",
+        "The repository contains two separate frontend package manifests and locks: package.json/package-lock.json at the root and alb_sheshi/frontend/package.json/package-lock.json with overlapping React, Vite, TypeScript, SignalR, and lucide-react dependencies."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "dependency_health": {
+      "dimension_character": "The main dependency set has a recognizable purpose, but it has drift from a focused application dependency list into a stocked template kit. A developer would mostly understand the chosen stack, yet would hit friction deciding which package root is authoritative and which UI/form/chart dependencies are actually part of the app.",
+      "score_rationale": "This sits below the solid 80 anchor because the drift is recurring: unused direct dependencies, many unused shadcn/Radix component dependencies, and a second overlapping frontend package manifest create real maintenance ambiguity. It is not near the 60 anchor because the core runtime stack is still coherent and the only detected cycle is a generated type-only TanStack Router artifact rather than a meaningful runtime cycle."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "dependency_health",
+      "identifier": "unused_form_schema_deps",
+      "summary": "Form/schema packages are direct runtime dependencies without source usage",
+      "related_files": [
+        "package.json",
+        "package-lock.json"
+      ],
+      "evidence": [
+        "package.json lists @hookform/resolvers and zod under dependencies.",
+        "rg found no imports of @hookform/resolvers or zod in src or alb_sheshi/frontend/src; occurrences are limited to package/lock files and transitive tool dependencies.",
+        "react-hook-form is only imported by src/components/ui/form.tsx, and that wrapper is not imported by the app's production routes/components."
+      ],
+      "suggestion": "Remove @hookform/resolvers and direct zod from package.json until route-level forms or schema validation actually use them; also remove react-hook-form if src/components/ui/form.tsx is unused or delete that wrapper with the unused UI cleanup.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "single_edit"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "unused_ui_dependency_kit",
+      "summary": "A large shadcn/Radix dependency kit remains installed for unused UI wrappers",
+      "related_files": [
+        "package.json",
+        "src/components/ui/accordion.tsx",
+        "src/components/ui/calendar.tsx",
+        "src/components/ui/chart.tsx",
+        "src/components/ui/carousel.tsx",
+        "src/components/ui/menubar.tsx",
+        "src/components/ui/sidebar.tsx"
+      ],
+      "evidence": [
+        "package.json declares many Radix and companion UI packages such as @radix-ui/react-accordion, @radix-ui/react-alert-dialog, @radix-ui/react-context-menu, @radix-ui/react-menubar, react-day-picker, embla-carousel-react, recharts, input-otp, cmdk, react-resizable-panels, and vaul.",
+        "Production imports of components/ui are limited to button, input, label, tabs, dialog, textarea, radio-group, and sonner; rg did not show route/component imports for accordion, calendar, chart, carousel, command, context-menu, drawer, menubar, navigation-menu, sidebar, or similar stocked wrappers.",
+        "The unused wrapper files import their own third-party packages, keeping those packages in package.json even though the live app does not use the UI features."
+      ],
+      "suggestion": "Prune unused src/components/ui wrappers and remove their matching direct dependencies, keeping only the UI primitives imported by app routes/components.",
+      "confidence": "medium",
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "dependency_health",
+      "identifier": "dual_frontend_manifests",
+      "summary": "Two frontend package roots carry overlapping dependencies with different declared versions",
+      "related_files": [
+        "package.json",
+        "package-lock.json",
+        "alb_sheshi/frontend/package.json",
+        "alb_sheshi/frontend/package-lock.json"
+      ],
+      "evidence": [
+        "The root package.json and alb_sheshi/frontend/package.json both declare React, React DOM, SignalR, lucide-react, Vite-related tooling, and TypeScript-related tooling for frontend code.",
+        "Declared versions differ between roots: root has lucide-react ^0.575.0 while alb_sheshi/frontend has ^0.561.0; root devDependencies use @vitejs/plugin-react ^5.0.4 and vite ^7.3.1 while alb_sheshi/frontend dependencies use @vitejs/plugin-react ^5.1.1 and vite ^7.2.7.",
+        "Both locks currently resolve some overlaps to the same installed versions, but the divergent package.json ranges mean future installs can drift differently per root."
+      ],
+      "suggestion": "Choose one authoritative frontend package root or convert the repository to an explicit workspace; align shared versions and move build-only tools such as Vite, TypeScript, and @vitejs/plugin-react out of alb_sheshi/frontend dependencies if that nested app remains.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Template-generated UI dependencies were not pruned after the app settled on a smaller component set.",
+      "A nested frontend prototype/package appears to coexist with the root TanStack Start app without a workspace boundary or version alignment."
+    ],
+    "likely_symptoms": [
+      "unused_form_schema_deps",
+      "unused_ui_dependency_kit"
+    ],
+    "possible_false_positives": [
+      "cycles::src/routeTree.gen.ts::src/routeTree.gen.ts::src/router.tsx is generated and type-only, so it is not a dependency_health defect."
+    ]
+  },
+  "context_updates": {
+    "dependency_health": {
+      "add": [
+        {
+          "header": "Core web stack is coherent",
+          "description": "The live application centers on React 19, TanStack Start/Router/Query, Tailwind 4, SignalR, and Radix-backed shadcn primitives, so the main technology choices are understandable despite cleanup needs.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Generated router cycle is type-only",
+          "description": "The mechanical cycle is from TanStack Router's generated routeTree.gen.ts importing getRouter only as an import type for module augmentation. That does not create runtime circular loading risk and should not drive dependency-health scoring.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Template UI dependencies remain stocked",
+          "description": "The package manifest still carries many Radix/shadcn companion packages because unused generated UI wrapper files remain in src/components/ui. This makes dependency intent harder to read and keeps the installed tree broader than the app behavior requires.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Duplicate frontend manifests can drift",
+          "description": "The root app and alb_sheshi/frontend each maintain package.json and package-lock.json with overlapping frontend dependencies but different declared ranges. Without a workspace or single authoritative manifest, future installs can resolve different tool and runtime versions.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

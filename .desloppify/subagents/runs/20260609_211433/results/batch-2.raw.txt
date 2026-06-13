@@ -1,0 +1,114 @@
+{
+  "batch": "high_level_elegance",
+  "batch_index": 2,
+  "assessments": {
+    "high_level_elegance": 72.0
+  },
+  "dimension_notes": {
+    "high_level_elegance": {
+      "evidence": [
+        "The active backend under server/Sheshi.Api is mostly decomposed by recognizable responsibilities: Auth, Data, Domain, Email, Features, Realtime, and Storage.",
+        "Backend feature areas such as server/Sheshi.Api/Features/Messages, Features/Rooms, and Features/Moderation keep controllers, DTOs, and service logic near their domain capability.",
+        "The frontend root src/ has a clear route/component/lib/hook split, and TanStack route files map directly to product routes like dhoma.$slug.tsx and tema.$messageId.tsx.",
+        "The repository also contains alb_sheshi/, which has its own frontend/package.json, frontend/src, server/Sheshi.sln, server/README.md, docker-compose.yml, and a divergent copy of the API.",
+        "diff -qr server alb_sheshi/server shows many production-source differences, including Program.cs, AuthController.cs, AppDbContext.cs, MessageService.cs, RoomsController.cs, ModerationController.cs, migrations, and tests.",
+        "The root package.json still names the frontend package tanstack_start_ts while alb_sheshi/frontend/package.json names another frontend package alb-sheshi-frontend, making the public project surface ambiguous.",
+        "docs/TODO.md says Supabase runtime was removed and documents a root server/frontend workflow, but it does not explain whether alb_sheshi is archival, alternate production, or stale migration output."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "high_level_elegance": {
+      "dimension_character": "Inside the active backend, ownership is fairly coherent: domain entities, feature controllers, realtime, storage, auth, and data all have understandable homes. The frontend is also navigable at a first pass, but the repository-level structure is undermined by a second full application tree under alb_sheshi that overlaps the same backend and frontend responsibilities while diverging from the root copies.",
+      "score_rationale": "This lands in the mixed-to-solid range: a developer working only in server/ and src/ can usually predict where to put changes, which pushes the score above significant drag. The duplicate alb_sheshi application root and stale public metadata make the top-level ownership contract hard to trust, so the codebase falls well short of the 90 anchor where each top-level package has an obvious, reliable purpose."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "duplicate_application_roots",
+      "summary": "The repo contains two divergent Sheshi application roots with overlapping ownership.",
+      "related_files": [
+        "server/Sheshi.Api/Program.cs",
+        "alb_sheshi/server/Sheshi.Api/Program.cs",
+        "package.json",
+        "alb_sheshi/frontend/package.json",
+        "alb_sheshi/docker-compose.yml"
+      ],
+      "evidence": [
+        "alb_sheshi/ contains its own frontend package, server solution, backend README, infra config, and docker-compose.yml while the repository root also contains package.json, src/, server/, and docker-compose.yml.",
+        "diff -qr server alb_sheshi/server reports divergent production files including Program.cs, AuthController.cs, AppDbContext.cs, MessageService.cs, RoomsController.cs, ModerationController.cs, migrations, and tests.",
+        "The root server/README.md tells developers to run dotnet run --project server/Sheshi.Api and npm run dev from the root, while alb_sheshi/server/README.md gives similar backend instructions for a nested tree."
+      ],
+      "suggestion": "Choose one production application root. Remove or clearly archive alb_sheshi outside the production scan path, or promote it as the canonical root and delete the overlapping root-level src/server copies; update README and compose/package entry points to name the chosen ownership boundary.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "architectural_change",
+      "root_cause_cluster": "duplicate_migration_roots"
+    },
+    {
+      "dimension": "high_level_elegance",
+      "identifier": "stale_project_contract_surface",
+      "summary": "Top-level project contracts do not clearly describe the canonical app structure.",
+      "related_files": [
+        "package.json",
+        "server/README.md",
+        "docs/TODO.md",
+        "alb_sheshi/server/README.md"
+      ],
+      "evidence": [
+        "The root package.json is still named tanstack_start_ts rather than Sheshi, while alb_sheshi/frontend/package.json names a second frontend package alb-sheshi-frontend.",
+        "There is no root README explaining the repository layout, which leaves server/README.md, docs/TODO.md, and alb_sheshi/server/README.md as partial and conflicting entry points.",
+        "docs/TODO.md documents the root .NET rewrite workflow and says stale Supabase wiring was removed, but it does not classify the nested alb_sheshi tree as active, archived, or generated."
+      ],
+      "suggestion": "Add or update a root README that defines the canonical frontend, backend, docs, and archival/generated directories; rename the root package to the product name; either remove alb_sheshi docs or mark that subtree explicitly as non-production/archive.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "duplicate_migration_roots"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A migration or rewrite appears to have left both the old nested app and the new root app in the production tree.",
+      "Project documentation was updated for backend phases, but not consolidated into a single repository-level ownership contract."
+    ],
+    "likely_symptoms": [
+      "stale_project_contract_surface"
+    ],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "high_level_elegance": {
+      "add": [
+        {
+          "header": "Backend folders match runtime capabilities",
+          "description": "The active API tree has predictable domain ownership: Auth owns identity flows, Features owns product endpoints, Realtime owns SignalR/presence, Storage owns image persistence, and Domain owns entities. That structure lets backend changes stay mostly inside the capability they affect.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend routes expose product topology",
+          "description": "The active frontend route files map cleanly to visible product areas such as rooms, threads, auth, moderation, profile, focus, and sitemap. This gives a new engineer a useful first navigation model before reading component internals.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Nested alb_sheshi blurs canonical ownership",
+          "description": "The repository contains a second full application tree with its own frontend, backend, infra, docs, and divergent server code. Because it is not excluded or clearly labeled archival, it weakens trust in which top-level packages are authoritative.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Public project metadata lags structure",
+          "description": "The root package name and available docs do not form one clear contract for the current Sheshi app layout. This makes runtime reality discoverable only after comparing package files, READMEs, and duplicate directories.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

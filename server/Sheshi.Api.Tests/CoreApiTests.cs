@@ -22,8 +22,6 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         roomsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var rooms = await roomsResponse.Content.ReadFromJsonAsync<RoomDto[]>();
         rooms.Should().NotBeNull();
-        // Other tests in this class share the fixture DB and may add rooms;
-        // only the seeded room is guaranteed.
         rooms.Should().Contain(r => r.Slug == "sheshi");
 
         var sheshiResponse = await client.GetAsync("/api/rooms/sheshi");
@@ -89,7 +87,7 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     public async Task Message_vote_report_and_highlight_flow_matches_current_app_contract()
     {
         var client = factory.CreateClient();
-        var alice = await PromoteToAdminAsync(client, await RegisterAsync(client, "alice"));
+        var alice = await RegisterAsync(client, "alice");
         var bob = await RegisterAsync(client, "bob");
         var room = await GetRoomAsync(client, "sheshi");
 
@@ -141,10 +139,10 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var messagesResponse = await client.GetAsync($"/api/rooms/{room.Id}/messages");
         messagesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var messagesPage = await messagesResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
-        var messages = messagesPage!.Items;
+        var messages = await messagesResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
         messages.Should().NotBeNull();
-        messages.Should().ContainSingle(m =>
+        messages!.NextCursor.Should().BeNull();
+        messages.Items.Should().ContainSingle(m =>
             m.Id == main.Id &&
             m.Upvotes == 1 &&
             m.ReplyCount == 1 &&
@@ -152,10 +150,10 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var repliesResponse = await client.GetAsync($"/api/messages/{main.Id}/replies");
         repliesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var repliesPage = await repliesResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
-        var replies = repliesPage!.Items;
+        var replies = await repliesResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
         replies.Should().NotBeNull();
-        replies.Should().ContainSingle(r => r.Id == reply.Id && r.Upvotes == 1 && r.ReplyCount == 1 && r.Voted);
+        replies!.NextCursor.Should().BeNull();
+        replies.Items.Should().ContainSingle(r => r.Id == reply.Id && r.Upvotes == 1 && r.ReplyCount == 1 && r.Voted);
 
         var threadResponse = await client.GetAsync($"/api/threads/{main.Id}");
         threadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -183,19 +181,6 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
         longReportResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        // Reporting the same message again is idempotent (anti-flood): no duplicate row.
-        var duplicateReportResponse = await client.PostAsJsonAsync($"/api/messages/{main.Id}/report", new
-        {
-            reason = "spam",
-            note = "again"
-        });
-        duplicateReportResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        await WithServicesAsync(async sp =>
-        {
-            var db = sp.GetRequiredService<AppDbContext>();
-            (await db.Reports.CountAsync(r => r.MessageId == main.Id)).Should().Be(1);
-        });
-
         var highlightsResponse = await client.GetAsync("/api/highlights?mode=top");
         highlightsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var highlights = await highlightsResponse.Content.ReadFromJsonAsync<MessageDto[]>();
@@ -204,67 +189,10 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Threads_store_root_depth_and_feeds_page_by_cursor()
-    {
-        var client = factory.CreateClient();
-        var user = await PromoteToAdminAsync(client, await RegisterAsync(client, "thread-meta"));
-        var room = await GetRoomAsync(client, "sheshi");
-        UseBearer(client, user.AccessToken);
-
-        var firstPost = await PostMessageAsync(client, room.Id, "First thread");
-        await Task.Delay(5);
-        var secondPost = await PostMessageAsync(client, room.Id, "Second thread");
-        var firstReply = await PostMessageAsync(client, room.Id, "First reply", firstPost.Id);
-        var nestedReply = await PostMessageAsync(client, room.Id, "Nested reply", firstReply.Id);
-
-        // Depth is capped: replies past the max reparent to the thread root so the
-        // tree (and recursive traversal) can never grow unbounded.
-        var deepParent = nestedReply;
-        for (var i = 0; i < 12; i++)
-        {
-            deepParent = await PostMessageAsync(client, room.Id, $"deep {i}", deepParent.Id);
-        }
-        await WithServicesAsync(async sp =>
-        {
-            var db = sp.GetRequiredService<AppDbContext>();
-            (await db.Messages.MaxAsync(m => m.Depth)).Should().BeLessThanOrEqualTo(8);
-        });
-
-        await WithServicesAsync(async sp =>
-        {
-            var db = sp.GetRequiredService<AppDbContext>();
-            var stored = await db.Messages
-                .AsNoTracking()
-                .Where(m => new[] { firstPost.Id, firstReply.Id, nestedReply.Id }.Contains(m.Id))
-                .ToDictionaryAsync(m => m.Id);
-
-            stored[firstPost.Id].RootMessageId.Should().Be(firstPost.Id);
-            stored[firstPost.Id].Depth.Should().Be(0);
-            stored[firstReply.Id].RootMessageId.Should().Be(firstPost.Id);
-            stored[firstReply.Id].Depth.Should().Be(1);
-            stored[nestedReply.Id].RootMessageId.Should().Be(firstPost.Id);
-            stored[nestedReply.Id].Depth.Should().Be(2);
-        });
-
-        var firstPageResponse = await client.GetAsync($"/api/rooms/{room.Id}/messages?limit=1");
-        firstPageResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var firstPage = await firstPageResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
-        firstPage.Should().NotBeNull();
-        firstPage!.Items.Should().ContainSingle(m => m.Id == secondPost.Id);
-        firstPage.NextCursor.Should().NotBeNullOrWhiteSpace();
-
-        var secondPageResponse = await client.GetAsync($"/api/rooms/{room.Id}/messages?limit=1&cursor={Uri.EscapeDataString(firstPage.NextCursor!)}");
-        secondPageResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var secondPage = await secondPageResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
-        secondPage.Should().NotBeNull();
-        secondPage!.Items.Should().ContainSingle(m => m.Id == firstPost.Id);
-    }
-
-    [Fact]
     public async Task Message_authorization_rules_match_supabase_rls_port()
     {
         var client = factory.CreateClient();
-        var author = await PromoteToAdminAsync(client, await RegisterAsync(client, "author"));
+        var author = await RegisterAsync(client, "author");
         var other = await RegisterAsync(client, "other");
         var banned = await RegisterAsync(client, "banned");
         var moderator = await RegisterAsync(client, "moderator");
@@ -291,22 +219,6 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var main = await mainResponse.Content.ReadFromJsonAsync<MessageDto>();
         main.Should().NotBeNull();
 
-        // Non-admins cannot open threads but can still reply.
-        UseBearer(client, other.AccessToken);
-        var otherThreadResponse = await client.PostAsJsonAsync("/api/messages", new
-        {
-            room_id = room.Id,
-            body = "Non-admin thread"
-        });
-        otherThreadResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        var otherReplyResponse = await client.PostAsJsonAsync("/api/messages", new
-        {
-            room_id = room.Id,
-            parent_id = main!.Id,
-            body = "Non-admin reply"
-        });
-        otherReplyResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-
         UseBearer(client, banned.AccessToken);
         var bannedPostResponse = await client.PostAsJsonAsync("/api/messages", new
         {
@@ -317,37 +229,17 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var bannedVoteResponse = await client.PutAsync($"/api/messages/{main!.Id}/vote", content: null);
         bannedVoteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        var bannedLoginResponse = await client.PostAsJsonAsync("/api/auth/login", new
-        {
-            email = banned.Email,
-            password = "Password123!"
-        });
-        bannedLoginResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-
-        var bannedRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
-        {
-            refresh_token = banned.RefreshToken
-        });
-        bannedRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-
         UseBearer(client, other.AccessToken);
         var otherDeleteResponse = await client.DeleteAsync($"/api/messages/{main.Id}");
         otherDeleteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-
-        var beforeDelete = (await GetRoomAsync(client, "sheshi")).ThreadCount;
 
         UseBearer(client, moderator.AccessToken);
         var moderatorDeleteResponse = await client.DeleteAsync($"/api/messages/{main.Id}");
         moderatorDeleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // Deleting a root thread decrements the room's denormalized thread count.
-        (await GetRoomAsync(client, "sheshi")).ThreadCount.Should().Be(beforeDelete - 1);
-
         var deleted = await client.GetFromJsonAsync<MessageDto>($"/api/messages/{main.Id}");
         deleted.Should().NotBeNull();
         deleted!.DeletedAt.Should().NotBeNull();
-        deleted.Body.Should().BeEmpty();
-        deleted.ImageUrl.Should().BeNull();
     }
 
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
@@ -378,16 +270,6 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         return auth! with { Email = email };
     }
 
-    private async Task<AuthResponse> PromoteToAdminAsync(HttpClient client, AuthResponse auth)
-    {
-        await WithServicesAsync(async sp =>
-        {
-            var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
-            await userManager.AddToRoleAsync((await userManager.FindByEmailAsync(auth.Email))!, Roles.Admin);
-        });
-        return await LoginAsync(client, auth.Email);
-    }
-
     private static void UseBearer(HttpClient client, string accessToken) =>
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
@@ -396,20 +278,6 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var room = await client.GetFromJsonAsync<RoomDto>($"/api/rooms/{slug}");
         room.Should().NotBeNull();
         return room!;
-    }
-
-    private static async Task<MessageDto> PostMessageAsync(HttpClient client, Guid roomId, string body, Guid? parentId = null)
-    {
-        var response = await client.PostAsJsonAsync("/api/messages", new
-        {
-            room_id = roomId,
-            parent_id = parentId,
-            body
-        });
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var message = await response.Content.ReadFromJsonAsync<MessageDto>();
-        message.Should().NotBeNull();
-        return message!;
     }
 
     private async Task WithServicesAsync(Func<IServiceProvider, Task> action)
@@ -430,8 +298,7 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         [property: JsonPropertyName("id")] Guid Id,
         [property: JsonPropertyName("slug")] string Slug,
         [property: JsonPropertyName("name")] string Name,
-        [property: JsonPropertyName("description")] string? Description,
-        [property: JsonPropertyName("thread_count")] int ThreadCount);
+        [property: JsonPropertyName("description")] string? Description);
 
     private sealed record UserDto(
         [property: JsonPropertyName("id")] Guid Id,

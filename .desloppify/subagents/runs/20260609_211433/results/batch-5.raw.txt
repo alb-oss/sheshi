@@ -1,0 +1,82 @@
+{
+  "batch": "naming_quality",
+  "batch_index": 5,
+  "assessments": {
+    "naming_quality": 90.0
+  },
+  "dimension_notes": {
+    "naming_quality": {
+      "evidence": [
+        "src/lib/sheshi.ts:45-151 uses API helper names that map directly to product actions: listRooms, getRoomBySlug, createRoom, listMessages, postMessage, toggleVote, softDeleteMessage, submitReport.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs:28-89 uses controller action names that match HTTP behavior and domain intent: ListRoomMessages, GetMessage, ListReplies, GetThread, PostMessage.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs:231-307 keeps private tree-building helper names concrete: GetThreadRootIdAsync, ResolveRootAsync, LoadThreadDescendantsAsync, CollectDescendants, BuildReplyNodes.",
+        "src/components/ui/alert-dialog.tsx and src/components/ui/dropdown-menu.tsx use shadcn/Radix compound component filenames and exported symbols; the mechanical kebab-case outlier is a framework convention rather than local vocabulary drift.",
+        "src/components/Composer.tsx:123-145 has a local async function named doSubmit even though it validates and posts a message, then clears composer state and notifies callbacks."
+      ],
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "confidence": "high",
+      "issues_preventing_higher_score": "The codebase is mostly predictable, but a few local UI handlers still use generic names like doSubmit where a new reader has to inspect the body to learn the actual domain action.",
+      "sub_axes": {}
+    }
+  },
+  "dimension_judgment": {
+    "naming_quality": {
+      "dimension_character": "Names generally let a new developer predict behavior quickly: frontend domain wrappers use list/get/create/post/toggle vocabulary, backend controllers mirror HTTP actions, and tree/thread helpers are concrete. The main naming weakness is isolated local UI handler naming, not a systemic vocabulary problem.",
+      "score_rationale": "This sits around the 90 anchor: a developer would trust most names, with only minor friction from local generic verbs. The mechanical filename concern does not lower the score because the kebab-case files are shadcn/Radix compound component conventions, not project-specific naming drift."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "naming_quality",
+      "identifier": "composer_do_submit_generic",
+      "summary": "Composer doSubmit hides that it posts a message and clears composer state",
+      "related_files": [
+        "src/components/Composer.tsx"
+      ],
+      "evidence": [
+        "src/components/Composer.tsx:123 names the function doSubmit, a generic verb that does not identify the domain action.",
+        "src/components/Composer.tsx:127-131 posts a message, clears body/image state, clears reply context, and triggers onPosted, so the behavior is specifically message submission."
+      ],
+      "suggestion": "Rename doSubmit to submitMessage or submitComposerMessage, and update the two call sites in onSubmit and the Enter key handler.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Most naming friction comes from local event-handler convenience names rather than shared API or domain vocabulary."
+    ],
+    "likely_symptoms": [
+      "composer_do_submit_generic"
+    ],
+    "possible_false_positives": [
+      "naming::src/components/ui::kebab-case is a shadcn/Radix compound component filename convention, not an actionable naming inconsistency."
+    ]
+  },
+  "context_updates": {
+    "naming_quality": {
+      "add": [
+        {
+          "header": "Domain API verbs are predictable",
+          "description": "The frontend Sheshi API wrapper consistently uses list/get/create/post/toggle/softDelete/submit names that map to user-visible domain actions. This lets callers infer both resource and behavior without opening the helper.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Backend action names mirror routes",
+          "description": "Controller methods use conventional HTTP-domain names such as ListRoomMessages, GetMessage, GetThread, and PostMessage. The names line up with route attributes and make endpoint intent easy to scan.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Compound UI filenames follow shadcn",
+          "description": "Multiword files in src/components/ui use kebab-case because they mirror shadcn/Radix component naming. The convention is localized and recognizable, so it helps navigation more than it harms consistency.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    }
+  }
+}

@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sheshi.Api.Email;
@@ -80,27 +81,6 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
             refresh_token = refreshed.RefreshToken
         });
         revokedRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-
-        // Replaying a revoked token is treated as theft: every active session dies.
-        var survivorLogin = await client.PostAsJsonAsync("/api/auth/login", new
-        {
-            email,
-            password = "Password123!"
-        });
-        var survivor = await survivorLogin.Content.ReadFromJsonAsync<AuthResponse>();
-        survivor.Should().NotBeNull();
-
-        var replayResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
-        {
-            refresh_token = refreshed.RefreshToken
-        });
-        replayResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-
-        var familyRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
-        {
-            refresh_token = survivor!.RefreshToken
-        });
-        familyRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -124,19 +104,50 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
 
         loginResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
 
-        // Five failures lock the account: even the correct password is rejected.
-        for (var attempt = 0; attempt < 4; attempt++)
+    [Fact]
+    public async Task Login_locks_account_after_repeated_bad_passwords()
+    {
+        var client = clientWithLowAuthLockout();
+        var email = $"lockout-{Guid.NewGuid():N}@example.com";
+
+        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
         {
-            await client.PostAsJsonAsync("/api/auth/login", new { email, password = "NotThePassword123!" });
+            email,
+            password = "Password123!",
+            display_name = "Lockout User"
+        });
+        registerResponse.EnsureSuccessStatusCode();
+
+        for (var i = 0; i < 3; i++)
+        {
+            var badLogin = await client.PostAsJsonAsync("/api/auth/login", new
+            {
+                email,
+                password = "WrongPassword123!"
+            });
+            badLogin.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
-        var lockedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var lockedLogin = await client.PostAsJsonAsync("/api/auth/login", new
         {
             email,
             password = "Password123!"
         });
-        lockedResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        lockedLogin.StatusCode.Should().Be(HttpStatusCode.Locked);
+
+        HttpClient clientWithLowAuthLockout() => factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Auth:Lockout:MaxFailedAccessAttempts"] = "3",
+                    ["Auth:Lockout:Minutes"] = "15"
+                });
+            });
+        }).CreateClient();
     }
 
     [Fact]
@@ -150,47 +161,6 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var providers = await response.Content.ReadFromJsonAsync<string[]>();
         providers.Should().NotBeNull();
         providers.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task Registration_sends_confirmation_email_and_endpoint_confirms_it()
-    {
-        var sender = new CapturingEmailSender();
-        var client = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureTestServices(services =>
-            {
-                services.RemoveAll<IEmailSender>();
-                services.AddSingleton<IEmailSender>(sender);
-            });
-        }).CreateClient();
-        var email = $"confirm-{Guid.NewGuid():N}@example.com";
-
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "Password123!",
-            display_name = "Confirm User"
-        });
-        registerResponse.EnsureSuccessStatusCode();
-        sender.ConfirmationUrls.Should().ContainSingle();
-
-        var confirmUri = new Uri(sender.ConfirmationUrls.Single());
-        var query = QueryHelpers.ParseQuery(confirmUri.Query);
-        var confirmResponse = await client.PostAsJsonAsync("/api/auth/confirm-email", new
-        {
-            email,
-            token = query["token"].Single()
-        });
-        confirmResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        // Idempotent: confirming again succeeds; garbage tokens are rejected for others.
-        var againResponse = await client.PostAsJsonAsync("/api/auth/confirm-email", new
-        {
-            email,
-            token = "garbage"
-        });
-        againResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact]
@@ -241,13 +211,6 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
         resetResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // A successful reset revokes every session issued before it.
-        var staleRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
-        {
-            refresh_token = registered!.RefreshToken
-        });
-        staleRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-
         var oldLoginResponse = await client.PostAsJsonAsync("/api/auth/login", new
         {
             email,
@@ -261,6 +224,12 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
             password = "NewPassword123!"
         });
         newLoginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var revokedRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refresh_token = registered!.RefreshToken
+        });
+        revokedRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     private sealed record AuthResponse(
@@ -280,17 +249,10 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
     private sealed class CapturingEmailSender : IEmailSender
     {
         public List<string> ResetUrls { get; } = [];
-        public List<string> ConfirmationUrls { get; } = [];
 
         public Task SendPasswordResetAsync(string email, string resetUrl, CancellationToken ct = default)
         {
             ResetUrls.Add(resetUrl);
-            return Task.CompletedTask;
-        }
-
-        public Task SendEmailConfirmationAsync(string email, string confirmUrl, CancellationToken ct = default)
-        {
-            ConfirmationUrls.Add(confirmUrl);
             return Task.CompletedTask;
         }
     }

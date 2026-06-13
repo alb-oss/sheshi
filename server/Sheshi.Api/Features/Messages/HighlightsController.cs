@@ -1,45 +1,50 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Sheshi.Api.Auth;
+using Sheshi.Api.Data;
 
 namespace Sheshi.Api.Features.Messages;
 
 [ApiController]
 [Route("api/highlights")]
-public class HighlightsController(HighlightsService highlights, MessageEnricher enricher) : ControllerBase
+public class HighlightsController(AppDbContext db, MessageService messageService) : ControllerBase
 {
-    private const int ResultLimit = 10;
-
     [HttpGet]
-    [EnableRateLimiting("reads")]
     public async Task<ActionResult<IReadOnlyList<MessageDto>>> List([FromQuery] string mode = "hot", CancellationToken ct = default)
     {
         mode = mode.ToLowerInvariant();
-        if (mode is not ("focus" or "hot" or "fresh" or "top" or "replied")) return BadRequest(new { error = "INVALID_MODE" });
+        if (mode is not ("hot" or "top" or "replied")) return BadRequest(new { error = "INVALID_MODE" });
 
-        var snapshot = await highlights.GetSnapshotAsync(ct);
-        var stats = snapshot.Stats;
+        var query = db.Messages
+            .AsNoTracking()
+            .Where(m => m.ParentId == null && m.DeletedAt == null);
+
+        if (mode is not "hot")
+        {
+            var since = DateTimeOffset.UtcNow.AddHours(-24);
+            query = query.Where(m => m.CreatedAt >= since);
+        }
+
+        var candidates = await query
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(200)
+            .ToListAsync(ct);
+
+        var enriched = await messageService.EnrichAsync(candidates, User.GetUserId(), ct);
         var now = DateTimeOffset.UtcNow;
         var ranked = mode switch
         {
-            "fresh" => snapshot.Candidates
-                .OrderByDescending(m => stats[m.Id].ActivityAt)
-                .ThenByDescending(m => HighlightsService.FreshTieBreakScore(stats[m.Id])),
-            "focus" or "hot" => snapshot.Candidates.OrderByDescending(m => highlights.Score(stats[m.Id], now)),
-            "top" => snapshot.Candidates
-                .OrderByDescending(m => stats[m.Id].Upvotes + stats[m.Id].BranchVotes)
-                .ThenByDescending(m => stats[m.Id].DirectReplies + stats[m.Id].Descendants)
-                .ThenByDescending(m => stats[m.Id].ActivityAt),
-            _ => snapshot.Candidates
-                .OrderByDescending(m => stats[m.Id].DirectReplies * 3 + stats[m.Id].Descendants)
-                .ThenByDescending(m => stats[m.Id].ActivityAt)
+            "hot" => enriched.OrderByDescending(m => HotScore(m, now)),
+            "top" => enriched.OrderByDescending(m => m.Upvotes).ThenByDescending(m => m.CreatedAt),
+            _ => enriched.OrderByDescending(m => m.ReplyCount).ThenByDescending(m => m.CreatedAt)
         };
 
-        // Rank on the cached stats, then enrich only the winners: the per-user
-        // "voted" flag and author data stay fresh while the heavy scan is shared.
-        var top = ranked.Take(ResultLimit).ToList();
-        var enriched = await enricher.EnrichAsync(top, User.GetUserId(), ct);
-        var byId = enriched.ToDictionary(m => m.Id);
-        return Ok(top.Select(m => byId[m.Id]).ToList());
+        return Ok(ranked.Take(10).ToList());
+    }
+
+    private static double HotScore(MessageDto message, DateTimeOffset now)
+    {
+        var ageHours = Math.Max((now - message.CreatedAt).TotalHours, 0.5);
+        return (message.Upvotes + message.ReplyCount * 2) / Math.Pow(ageHours, 1.3);
     }
 }

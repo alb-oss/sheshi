@@ -1,16 +1,11 @@
-using System.Net;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.HttpLogging;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
@@ -25,28 +20,8 @@ using Sheshi.Api.Realtime;
 using Sheshi.Api.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
-
-// Structured JSON logs outside Development so a log pipeline can parse them
-// (with the trace id via scopes); the readable console stays for local work.
-if (!builder.Environment.IsDevelopment())
-{
-    builder.Logging.ClearProviders();
-    builder.Logging.AddJsonConsole(o => o.IncludeScopes = true);
-}
 
 // Add services to the container.
-
-// Per-request log line (method, path, status, duration).
-builder.Services.AddHttpLogging(o =>
-    o.LoggingFields = HttpLoggingFields.RequestMethod
-        | HttpLoggingFields.RequestPath
-        | HttpLoggingFields.ResponseStatusCode
-        | HttpLoggingFields.Duration);
-
-// Liveness is dependency-free; readiness verifies the database is reachable.
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>("database", tags: ["ready"]);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o =>
@@ -57,95 +32,41 @@ builder.Services.AddControllers()
     });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddMemoryCache();
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(
-        builder.Configuration["DataProtection:KeyPath"] ?? Path.Combine(builder.Environment.ContentRootPath, "keys")))
-    .SetApplicationName("Sheshi");
-builder.Services.AddProblemDetails();
-builder.Services.AddHostedService<RefreshTokenCleanupService>();
-builder.Services.AddHostedService<DailyStatsRollupService>();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
- builder.Services.Configure<HighlightsOptions>(builder.Configuration.GetSection("Highlights"));
+builder.Services.Configure<ImageSafetyOptions>(builder.Configuration.GetSection("ImageSafety"));
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
-builder.Services.AddScoped<MessageEnricher>();
 builder.Services.AddScoped<MessageService>();
-builder.Services.AddScoped<MessageReader>();
-builder.Services.AddScoped<HighlightsService>();
+builder.Services.AddScoped<IContentClassifier, NoopContentClassifier>();
+builder.Services.AddScoped<ModerationActionLogger>();
+builder.Services.AddScoped<ModerationMetricsService>();
+builder.Services.AddScoped<ModerationRuleEngine>();
 builder.Services.AddScoped<RoomService>();
-builder.Services.AddScoped<ModerationService>();
 builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddScoped<RealtimeNotifier>();
-builder.Services.AddSignalR()
-    .AddJsonProtocol(o => o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower);
-var authPermitLimit = GetConfiguredLimit(builder.Configuration, "RateLimits:AuthPerMinute", builder.Environment.IsDevelopment() ? 1000 : 20);
-var readPermitLimit = GetConfiguredLimit(builder.Configuration, "RateLimits:ReadsPerMinute", builder.Environment.IsDevelopment() ? 5000 : 600);
-var writePermitLimit = GetConfiguredLimit(builder.Configuration, "RateLimits:WritesPerMinute", builder.Environment.IsDevelopment() ? 1000 : 90);
-var realtimePermitLimit = GetConfiguredLimit(builder.Configuration, "RateLimits:RealtimeConnectsPerMinute", builder.Environment.IsDevelopment() ? 1000 : 120);
-var moderationPermitLimit = GetConfiguredLimit(builder.Configuration, "RateLimits:ModerationPerMinute", builder.Environment.IsDevelopment() ? 1000 : 120);
+builder.Services.AddSignalR().AddJsonProtocol(o =>
+{
+    o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+    o.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
+    o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
+});
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, ct) =>
     {
-        context.HttpContext.Response.Headers.RetryAfter = "60";
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString("0");
+
         await context.HttpContext.Response.WriteAsJsonAsync(new { error = "RATE_LIMITED" }, cancellationToken: ct);
     };
-    options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
-        GetRateLimitKey(context),
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = authPermitLimit,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0
-        }));
-    options.AddPolicy("reads", context => RateLimitPartition.GetFixedWindowLimiter(
-        GetRateLimitKey(context),
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = readPermitLimit,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0
-        }));
-    options.AddPolicy("writes", context => RateLimitPartition.GetFixedWindowLimiter(
-        GetRateLimitKey(context),
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = writePermitLimit,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0
-        }));
-    options.AddPolicy("realtime", context => RateLimitPartition.GetFixedWindowLimiter(
-        GetRateLimitKey(context),
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = realtimePermitLimit,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0
-        }));
-    options.AddPolicy("moderation", context => RateLimitPartition.GetFixedWindowLimiter(
-        GetRateLimitKey(context),
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = moderationPermitLimit,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0
-        }));
-});
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor |
-                               ForwardedHeaders.XForwardedProto |
-                               ForwardedHeaders.XForwardedHost;
-    options.ForwardLimit = builder.Configuration.GetValue<int?>("LoadBalancer:ForwardLimit") ?? 2;
 
-    foreach (var proxy in builder.Configuration.GetSection("LoadBalancer:KnownProxies").Get<string[]>() ?? [])
-    {
-        if (IPAddress.TryParse(proxy, out var address)) options.KnownProxies.Add(address);
-    }
+    AddFixedPolicy(options, builder.Configuration, "auth", "Auth", preferUser: false, defaultPermitLimit: 200, defaultWindowSeconds: 60);
+    AddFixedPolicy(options, builder.Configuration, "writes", "Writes", preferUser: true, defaultPermitLimit: 30, defaultWindowSeconds: 60);
+    AddFixedPolicy(options, builder.Configuration, "reports", "Reports", preferUser: true, defaultPermitLimit: 10, defaultWindowSeconds: 300);
+    AddFixedPolicy(options, builder.Configuration, "moderation", "Moderation", preferUser: true, defaultPermitLimit: 120, defaultWindowSeconds: 60);
 });
 builder.Services.AddCors(options =>
 {
@@ -166,19 +87,20 @@ builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
-        options.Password.RequiredLength = 6;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = !builder.Environment.IsDevelopment();
+        options.Password.RequiredLength = 10;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
         options.Lockout.AllowedForNewUsers = true;
-        options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+        options.Lockout.MaxFailedAccessAttempts = builder.Configuration.GetValue("Auth:Lockout:MaxFailedAccessAttempts", 5);
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(builder.Configuration.GetValue("Auth:Lockout:Minutes", 15));
     })
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
-ValidateJwtOptions(jwt, builder.Environment);
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey));
 var auth = builder.Services
     .AddAuthentication(options =>
@@ -285,10 +207,6 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-else
-{
-    app.UseHsts();
-}
 
 var storage = app.Services.GetRequiredService<IConfiguration>().GetSection("Storage").Get<StorageOptions>() ?? new StorageOptions();
 var uploadPath = Path.GetFullPath(storage.UploadPath);
@@ -299,54 +217,18 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
-// Behind a TLS-terminating reverse proxy, trust its forwarded scheme/IP so the
-// real client IP reaches rate limiting and the request scheme reads as https.
-var behindProxy = app.Configuration.GetValue<bool>("LoadBalancer:UseForwardedHeaders");
-if (behindProxy)
-    app.UseForwardedHeaders();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler(handler => handler.Run(async context =>
-    {
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        await context.Response.WriteAsJsonAsync(new { error = "INTERNAL_ERROR" });
-    }));
-}
-
-app.UseHttpLogging();
-
-app.Use(async (context, next) =>
-{
-    var headers = context.Response.Headers;
-    headers.TryAdd("X-Content-Type-Options", "nosniff");
-    headers.TryAdd("X-Frame-Options", "DENY");
-    headers.TryAdd("Referrer-Policy", "no-referrer");
-    headers.TryAdd("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()");
-    headers.TryAdd("Cross-Origin-Opener-Policy", "same-origin");
-    headers.TryAdd("Cross-Origin-Resource-Policy", "same-site");
-    headers.TryAdd("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
-    await next();
-});
-
-// HTTPS redirect only when directly exposed; behind a TLS-terminating proxy the
-// proxy owns the redirect, and doing it here would cause a redirect loop.
-if (!behindProxy)
-    app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
 app.UseRouting();
 app.UseCors("Frontend");
 app.UseAuthentication();
-app.UseAuthorization();
-// After authentication so the rate limiter can partition by user id, not just IP.
 app.UseRateLimiter();
+app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<ChatHub>("/hub").RequireRateLimiting("realtime");
+app.MapHub<ChatHub>("/hub");
 
-// Liveness: process is up (no dependencies). Readiness: database reachable.
-app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
-app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
+app.MapGet("/health", () => "ok");
 
 app.Run();
 
@@ -370,27 +252,39 @@ static string[] GetAllowedOrigins(IConfiguration configuration)
     ];
 }
 
-static int GetConfiguredLimit(IConfiguration configuration, string key, int fallback) =>
-    Math.Max(1, configuration.GetValue<int?>(key) ?? fallback);
-
-static void ValidateJwtOptions(JwtOptions jwt, IWebHostEnvironment environment)
+static void AddFixedPolicy(
+    RateLimiterOptions options,
+    IConfiguration configuration,
+    string policyName,
+    string configName,
+    bool preferUser,
+    int defaultPermitLimit,
+    int defaultWindowSeconds)
 {
-    if (string.IsNullOrWhiteSpace(jwt.Issuer) || string.IsNullOrWhiteSpace(jwt.Audience))
-        throw new InvalidOperationException("Jwt:Issuer and Jwt:Audience must be configured.");
-
-    if (string.IsNullOrWhiteSpace(jwt.SigningKey) || Encoding.UTF8.GetByteCount(jwt.SigningKey) < 32)
-        throw new InvalidOperationException("Jwt:SigningKey must be at least 32 bytes.");
-
-    if (!environment.IsDevelopment() && jwt.SigningKey == "local_dev_signing_key_change_me_min_32_bytes")
-        throw new InvalidOperationException("Jwt:SigningKey must be replaced outside Development.");
+    options.AddPolicy(policyName, context =>
+    {
+        var permitLimit = Math.Max(1, configuration.GetValue($"RateLimits:{configName}:PermitLimit", defaultPermitLimit));
+        var windowSeconds = Math.Max(1, configuration.GetValue($"RateLimits:{configName}:WindowSeconds", defaultWindowSeconds));
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: BuildPartitionKey(context, policyName, preferUser),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = TimeSpan.FromSeconds(windowSeconds),
+                QueueLimit = 0,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                AutoReplenishment = true
+            });
+    });
 }
 
-static string GetRateLimitKey(HttpContext context)
+static string BuildPartitionKey(HttpContext context, string policyName, bool preferUser)
 {
-    var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (!string.IsNullOrWhiteSpace(userId)) return $"user:{userId}";
+    var userId = preferUser ? context.User.GetUserId()?.ToString() : null;
+    if (!string.IsNullOrWhiteSpace(userId)) return $"{policyName}:user:{userId}";
 
-    return $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+    var ip = context.Connection.RemoteIpAddress?.ToString();
+    return $"{policyName}:ip:{ip ?? "unknown"}";
 }
 
 public partial class Program;

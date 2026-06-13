@@ -48,7 +48,7 @@ public class ModelParityTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public void Top_level_message_index_supports_keyset_pagination()
+    public void Top_level_message_index_orders_created_at_descending()
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -56,13 +56,13 @@ public class ModelParityTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         message.Should().NotBeNull();
         var index = message!.GetIndexes()
-            .Where(i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(Message.RoomId), nameof(Message.CreatedAt), nameof(Message.Id) }))
+            .Where(i => i.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(Message.RoomId), nameof(Message.CreatedAt) }))
             .Should()
             .ContainSingle()
             .Subject;
 
         index.GetFilter().Should().Be("\"ParentId\" IS NULL");
-        index.IsDescending.Should().Equal([false, true, true]);
+        index.IsDescending.Should().Equal([false, true]);
     }
 
     private static bool HasProperties(IReadOnlyForeignKey foreignKey, params string[] names) =>
