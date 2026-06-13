@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { sq } from "@/i18n/sq";
 import { listHighlights, type HighlightMode, type MessageRow } from "@/lib/sheshi";
+import { ensureRealtimeStarted } from "@/lib/realtime";
 import { Link } from "@tanstack/react-router";
 import { Flame, ArrowUp, MessageSquare, ArrowUpRight } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -17,6 +18,13 @@ export function HighlightsPanel({
   const [mode, setMode] = useState<HighlightMode>("hot");
   const [items, setItems] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+
+  const refresh = useCallback(
+    () => listHighlights(modeRef.current).then(setItems).catch(() => {}),
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +43,26 @@ export function HighlightsPanel({
       cancelled = true;
     };
   }, [mode, currentUserId]);
+
+  // Phase B: keep the global "Hot" live — debounced refetch on any realtime activity
+  // (the panel is joined to no room/thread group, so it listens for the global tick).
+  useEffect(() => {
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tick = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!disposed) void refresh();
+      }, 800);
+    };
+    const conn = ensureRealtimeStarted();
+    conn.then((c) => !disposed && c.on("highlights_changed", tick)).catch(() => {});
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      conn.then((c) => c.off("highlights_changed", tick)).catch(() => {});
+    };
+  }, [refresh]);
 
   const tabs: { id: HighlightMode; label: string }[] = [
     { id: "hot", label: sq.fokus.hot },
