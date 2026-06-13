@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUp, CornerDownRight, Flag, Trash2 } from "lucide-react";
+import { ArrowUp, CornerDownRight, Flag, Share2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { sq as sqLocale } from "date-fns/locale";
@@ -7,6 +7,7 @@ import { sq } from "@/i18n/sq";
 import { cn } from "@/lib/utils";
 import { SheshiError, toggleVote, softDeleteMessage, type MessageRow } from "@/lib/sheshi";
 import { ReportDialog } from "./ReportDialog";
+import { ShareDialog, type ShareTarget } from "./ShareDialog";
 import { toast } from "sonner";
 
 interface Props {
@@ -32,6 +33,7 @@ export function MessageCard({
   const [optimisticUpvotes, setOptimisticUpvotes] = useState(message.upvotes ?? 0);
   const [optimisticVoted, setOptimisticVoted] = useState(!!message.voted);
   const [reportOpen, setReportOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const isDeleted = !!message.deleted_at;
   const isOwn = currentUserId && currentUserId === message.author_id;
 
@@ -87,6 +89,35 @@ export function MessageCard({
     } finally {
       setVoting(false);
     }
+  }
+
+  function buildShareTarget(): ShareTarget {
+    const url =
+      (typeof window !== "undefined" ? window.location.origin : "") + `/tema/${message.id}`;
+    const body = isDeleted ? sq.chat.deleted : message.body.trim();
+    const excerpt = body.length > 160 ? `${body.slice(0, 157)}…` : body;
+    return {
+      title: `#${roomSlug} në ${sq.appName}`,
+      text: excerpt || `Diskutim në ${sq.appName}`,
+      url,
+      roomLabel: `#${roomSlug}`,
+    };
+  }
+
+  // Prefer the OS share sheet on mobile (the old app's behaviour); fall back to our dialog
+  // on desktop / unsupported. A user-cancelled native share is silent, not an error.
+  async function onShare() {
+    const target = buildShareTarget();
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: target.title, text: target.text, url: target.url });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        // Any other failure → fall through to the dialog.
+      }
+    }
+    setShareOpen(true);
   }
 
   async function onDelete() {
@@ -204,6 +235,16 @@ export function MessageCard({
               return null;
             })()}
 
+            <button
+              type="button"
+              onClick={() => void onShare()}
+              aria-label={sq.share.action}
+              title={sq.share.action}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 text-foreground/50 transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary"
+            >
+              <Share2 className="h-3.5 w-3.5" aria-hidden />
+            </button>
+
             {currentUserId && !isOwn && (
               <button
                 type="button"
@@ -229,6 +270,9 @@ export function MessageCard({
       </div>
 
       <ReportDialog open={reportOpen} onOpenChange={setReportOpen} messageId={message.id} />
+      {shareOpen && (
+        <ShareDialog open={shareOpen} onOpenChange={setShareOpen} target={buildShareTarget()} />
+      )}
     </article>
   );
 }
