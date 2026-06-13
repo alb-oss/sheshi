@@ -300,7 +300,9 @@ function ThreadPage() {
           )}
         </div>
 
-        {root && (
+        {/* The docked thread composer hides while an inline reply is open, so the user only
+            ever sees one text box at a time (two was confusing). */}
+        {root && !replyTarget && (
           <Composer
             key={root.id}
             roomId={root.room_id}
@@ -342,22 +344,9 @@ function ReplyBranch({
 
   return (
     <div className="relative" style={{ marginLeft: levelIndent }}>
-      {hasChildren && !isCollapsed ? (
-        // The vertical thread rail doubles as the collapse affordance (Reddit-style: click
-        // the line to fold the subtree). It lives in the left gutter so it never intercepts
-        // clicks on the comment itself, and brightens to the accent on hover.
-        <button
-          type="button"
-          onClick={() => onToggleCollapse(node.message.id)}
-          aria-label="Mbyll përgjigjet"
-          title="Mbyll përgjigjet"
-          className="group/line absolute left-0 top-9 bottom-0 z-10 flex w-4 justify-center"
-        >
-          <span className="w-px bg-thread-line transition-colors group-hover/line:bg-primary" />
-        </button>
-      ) : (
-        <div className="absolute left-2 top-0 bottom-0 w-px bg-thread-line" aria-hidden />
-      )}
+      {/* Static thread guide line in the left gutter. Collapsing is driven by the comment's
+          own [–]/[+] head toggle (and the [+] pill below) — never by clicking this line. */}
+      <div className="absolute bottom-0 left-2 top-0 w-px bg-thread-line" aria-hidden />
       <div className="pl-4 sm:pl-5">
         <MessageCard
           message={node.message}
@@ -367,6 +356,9 @@ function ReplyBranch({
           onChanged={onChanged}
           onReply={onReply}
           compact
+          collapsible={hasChildren}
+          collapsed={isCollapsed}
+          onToggleCollapse={() => onToggleCollapse(node.message.id)}
         />
 
         {renderReplyComposer(node.message)}
@@ -375,7 +367,7 @@ function ReplyBranch({
           <button
             type="button"
             onClick={() => onToggleCollapse(node.message.id)}
-            className="mb-2 ml-1 inline-flex min-h-7 items-center gap-1.5 rounded-sm border border-thread-line px-2 py-1 text-[11px] font-bold text-foreground/60 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+            className="mb-2 ml-1 inline-flex min-h-7 items-center gap-1.5 rounded-full border border-thread-line px-2.5 py-1 text-[11px] font-bold text-foreground/60 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
           >
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />
             {sq.chat.replies(hiddenCount)}

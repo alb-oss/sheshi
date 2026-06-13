@@ -36,6 +36,8 @@ export const sq = {
     save: "Ruaj",
     saved: "U ruajt",
     unsave: "Hiq nga të ruajturat",
+    hideReplies: "Mbyll përgjigjet",
+    showReplies: "Shfaq përgjigjet",
     replies: (n: number) => (n === 1 ? "1 përgjigje" : `${n} përgjigje`),
     upvote: "Mbështet",
     report: "Raporto",

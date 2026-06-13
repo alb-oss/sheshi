@@ -1,5 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowBigUp, Bookmark, CornerDownRight, Flag, Share2, Trash2 } from "lucide-react";
+import {
+  ArrowBigUp,
+  Bookmark,
+  ChevronDown,
+  ChevronRight,
+  CornerDownRight,
+  Flag,
+  Share2,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { sq as sqLocale } from "date-fns/locale";
@@ -19,6 +28,10 @@ interface Props {
   asThreadLink?: boolean;
   compact?: boolean;
   onReply?: (message: MessageRow) => void;
+  // Head-anchored collapse toggle (Reddit's [–]/[+]) — shown when the comment has children.
+  collapsible?: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export function MessageCard({
@@ -29,6 +42,9 @@ export function MessageCard({
   asThreadLink = true,
   compact,
   onReply,
+  collapsible,
+  collapsed,
+  onToggleCollapse,
 }: Props) {
   const [voting, setVoting] = useState(false);
   const [optimisticUpvotes, setOptimisticUpvotes] = useState(message.upvotes ?? 0);
@@ -145,7 +161,12 @@ export function MessageCard({
   }
 
   return (
-    <article className={cn("group flex gap-2 px-3 py-3 sm:gap-3 sm:px-4", compact && "py-2.5")}>
+    <article
+      className={cn(
+        "group flex gap-2 rounded-md px-3 py-3 transition-colors hover:bg-card/40 sm:gap-3 sm:px-4",
+        compact && "py-2.5",
+      )}
+    >
       {/* Reddit-style left vote rail: up-arrow over the score. The down-arrow lands when the
           backend gains a real downvote (see docs/plans/2026-06-14-reddit-thread-ui-design.md). */}
       {!isDeleted && (
@@ -182,6 +203,22 @@ export function MessageCard({
 
       <div className="flex-1 min-w-0">
         <div className="mb-1 flex items-center gap-2">
+          {collapsible && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              aria-label={collapsed ? sq.chat.showReplies : sq.chat.hideReplies}
+              aria-expanded={!collapsed}
+              title={collapsed ? sq.chat.showReplies : sq.chat.hideReplies}
+              className="-ml-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-background hover:text-primary"
+            >
+              {collapsed ? (
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              ) : (
+                <ChevronDown className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+          )}
           <span
             className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/50 bg-card text-[9px] font-bold text-foreground/70"
             aria-hidden
