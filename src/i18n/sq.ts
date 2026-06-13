@@ -47,6 +47,14 @@ export const sq = {
     composerHint: "Maks 2000 karaktere",
     messagesCount: "mesazhe",
   },
+  share: {
+    action: "Shpërndaj",
+    title: "Shpërndaj temën",
+    copy: "Kopjo lidhjen",
+    copied: "Lidhja u kopjua.",
+    copyFailed: "Lidhja nuk u kopjua.",
+    via: "Shpërndaje këtë diskutim",
+  },
   fokus: {
     title: "Në Fokus",
     hot: "Hot",
