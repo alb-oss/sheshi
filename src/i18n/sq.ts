@@ -32,6 +32,7 @@ export const sq = {
     placeholder: "Shkruaj në sheshi…",
     send: "Posto",
     reply: "Përgjigju",
+    cancel: "Anulo",
     replies: (n: number) => (n === 1 ? "1 përgjigje" : `${n} përgjigje`),
     upvote: "Mbështet",
     report: "Raporto",

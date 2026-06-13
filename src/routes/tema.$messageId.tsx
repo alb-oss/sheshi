@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppShell } from "@/components/AppShell";
-import { Composer, type ComposerHandle } from "@/components/Composer";
+import { Composer } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { MessageCard } from "@/components/MessageCard";
 import { sq } from "@/i18n/sq";
@@ -69,8 +69,6 @@ function ThreadPage() {
   const lastReplyIdRef = useRef<string | null>(null);
   const activeMessageIdRef = useRef(messageId);
   const reloadRequestIdRef = useRef(0);
-  const composerRef = useRef<ComposerHandle | null>(null);
-  const composerWrapRef = useRef<HTMLDivElement | null>(null);
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
   activeMessageIdRef.current = messageId;
 
@@ -79,22 +77,40 @@ function ThreadPage() {
   const slug = root ? (roomLookup.get(root.room_id) ?? "sheshi") : "sheshi";
   const replyTotal = useMemo(() => (thread ? countNodes(thread.replies) : 0), [thread]);
   const joinedThreadId = root?.id ?? messageId;
-  const rootReplyContext = root
-    ? {
-        label: root.author?.username ? `@${root.author.username}` : "@anonim",
-        excerpt: root.deleted_at ? sq.chat.deleted : root.body.slice(0, 120),
-      }
-    : null;
 
+  // Reddit-style inline reply: clicking "Reply" on a comment toggles an inline composer that
+  // opens directly under THAT comment (no scroll-to-the-bottom-box). Only one is open at a
+  // time. The autoFocus on the inline Composer brings the comment into view for us.
   const handleReply = (m: MessageRow) => {
-    const username = m.author?.username;
-    const label = username ? `@${username}` : "@anonim";
-    const excerpt = m.deleted_at ? sq.chat.deleted : m.body.slice(0, 120);
-    setReplyTarget({ messageId: m.id, label, excerpt });
-    requestAnimationFrame(() => {
-      composerWrapRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-      composerRef.current?.focus();
-    });
+    setReplyTarget((current) =>
+      current?.messageId === m.id
+        ? null
+        : {
+            messageId: m.id,
+            label: m.author?.username ? `@${m.author.username}` : "@anonim",
+            excerpt: m.deleted_at ? sq.chat.deleted : m.body.slice(0, 120),
+          });
+  };
+
+  // Renders the inline reply composer beneath the comment `m` when it is the active target.
+  // Posts a reply parented to `m`; both posting and Cancel close the box.
+  const renderReplyComposer = (m: MessageRow) => {
+    if (!root || !replyTarget || replyTarget.messageId !== m.id) return null;
+    return (
+      <Composer
+        roomId={root.room_id}
+        parentId={m.id}
+        currentUserId={userId}
+        onPosted={() => {
+          setReplyTarget(null);
+          reload();
+        }}
+        onCancel={() => setReplyTarget(null)}
+        placeholder={`${sq.chat.reply} ${replyTarget.label}…`}
+        autoFocus
+        compact
+      />
+    );
   };
 
   const reload = () => {
@@ -258,13 +274,16 @@ function ThreadPage() {
                 onChanged={reload}
                 onReply={handleReply}
               />
+              {replyTarget?.messageId === root.id && (
+                <div className="px-4 sm:px-6">{renderReplyComposer(root)}</div>
+              )}
 
               <div className="border-y border-border bg-card/40 px-6 py-2 text-[10px] uppercase tracking-widest font-bold text-foreground/40">
                 {sq.chat.replies(replyTotal)}
               </div>
 
               <div className="py-2">
-                {thread.replies.map((node) => (
+                {(thread?.replies ?? []).map((node) => (
                   <ReplyBranch
                     key={node.message.id}
                     node={node}
@@ -274,6 +293,7 @@ function ThreadPage() {
                     onToggleCollapse={toggleCollapse}
                     onChanged={reload}
                     onReply={handleReply}
+                    renderReplyComposer={renderReplyComposer}
                   />
                 ))}
               </div>
@@ -282,19 +302,14 @@ function ThreadPage() {
         </div>
 
         {root && (
-          <div ref={composerWrapRef}>
-            <Composer
-              key={replyTarget?.messageId ?? root.id}
-              ref={composerRef}
-              roomId={root.room_id}
-              parentId={replyTarget?.messageId ?? root.id}
-              currentUserId={userId}
-              onPosted={reload}
-              placeholder={sq.chat.reply + "…"}
-              replyContext={replyTarget ?? rootReplyContext}
-              onClearReplyContext={replyTarget ? () => setReplyTarget(null) : undefined}
-            />
-          </div>
+          <Composer
+            key={root.id}
+            roomId={root.room_id}
+            parentId={root.id}
+            currentUserId={userId}
+            onPosted={reload}
+            placeholder={sq.chat.placeholder}
+          />
         )}
       </div>
     </AppShell>
@@ -309,6 +324,7 @@ function ReplyBranch({
   onToggleCollapse,
   onChanged,
   onReply,
+  renderReplyComposer,
 }: {
   node: ReplyNode;
   slug: string;
@@ -317,6 +333,7 @@ function ReplyBranch({
   onToggleCollapse: (id: string) => void;
   onChanged: () => void;
   onReply: (message: MessageRow) => void;
+  renderReplyComposer: (message: MessageRow) => ReactNode;
 }) {
   const isCollapsed = collapsed.has(node.message.id);
   const hiddenCount = countNodes(node.replies);
@@ -342,6 +359,8 @@ function ReplyBranch({
           onReply={onReply}
           compact
         />
+
+        {renderReplyComposer(node.message)}
 
         {hiddenCount > 0 ? (
           <button
@@ -369,6 +388,7 @@ function ReplyBranch({
               onToggleCollapse={onToggleCollapse}
               onChanged={onChanged}
               onReply={onReply}
+              renderReplyComposer={renderReplyComposer}
             />
           ))}
       </div>
