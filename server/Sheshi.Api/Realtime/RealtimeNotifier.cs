@@ -35,6 +35,9 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub)
         if (threadRootId is not null)
             await hub.Clients.Group(GroupNames.Thread(threadRootId.Value)).SendAsync(evt, payload, ct);
         await MessageChangedAsync(roomId, threadRootId, ct); // legacy fallback
+        // Global tick so the cross-room "Hot" panel (joined to no group) can refresh.
+        // Coarse + payload-free; the client debounces the refetch. Throttle server-side at scale.
+        await hub.Clients.All.SendAsync("highlights_changed", ct);
     }
 }
 
