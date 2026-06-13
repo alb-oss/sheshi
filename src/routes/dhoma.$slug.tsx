@@ -38,6 +38,10 @@ function RoomPage({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const firstIdRef = useRef<string | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [newCount, setNewCount] = useState(0);
+  const loadingMoreRef = useRef(false);
 
   useEffect(() => {
     listRooms()
@@ -71,6 +75,8 @@ function RoomPage({ slug }: { slug: string }) {
         const firstId = rows[0]?.id ?? null;
         const isNew = firstId && firstId !== firstIdRef.current;
         setMessages(rows);
+        setCursor(page.next_cursor);
+        setNewCount(0);
         firstIdRef.current = firstId;
         requestAnimationFrame(() => {
           if ((loading || isNew) && scrollRef.current)
@@ -79,6 +85,33 @@ function RoomPage({ slug }: { slug: string }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  // Infinite scroll: pull older pages via the cursor API as the user nears the bottom.
+  const loadMore = () => {
+    if (!room || !cursor || loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    listMessages(room.id, cursor)
+      .then((page) => {
+        setMessages((prev) => {
+          const seen = new Set(prev.map((m) => m.id));
+          return [...prev, ...page.items.filter((m) => !seen.has(m.id))];
+        });
+        setCursor(page.next_cursor);
+      })
+      .catch(() => {})
+      .finally(() => {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      });
+  };
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollTop < 40 && newCount > 0) setNewCount(0);
+    if (cursor && el.scrollHeight - el.scrollTop - el.clientHeight < 400) loadMore();
   };
 
   useEffect(() => {
@@ -94,7 +127,12 @@ function RoomPage({ slug }: { slug: string }) {
       if (!msg || msg.room_id !== roomId) return;
       if (msg.parent_id == null) {
         setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [msg, ...prev]));
-        requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" }));
+        const el = scrollRef.current;
+        if (!el || el.scrollTop < 60) {
+          requestAnimationFrame(() => el?.scrollTo({ top: 0, behavior: "smooth" }));
+        } else {
+          setNewCount((n) => n + 1); // reading below — show a pill instead of yanking the view
+        }
       } else if (p.root_id) {
         // a reply: bump its top-level ancestor's reply count in the feed
         setMessages((prev) =>
@@ -158,7 +196,18 @@ function RoomPage({ slug }: { slug: string }) {
             {messages.length} {sq.chat.messagesCount}
           </span>
         </div>
-        <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
+        <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto no-scrollbar">
+          {newCount > 0 && (
+            <button
+              onClick={() => {
+                scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                setNewCount(0);
+              }}
+              className="sticky top-2 z-10 mx-auto block bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow"
+            >
+              {newCount === 1 ? "1 postim i ri" : `${newCount} postime të reja`} ↑
+            </button>
+          )}
           {loading ? (
             <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
               {sq.chat.loading}
@@ -181,6 +230,11 @@ function RoomPage({ slug }: { slug: string }) {
                   onChanged={reload}
                 />
               ))}
+              {cursor && (
+                <div className="p-4 text-center text-[11px] uppercase tracking-widest font-bold text-foreground/40">
+                  {loadingMore ? sq.chat.loading : "•"}
+                </div>
+              )}
             </div>
           )}
         </div>
