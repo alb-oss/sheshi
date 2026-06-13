@@ -4,8 +4,13 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 
 namespace Sheshi.Api.Tests;
@@ -16,7 +21,7 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
     public async Task SignalR_room_members_receive_changed_events_and_presence_counts_update()
     {
         var client = factory.CreateClient();
-        var user = await PromoteToAdminAsync(client, await RegisterAsync(client, "realtime"));
+        var user = await RegisterAsync(client, "realtime");
         var room = await GetRoomAsync(client, "sheshi");
         var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -51,15 +56,14 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
     public async Task Multipart_message_post_saves_image_and_returns_image_url()
     {
         var client = factory.CreateClient();
-        var user = await PromoteToAdminAsync(client, await RegisterAsync(client, "image"));
+        var user = await RegisterAsync(client, "image");
         var room = await GetRoomAsync(client, "sheshi");
         UseBearer(client, user.AccessToken);
 
         using var form = new MultipartFormDataContent();
         form.Add(new StringContent(room.Id.ToString()), "room_id");
         form.Add(new StringContent("Message with image"), "body");
-        var image = new ByteArrayContent(Convert.FromBase64String(
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="));
+        var image = new ByteArrayContent(CreateOnePixelPng());
         image.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
         form.Add(image, "image", "pixel.png");
 
@@ -69,17 +73,90 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         var message = await response.Content.ReadFromJsonAsync<MessageDto>();
         message.Should().NotBeNull();
         message!.ImageUrl.Should().StartWith("http://localhost:5080/uploads/");
+    }
 
-        // A fake "PNG" whose bytes are not an image is rejected by magic-byte sniffing.
-        using var fakeForm = new MultipartFormDataContent();
-        fakeForm.Add(new StringContent(room.Id.ToString()), "room_id");
-        fakeForm.Add(new StringContent("Not really an image"), "body");
-        var fake = new ByteArrayContent("<html>not an image</html>"u8.ToArray());
-        fake.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
-        fakeForm.Add(fake, "image", "fake.png");
+    [Fact]
+    public async Task Multipart_image_only_post_saves_image_without_text_body()
+    {
+        var client = factory.CreateClient();
+        var user = await RegisterAsync(client, "image-only");
+        var room = await GetRoomAsync(client, "sheshi");
+        UseBearer(client, user.AccessToken);
 
-        var fakeResponse = await client.PostAsync("/api/messages", fakeForm);
-        fakeResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(room.Id.ToString()), "room_id");
+        form.Add(new StringContent("   "), "body");
+        var image = new ByteArrayContent(CreateOnePixelPng());
+        image.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
+        form.Add(image, "image", "pixel.png");
+
+        var response = await client.PostAsync("/api/messages", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var message = await response.Content.ReadFromJsonAsync<MessageDto>();
+        message.Should().NotBeNull();
+        message!.Body.Should().Be("");
+        message.ImageUrl.Should().StartWith("http://localhost:5080/uploads/");
+    }
+
+    [Fact]
+    public async Task Multipart_upload_rejects_disguised_image_bytes()
+    {
+        var client = factory.CreateClient();
+        var user = await RegisterAsync(client, "fake-image");
+        var room = await GetRoomAsync(client, "sheshi");
+        UseBearer(client, user.AccessToken);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(room.Id.ToString()), "room_id");
+        form.Add(new StringContent("fake image"), "body");
+        var image = new ByteArrayContent("this is not a png"u8.ToArray());
+        image.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
+        form.Add(image, "image", "fake.png");
+
+        var response = await client.PostAsync("/api/messages", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorDto>();
+        payload.Should().NotBeNull();
+        payload!.Error.Should().Be("INVALID_IMAGE");
+    }
+
+    [Fact]
+    public async Task Multipart_upload_rewrites_image_and_drops_trailing_payload()
+    {
+        var uploadPath = Path.Combine(Path.GetTempPath(), $"sheshi-safe-images-{Guid.NewGuid():N}");
+        var client = factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Storage:UploadPath"] = uploadPath,
+                    ["Storage:PublicBaseUrl"] = "http://localhost:5080/uploads"
+                });
+            });
+        }).CreateClient();
+        var user = await RegisterAsync(client, "clean-image");
+        var room = await GetRoomAsync(client, "sheshi");
+        UseBearer(client, user.AccessToken);
+
+        var cleanPng = CreateOnePixelPng();
+        var pngWithMetadata = AddPngTextChunk(cleanPng, "Comment", "SECRET-GPS-PAYLOAD");
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(room.Id.ToString()), "room_id");
+        var image = new ByteArrayContent(pngWithMetadata);
+        image.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
+        form.Add(image, "image", "pixel.png");
+
+        var response = await client.PostAsync("/api/messages", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var message = await response.Content.ReadFromJsonAsync<MessageDto>();
+        message.Should().NotBeNull();
+        var savedName = new Uri(message!.ImageUrl!).Segments.Last();
+        var savedBytes = await File.ReadAllBytesAsync(Path.Combine(uploadPath, savedName));
+        System.Text.Encoding.Latin1.GetString(savedBytes).Should().NotContain("SECRET-GPS-PAYLOAD");
     }
 
     [Fact]
@@ -102,7 +179,7 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         moderator = await LoginAsync(client, moderator.Email);
         admin = await LoginAsync(client, admin.Email);
 
-        UseBearer(client, admin.AccessToken);
+        UseBearer(client, reporter.AccessToken);
         var postResponse = await client.PostAsJsonAsync("/api/messages", new
         {
             room_id = room.Id,
@@ -110,7 +187,6 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         });
         var message = await postResponse.Content.ReadFromJsonAsync<MessageDto>();
         message.Should().NotBeNull();
-        UseBearer(client, reporter.AccessToken);
         var reportResponse = await client.PostAsJsonAsync($"/api/messages/{message!.Id}/report", new
         {
             reason = "hate",
@@ -160,101 +236,152 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         });
         adminRoleResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
+        var actionsResponse = await client.GetAsync("/api/mod/actions");
+        actionsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var actions = await actionsResponse.Content.ReadFromJsonAsync<ModActionDto[]>();
+        actions.Should().NotBeNull();
+        actions!.Select(a => a.ActionType)
+            .Should()
+            .Contain([
+                "report_resolved",
+                "user_banned",
+                "role_granted"
+            ]);
+
         futureMod = await LoginAsync(client, futureMod.Email);
         UseBearer(client, futureMod.AccessToken);
         var futureModReportsResponse = await client.GetAsync("/api/mod/reports");
         futureModReportsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        // Analytics and user-listing reads return a populated, well-formed payload.
-        UseBearer(client, admin.AccessToken);
-        var analytics = await client.GetFromJsonAsync<ModAnalyticsDto>("/api/mod/analytics");
-        analytics.Should().NotBeNull();
-        analytics!.Totals.Users.Should().BeGreaterThan(0);
-        analytics.Totals.Messages.Should().BeGreaterThanOrEqualTo(1);
-        analytics.Trend.Should().HaveCount(7);
-        analytics.Users.Moderators.Should().BeGreaterThanOrEqualTo(1);
-
-        // New insight metrics.
-        analytics.ActiveUsers.Weekly.Should().BeGreaterThanOrEqualTo(1); // admin posted this week
-        analytics.Growth.Messages.Current.Should().BeGreaterThanOrEqualTo(1);
-        analytics.ModerationHealth.AvgResolutionHours.Should().NotBeNull(); // a report was resolved above
-        analytics.ModerationHealth.ReportsPerThousandMessages.Should().BeGreaterThan(0);
-        analytics.TopAuthors.Should().NotBeEmpty();
-
-        // History endpoint: a finalized day is read from the rollup table; today is live.
-        await WithServicesAsync(async sp =>
-        {
-            var db = sp.GetRequiredService<Sheshi.Api.Data.AppDbContext>();
-            var yesterday = DateTime.UtcNow.Date.AddDays(-1);
-            var row = await db.DailyStats.FindAsync(yesterday)
-                ?? db.DailyStats.Add(new Sheshi.Api.Domain.DailyStat { Date = yesterday }).Entity;
-            row.Messages = 5;
-            row.NewUsers = 2;
-            await db.SaveChangesAsync();
-        });
-        var history = await client.GetFromJsonAsync<ModTrendPoint[]>("/api/mod/analytics/history?days=3");
-        history.Should().NotBeNull();
-        history!.Should().HaveCount(3);
-        history[1].Messages.Should().Be(5);                       // yesterday, from the rollup
-        history[^1].Messages.Should().BeGreaterThanOrEqualTo(1);  // today, computed live
-
-        var usersResponse = await client.GetAsync("/api/mod/users?query=mod");
-        usersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var modUsers = await usersResponse.Content.ReadFromJsonAsync<ModUserDto[]>();
-        modUsers.Should().NotBeNull();
-        modUsers!.Should().Contain(u => u.Roles.Contains("moderator"));
     }
 
-    private sealed record ModAnalyticsDto(
-        [property: JsonPropertyName("totals")] ModTotals Totals,
-        [property: JsonPropertyName("users")] ModUserCounts Users,
-        [property: JsonPropertyName("active_users")] ModActiveUsers ActiveUsers,
-        [property: JsonPropertyName("growth")] ModGrowth Growth,
-        [property: JsonPropertyName("engagement")] ModEngagement Engagement,
-        [property: JsonPropertyName("moderation_health")] ModModerationHealth ModerationHealth,
-        [property: JsonPropertyName("trend")] object[] Trend,
-        [property: JsonPropertyName("top_authors")] ModAuthor[] TopAuthors);
+    [Fact]
+    public async Task Moderation_reports_can_be_filtered_by_reason()
+    {
+        var client = factory.CreateClient();
+        var reporter = await RegisterAsync(client, "filterreporter");
+        var author = await RegisterAsync(client, "filterauthor");
+        var moderator = await RegisterAsync(client, "filtermod");
+        var room = await GetRoomAsync(client, "sheshi");
 
-    private sealed record ModTotals(
-        [property: JsonPropertyName("users")] int Users,
-        [property: JsonPropertyName("messages")] int Messages);
+        await WithServicesAsync(async sp =>
+        {
+            var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
+            await userManager.AddToRoleAsync((await userManager.FindByEmailAsync(moderator.Email))!, Roles.Moderator);
+        });
+        moderator = await LoginAsync(client, moderator.Email);
 
-    private sealed record ModUserCounts(
-        [property: JsonPropertyName("moderators")] int Moderators);
+        UseBearer(client, author.AccessToken);
+        var hateMessage = await CreateMessageAsync(client, room.Id, "Message reported for hate");
+        var spamMessage = await CreateMessageAsync(client, room.Id, "Message reported for spam");
 
-    private sealed record ModActiveUsers(
-        [property: JsonPropertyName("daily")] int Daily,
-        [property: JsonPropertyName("weekly")] int Weekly,
-        [property: JsonPropertyName("monthly")] int Monthly);
+        UseBearer(client, reporter.AccessToken);
+        var hateReport = await client.PostAsJsonAsync($"/api/messages/{hateMessage.Id}/report", new
+        {
+            reason = "hate"
+        });
+        hateReport.StatusCode.Should().Be(HttpStatusCode.Created);
 
-    private sealed record ModGrowth(
-        [property: JsonPropertyName("messages")] ModGrowthPoint Messages);
+        var spamReport = await client.PostAsJsonAsync($"/api/messages/{spamMessage.Id}/report", new
+        {
+            reason = "spam"
+        });
+        spamReport.StatusCode.Should().Be(HttpStatusCode.Created);
 
-    private sealed record ModGrowthPoint(
-        [property: JsonPropertyName("current")] int Current,
-        [property: JsonPropertyName("previous")] int Previous);
+        UseBearer(client, moderator.AccessToken);
+        var filteredResponse = await client.GetAsync("/api/mod/reports?status=open&reason=hate");
+        filteredResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var filtered = await filteredResponse.Content.ReadFromJsonAsync<ModReportDto[]>();
+        filtered.Should().NotBeNull();
+        filtered.Should().ContainSingle(r => r.MessageId == hateMessage.Id && r.Reason == "hate");
+        filtered.Should().OnlyContain(r => r.Reason == "hate");
+    }
 
-    private sealed record ModEngagement(
-        [property: JsonPropertyName("answered_threads_pct")] double AnsweredThreadsPct,
-        [property: JsonPropertyName("avg_replies_per_thread")] double AvgRepliesPerThread);
+    [Fact]
+    public async Task Report_inbox_can_filter_by_room_severity_repeat_offender_and_sort_age()
+    {
+        var client = factory.CreateClient();
+        var reporter = await RegisterAsync(client, "workflowreporter");
+        var repeatAuthor = await RegisterAsync(client, "workflowrepeat");
+        var singleAuthor = await RegisterAsync(client, "workflowsingle");
+        var moderator = await RegisterAsync(client, "workflowmod");
+        var roomSlug = $"workflow-{Guid.NewGuid():N}";
+        Guid roomId = default;
 
-    private sealed record ModModerationHealth(
-        [property: JsonPropertyName("avg_resolution_hours")] double? AvgResolutionHours,
-        [property: JsonPropertyName("reports_per_thousand_messages")] double ReportsPerThousandMessages,
-        [property: JsonPropertyName("deletion_rate_pct")] double DeletionRatePct);
+        await WithServicesAsync(async sp =>
+        {
+            var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
+            await userManager.AddToRoleAsync((await userManager.FindByEmailAsync(moderator.Email))!, Roles.Moderator);
+            var db = sp.GetRequiredService<AppDbContext>();
+            var room = new Room { Name = "Workflow", Slug = roomSlug, Description = "Workflow test room" };
+            db.Rooms.Add(room);
+            await db.SaveChangesAsync();
+            roomId = room.Id;
+        });
+        moderator = await LoginAsync(client, moderator.Email);
 
-    private sealed record ModTrendPoint(
-        [property: JsonPropertyName("date")] string Date,
-        [property: JsonPropertyName("messages")] int Messages);
+        UseBearer(client, repeatAuthor.AccessToken);
+        var repeatOne = await CreateMessageAsync(client, roomId, "first repeat offender report");
+        var repeatTwo = await CreateMessageAsync(client, roomId, "second repeat offender report");
+        UseBearer(client, singleAuthor.AccessToken);
+        var single = await CreateMessageAsync(client, roomId, "single lower risk report");
 
-    private sealed record ModAuthor(
-        [property: JsonPropertyName("id")] Guid Id,
-        [property: JsonPropertyName("author")] string Author,
-        [property: JsonPropertyName("messages")] int Messages);
+        UseBearer(client, reporter.AccessToken);
+        await ReportAsync(client, repeatOne.Id, "spam");
+        await ReportAsync(client, repeatTwo.Id, "doxxing");
+        await ReportAsync(client, single.Id, "other");
 
-    private sealed record ModUserDto(
-        [property: JsonPropertyName("id")] Guid Id,
-        [property: JsonPropertyName("roles")] string[] Roles);
+        UseBearer(client, moderator.AccessToken);
+        var filteredResponse = await client.GetAsync($"/api/mod/reports?status=open&room_id={roomId}&min_severity=high&repeat_offender=true&sort=oldest");
+
+        filteredResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var reports = await filteredResponse.Content.ReadFromJsonAsync<ModReportDto[]>();
+        reports.Should().NotBeNull();
+        reports!.Should().ContainSingle();
+        reports[0].MessageId.Should().Be(repeatTwo.Id);
+        reports[0].Severity.Should().Be("high");
+        reports[0].RoomSlug.Should().Be(roomSlug);
+        reports[0].AuthorOpenReportCount.Should().Be(2);
+        reports[0].AgeHours.Should().BeGreaterThanOrEqualTo(0);
+    }
+
+    [Fact]
+    public async Task Action_log_exposes_actor_details_metadata_and_filters()
+    {
+        var client = factory.CreateClient();
+        var reporter = await RegisterAsync(client, "actionreporter");
+        var author = await RegisterAsync(client, "actionauthor");
+        var moderator = await RegisterAsync(client, "actionmod");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        await WithServicesAsync(async sp =>
+        {
+            var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
+            await userManager.AddToRoleAsync((await userManager.FindByEmailAsync(moderator.Email))!, Roles.Moderator);
+        });
+        moderator = await LoginAsync(client, moderator.Email);
+
+        UseBearer(client, author.AccessToken);
+        var message = await CreateMessageAsync(client, room.Id, "action log target");
+        UseBearer(client, reporter.AccessToken);
+        await ReportAsync(client, message.Id, "hate");
+
+        UseBearer(client, moderator.AccessToken);
+        var reports = await client.GetFromJsonAsync<ModReportDto[]>("/api/mod/reports?status=open");
+        var report = reports!.Single(r => r.MessageId == message.Id);
+        var resolveResponse = await client.PostAsync($"/api/mod/reports/{report.Id}/resolve", content: null);
+        resolveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var actionsResponse = await client.GetAsync("/api/mod/actions?action_type=report_resolved&target_type=report");
+
+        actionsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var actions = await actionsResponse.Content.ReadFromJsonAsync<ModActionDto[]>();
+        actions.Should().NotBeNull();
+        actions!.Should().ContainSingle(a => a.TargetId == report.Id);
+        var action = actions.Single(a => a.TargetId == report.Id);
+        action.Actor.Username.Should().NotBeNullOrWhiteSpace();
+        action.Metadata.Should().ContainKey("previous_status");
+        action.Metadata["new_status"].Should().Be("resolved");
+    }
 
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
@@ -291,14 +418,92 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         return room!;
     }
 
-    private async Task<AuthResponse> PromoteToAdminAsync(HttpClient client, AuthResponse auth)
+    private async Task<MessageDto> CreateMessageAsync(HttpClient client, Guid roomId, string body)
     {
-        await WithServicesAsync(async sp =>
+        var response = await client.PostAsJsonAsync("/api/messages", new
         {
-            var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
-            await userManager.AddToRoleAsync((await userManager.FindByEmailAsync(auth.Email))!, Roles.Admin);
+            room_id = roomId,
+            body
         });
-        return await LoginAsync(client, auth.Email);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var message = await response.Content.ReadFromJsonAsync<MessageDto>();
+        message.Should().NotBeNull();
+        return message!;
+    }
+
+    private static async Task ReportAsync(HttpClient client, Guid messageId, string reason)
+    {
+        var response = await client.PostAsJsonAsync($"/api/messages/{messageId}/report", new
+        {
+            reason
+        });
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    private static byte[] AddPngTextChunk(byte[] png, string key, string value)
+    {
+        var iendOffset = FindPngChunkOffset(png, "IEND");
+        var chunkData = System.Text.Encoding.Latin1.GetBytes($"{key}\0{value}");
+        var typeBytes = System.Text.Encoding.ASCII.GetBytes("tEXt");
+        using var output = new MemoryStream();
+        output.Write(png.AsSpan(0, iendOffset));
+        WriteBigEndianUInt32(output, (uint)chunkData.Length);
+        output.Write(typeBytes);
+        output.Write(chunkData);
+        WriteBigEndianUInt32(output, Crc32(typeBytes.Concat(chunkData).ToArray()));
+        output.Write(png.AsSpan(iendOffset));
+        return output.ToArray();
+    }
+
+    private static byte[] CreateOnePixelPng()
+    {
+        using var image = new Image<Rgba32>(1, 1);
+        image[0, 0] = new Rgba32(255, 0, 0, 255);
+        using var output = new MemoryStream();
+        image.SaveAsPng(output);
+        return output.ToArray();
+    }
+
+    private static int FindPngChunkOffset(byte[] png, string chunkType)
+    {
+        var offset = 8;
+        while (offset + 8 <= png.Length)
+        {
+            var length = ReadBigEndianUInt32(png.AsSpan(offset, 4));
+            var type = System.Text.Encoding.ASCII.GetString(png, offset + 4, 4);
+            if (type == chunkType) return offset;
+            offset += 12 + checked((int)length);
+        }
+
+        throw new InvalidOperationException($"PNG chunk {chunkType} not found.");
+    }
+
+    private static uint ReadBigEndianUInt32(ReadOnlySpan<byte> bytes) =>
+        ((uint)bytes[0] << 24) | ((uint)bytes[1] << 16) | ((uint)bytes[2] << 8) | bytes[3];
+
+    private static void WriteBigEndianUInt32(Stream stream, uint value)
+    {
+        Span<byte> bytes =
+        [
+            (byte)(value >> 24),
+            (byte)(value >> 16),
+            (byte)(value >> 8),
+            (byte)value
+        ];
+        stream.Write(bytes);
+    }
+
+    private static uint Crc32(byte[] bytes)
+    {
+        var crc = 0xffffffffu;
+        foreach (var b in bytes)
+        {
+            crc ^= b;
+            for (var i = 0; i < 8; i++)
+                crc = (crc & 1) == 1 ? (crc >> 1) ^ 0xedb88320u : crc >> 1;
+        }
+
+        return ~crc;
     }
 
     private static void UseBearer(HttpClient client, string accessToken) =>
@@ -361,5 +566,31 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         [property: JsonPropertyName("note")] string? Note,
         [property: JsonPropertyName("status")] string Status,
         [property: JsonPropertyName("message_body")] string MessageBody,
-        [property: JsonPropertyName("message_author_id")] Guid MessageAuthorId);
+        [property: JsonPropertyName("message_author_id")] Guid MessageAuthorId,
+        [property: JsonPropertyName("room_id")] Guid RoomId,
+        [property: JsonPropertyName("room_slug")] string RoomSlug,
+        [property: JsonPropertyName("severity")] string Severity,
+        [property: JsonPropertyName("created_at")] DateTimeOffset CreatedAt,
+        [property: JsonPropertyName("age_hours")] double AgeHours,
+        [property: JsonPropertyName("author_report_count")] int AuthorReportCount,
+        [property: JsonPropertyName("author_open_report_count")] int AuthorOpenReportCount,
+        [property: JsonPropertyName("author_open_flag_count")] int AuthorOpenFlagCount);
+
+    private sealed record ModActionDto(
+        [property: JsonPropertyName("id")] Guid Id,
+        [property: JsonPropertyName("actor_id")] Guid ActorId,
+        [property: JsonPropertyName("action_type")] string ActionType,
+        [property: JsonPropertyName("target_type")] string TargetType,
+        [property: JsonPropertyName("target_id")] Guid TargetId,
+        [property: JsonPropertyName("reason")] string? Reason,
+        [property: JsonPropertyName("created_at")] DateTimeOffset CreatedAt,
+        [property: JsonPropertyName("actor")] ModActorDto Actor,
+        [property: JsonPropertyName("metadata")] Dictionary<string, string> Metadata);
+
+    private sealed record ModActorDto(
+        [property: JsonPropertyName("id")] Guid Id,
+        [property: JsonPropertyName("username")] string? Username,
+        [property: JsonPropertyName("display_name")] string? DisplayName);
+
+    private sealed record ErrorDto([property: JsonPropertyName("error")] string Error);
 }

@@ -1,0 +1,293 @@
+{
+  "batch": "design_coherence",
+  "batch_index": 17,
+  "assessments": {
+    "design_coherence": 72.0
+  },
+  "dimension_notes": {
+    "design_coherence": {
+      "evidence": [
+        "The TanStack route files in src/routes generally keep route-level loading, local UI state, and page rendering together without creating extra indirection; src/routes/index.tsx is long enough to trigger a detector but remains a coherent home page with a small RoomCard helper.",
+        "src/lib/api-client.ts and src/lib/sheshi.ts form a straightforward API layer: api-client owns token refresh and response handling, while sheshi.ts exposes domain-specific calls with thin wrappers.",
+        "alb_sheshi/frontend/src/App.tsx is a 1360-line legacy-style single component/module that owns routing, auth persistence, theme, realtime subscriptions, room/thread fetching, optimistic voting, saving, sharing, dialogs, and most view components in one file.",
+        "src/components/ui/sidebar.tsx and src/components/ui/chart.tsx are large shadcn-style components with no importers found by repository search; this adds a broad unused surface that a new developer must mentally filter.",
+        "src/server.ts is intentionally reached through vite.config.ts tanstackStart.server.entry = \"server\", so the orphaned-file signal is a detector blind spot rather than a design defect.",
+        "src/routeTree.gen.ts is explicitly generated TanStack Router output with @ts-nocheck and route update casts; it should be excluded from design critique rather than refactored manually."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "design_coherence": {
+      "dimension_character": "The main src application has mostly direct, understandable route components and API helpers; the abstractions are ordinary and generally earned. The quality is uneven because the older alb_sheshi frontend keeps an entire SPA's orchestration and views in one App.tsx, and the active UI tree contains unused large component modules that look like available design surface but are not part of the product.",
+      "score_rationale": "This lands in the mixed-to-solid range: a developer working in the current src routes would usually understand the design quickly, but they cannot assume that pattern holds across the repository. The monolithic legacy App.tsx and large unused UI components create enough structural friction that the design decisions are not reliably coherent, but the clearer current route/API structure keeps this above the significant-drag anchor."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "design_coherence",
+      "identifier": "message_card_prop_sync_ok",
+      "summary": "MessageCard optimistic state reset is acceptable for its role",
+      "related_files": [
+        "src/components/MessageCard.tsx"
+      ],
+      "evidence": [
+        "MessageCard keeps optimisticUpvotes and optimisticVoted local so the vote button can update immediately, then the useEffect resets those two values when message.id, message.upvotes, or message.voted changes.",
+        "The component has a single presentational/action role around one message card; the sync effect is tied to server-provided vote state rather than a broad duplicated model."
+      ],
+      "suggestion": "No design refactor needed for this signal; keep the local optimistic state unless the voting flow is centralized across multiple components.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "11034a3eae6cc0be",
+      "reasoning": "The setState-only effect is a purposeful reset of local optimistic UI after the backing message changes, not an avoidable responsibility split."
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "unused_chart_component_surface",
+      "summary": "Large unused chart component adds unearned UI surface",
+      "related_files": [
+        "src/components/ui/chart.tsx"
+      ],
+      "evidence": [
+        "Repository search found no imports of src/components/ui/chart.tsx, while the file defines ChartContainer, ChartStyle, ChartTooltipContent, ChartLegendContent, and Recharts-specific payload helpers.",
+        "The app has no visible chart feature in the inspected route files, so this module reads as retained scaffold rather than an earned abstraction."
+      ],
+      "suggestion": "Delete src/components/ui/chart.tsx and the unused Recharts dependency path if no near-term chart feature owns it; otherwise add the feature import that makes this component part of the active product surface.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "unused_ui_scaffold",
+      "concern_verdict": "confirmed",
+      "concern_fingerprint": "b0cd251e2a63934f"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "unused_sidebar_component_surface",
+      "summary": "Large unused sidebar module obscures the actual navigation design",
+      "related_files": [
+        "src/components/ui/sidebar.tsx"
+      ],
+      "evidence": [
+        "Repository search found no imports of src/components/ui/sidebar.tsx.",
+        "The file is 744 lines and owns provider state, cookies, keyboard shortcuts, mobile Sheet behavior, layout primitives, menu variants, actions, badges, skeletons, and submenus.",
+        "The active app navigation appears to use AppShell/route-level layout rather than this sidebar system, so a new developer has to determine whether this large component family is real or leftover."
+      ],
+      "suggestion": "Remove src/components/ui/sidebar.tsx if the app has standardized on AppShell, or wire AppShell to this sidebar system and delete the competing unused navigation primitives.",
+      "confidence": "high",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "unused_ui_scaffold",
+      "concern_verdict": "confirmed",
+      "concern_fingerprint": "d5b8acfb6c431551"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "api_client_async_wrappers_ok",
+      "summary": "API client async wrappers are coherent despite detector signal",
+      "related_files": [
+        "src/lib/api-client.ts"
+      ],
+      "evidence": [
+        "apiJson and apiForm both await api() before parsing JSON, while api() owns authorization headers, token refresh, retry, and error conversion.",
+        "The async surface is consistent with fetch-style API helpers and does not introduce extra abstraction layers or mixed responsibilities."
+      ],
+      "suggestion": "No design change needed for the async-without-await signal; keep this module as the single transport helper unless call sites show a need for a different API shape.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "927debddde850f24",
+      "reasoning": "The module has a clear transport responsibility, and Promise-returning wrappers are an acceptable API shape here."
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "domain_api_thin_wrappers_ok",
+      "summary": "Domain API wrappers are direct and understandable",
+      "related_files": [
+        "src/lib/sheshi.ts"
+      ],
+      "evidence": [
+        "src/lib/sheshi.ts defines domain types and maps each exported function to a corresponding API endpoint.",
+        "The few functions with additional logic handle concrete domain cases: 404-to-null for lookups, message validation, image FormData, and auth error normalization."
+      ],
+      "suggestion": "No structural refactor needed; keep the thin domain API module, and only extract if unrelated domains start accumulating here.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "05355c5173d6beeb",
+      "reasoning": "The async wrapper pattern is consistent and simpler than adding extra service objects or dependency wrappers."
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "home_page_length_coherent",
+      "summary": "Home route length is acceptable because responsibilities stay cohesive",
+      "related_files": [
+        "src/routes/index.tsx"
+      ],
+      "evidence": [
+        "HomePage owns loading rooms, loading presence, create-room dialog state, and rendering the home list.",
+        "RoomCard, Metric, and formatting helpers are already split below the route component, and the page does not mix unrelated feature domains."
+      ],
+      "suggestion": "No immediate design split needed; consider extracting CreateRoomDialog only if another route needs the same creation workflow.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "c1cf4ca97964e98d",
+      "reasoning": "The function is long but has one coherent route responsibility, which the dimension rubric explicitly says to skip."
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "profile_state_sync_ok",
+      "summary": "Profile display-name draft state is a reasonable local form design",
+      "related_files": [
+        "src/routes/profili.tsx"
+      ],
+      "evidence": [
+        "ProfilePage keeps displayName as editable form draft state and resets it from user.display_name when the loaded user changes.",
+        "The save and signOut handlers are short and tied to the profile page's immediate workflow."
+      ],
+      "suggestion": "No design change needed; keep the local draft state unless profile editing grows beyond a single display-name field.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "66799bce6a487619",
+      "reasoning": "The setState-only effect supports a form draft reset and does not indicate mixed responsibilities."
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "thread_route_near_limit_but_coherent",
+      "summary": "Thread route is dense but still organized around one route workflow",
+      "related_files": [
+        "src/routes/tema.$messageId.tsx"
+      ],
+      "evidence": [
+        "ThreadPage owns thread loading, realtime subscription, scroll-to-bottom behavior, reply target state, and composer focus for the /tema/$messageId route.",
+        "Recursive reply rendering is extracted to ReplyBranch, and the remaining helpers count and locate replies without adding indirection."
+      ],
+      "suggestion": "Do not split yet for size alone; if this grows, the simplest next extraction is a useThreadRealtime hook for the ensureRealtimeStarted subscription and reload lifecycle.",
+      "confidence": "medium",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "4a0b49805be7d086",
+      "reasoning": "The component is close to the design boundary, but the responsibilities are all route-local and understandable after one pass."
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "server_entry_not_orphaned",
+      "summary": "Server entry is configured indirectly and should not be treated as dead",
+      "related_files": [
+        "src/server.ts",
+        "vite.config.ts"
+      ],
+      "evidence": [
+        "vite.config.ts sets tanstackStart.server.entry to \"server\" with a comment saying the bundled server entry is redirected to src/server.ts.",
+        "src/server.ts wraps @tanstack/react-start/server-entry and normalizes catastrophic SSR responses, which is a focused server-entry concern."
+      ],
+      "suggestion": "No design change needed; configure the orphan detector to recognize the TanStack Start server entry instead of refactoring this file.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "7cc3a37df9c338c5",
+      "reasoning": "The file is used through framework configuration rather than imports, and its body has one clear responsibility."
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "legacy_app_monolith",
+      "summary": "Legacy App.tsx mixes application orchestration and most views in one file",
+      "related_files": [
+        "alb_sheshi/frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "App() owns route parsing, history navigation, theme persistence, auth persistence, provider loading, callback handling, room/highlight/presence loading, SignalR setup, room message paging, thread loading, optimistic voting, saving, sharing, message submission, auth modal state, create-room modal state, and toast state.",
+        "The same file also defines TopBar, RoomRail, Home, RoomView, ThreadView, ThreadCard, ActionRow, ReplyTree, Composer, ReplyComposer, FocusPanel, AuthPage, Profile, CreateRoomDialog, Dialog, and data-ranking helpers.",
+        "A new team member cannot understand ownership in 30 seconds because changing one workflow requires scanning a 1360-line module with both app orchestration and UI implementation."
+      ],
+      "suggestion": "Split along existing boundaries without adding new abstractions: move route/view components such as Home, RoomView, ThreadView, AuthPage, and Profile into focused sibling files, and keep App.tsx responsible for top-level state orchestration until repeated state patterns justify hooks.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "legacy_frontend_monolith",
+      "concern_verdict": "confirmed",
+      "concern_fingerprint": "a387bb0cee29d69e"
+    },
+    {
+      "dimension": "design_coherence",
+      "identifier": "generated_route_tree_ok",
+      "summary": "Generated route tree should be excluded from design critique",
+      "related_files": [
+        "src/routeTree.gen.ts",
+        "src/router.tsx"
+      ],
+      "evidence": [
+        "src/routeTree.gen.ts starts with comments stating it was automatically generated by TanStack Router and should not be edited because it will be overwritten.",
+        "The @ts-nocheck, as any casts, and single importer from src/router.tsx are framework-generated route wiring rather than authored structural design."
+      ],
+      "suggestion": "No source refactor needed; exclude src/routeTree.gen.ts from design and smell detectors, and make any route design changes in src/routes instead.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "f49fa3feeb8ccc71",
+      "reasoning": "Generated framework output is not an authored mixed-responsibility module."
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The repository appears to contain both a current TanStack route-based frontend and an older all-in-one frontend under alb_sheshi/frontend, producing sharply different design quality.",
+      "The UI component folder retains scaffolded shadcn components beyond what the current product imports."
+    ],
+    "likely_symptoms": [
+      "unused_ui_scaffold",
+      "generated_route_tree_ok"
+    ],
+    "possible_false_positives": [
+      "Orphaned src/server.ts because framework configuration, not static import, references it.",
+      "Smell findings in src/routeTree.gen.ts because generated router code intentionally uses ts-nocheck and casts."
+    ]
+  },
+  "context_updates": {
+    "design_coherence": {
+      "add": [
+        {
+          "header": "Route pages are mostly focused",
+          "description": "The current src/routes files generally keep one route workflow per file and use small local helpers where that improves scanability. This gives developers a clear place to make page-level changes without extra ceremony.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "API layer has simple ownership",
+          "description": "api-client owns transport concerns while sheshi.ts owns domain endpoint names and types. The split is direct enough that developers can predict where token refresh, 404 handling, and message operations live.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Legacy frontend is a monolith",
+          "description": "alb_sheshi/frontend/src/App.tsx concentrates orchestration, routing, data loading, realtime behavior, and nearly all views in one module. That makes the older frontend much harder to explain or modify than the current route-based src tree.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Unused shadcn surface remains",
+          "description": "Large ui modules such as sidebar and chart are present without importers, so the component folder advertises capabilities the product does not currently use. This creates design noise even when the active components are straightforward.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Generated route tree is detector noise",
+          "description": "routeTree.gen.ts is generated TanStack Router wiring and should not be judged like authored design code. Its casts, ts-nocheck, and single importer are framework output rather than a signal to refactor.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

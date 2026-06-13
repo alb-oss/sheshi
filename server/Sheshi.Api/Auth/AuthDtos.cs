@@ -14,8 +14,6 @@ public record ForgotPasswordRequest(string Email);
 
 public record ResetPasswordRequest(string Email, string Token, string Password);
 
-public record ConfirmEmailRequest(string Email, string Token);
-
 public record UpdateProfileRequest(string? DisplayName);
 
 public record UserDto(

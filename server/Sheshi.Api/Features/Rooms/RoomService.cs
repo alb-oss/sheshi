@@ -1,35 +1,20 @@
-using Sheshi.Api.Common;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 
 namespace Sheshi.Api.Features.Rooms;
 
-/// <summary>Cache key for the full room list. Evicted whenever a room's
-/// denormalized counters change (new room, post, or delete).</summary>
-public static class RoomsCache
+public class RoomService(AppDbContext db)
 {
-    public const string ListKey = "rooms:list:v1";
-}
-
-public class RoomService(AppDbContext db, IMemoryCache cache)
-{
-    private static readonly TimeSpan ListTtl = TimeSpan.FromSeconds(30);
-
     public async Task<IReadOnlyList<RoomDto>> ListAsync(CancellationToken ct = default)
     {
-        if (cache.TryGetValue(RoomsCache.ListKey, out IReadOnlyList<RoomDto>? cached) && cached is not null)
-            return cached;
-
         var rooms = await db.Rooms
             .AsNoTracking()
             .OrderBy(r => r.Name)
             .ToListAsync(ct);
 
-        var dtos = rooms.Select(ToDto).ToList();
-        cache.Set(RoomsCache.ListKey, (IReadOnlyList<RoomDto>)dtos, ListTtl);
-        return dtos;
+        return await ToDtosAsync(rooms, ct);
     }
 
     public async Task<RoomDto?> GetBySlugAsync(string slug, CancellationToken ct = default)
@@ -38,7 +23,7 @@ public class RoomService(AppDbContext db, IMemoryCache cache)
             .AsNoTracking()
             .SingleOrDefaultAsync(r => r.Slug == slug, ct);
 
-        return room is null ? null : ToDto(room);
+        return room is null ? null : (await ToDtosAsync([room], ct)).Single();
     }
 
     public async Task<CreateRoomResult> CreateAsync(CreateRoomRequest request, CancellationToken ct = default)
@@ -62,14 +47,38 @@ public class RoomService(AppDbContext db, IMemoryCache cache)
         };
         db.Rooms.Add(room);
         await db.SaveChangesAsync(ct);
-        cache.Remove(RoomsCache.ListKey);
 
-        return CreateRoomResult.Created(room, ToDto(room));
+        return CreateRoomResult.Created(room, (await ToDtosAsync([room], ct)).Single());
     }
 
-    // Counters are denormalized onto Room, so a DTO is a pure projection — no GROUP BY.
-    private static RoomDto ToDto(Room r) =>
-        new(r.Id, r.Slug, r.Name, r.Description, r.ThreadCount, r.LatestActivityAt);
+    private async Task<IReadOnlyList<RoomDto>> ToDtosAsync(IReadOnlyList<Room> rooms, CancellationToken ct)
+    {
+        if (rooms.Count == 0) return [];
+
+        var roomIds = rooms.Select(r => r.Id).ToArray();
+
+        var threadCounts = await db.Messages
+            .AsNoTracking()
+            .Where(m => roomIds.Contains(m.RoomId) && m.ParentId == null && m.DeletedAt == null)
+            .GroupBy(m => m.RoomId)
+            .Select(g => new { RoomId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.RoomId, x => x.Count, ct);
+
+        var latestActivity = await db.Messages
+            .AsNoTracking()
+            .Where(m => roomIds.Contains(m.RoomId))
+            .GroupBy(m => m.RoomId)
+            .Select(g => new { RoomId = g.Key, LatestAt = g.Max(m => m.CreatedAt) })
+            .ToDictionaryAsync(x => x.RoomId, x => (DateTimeOffset?)x.LatestAt, ct);
+
+        return rooms.Select(r => new RoomDto(
+            r.Id,
+            r.Slug,
+            r.Name,
+            r.Description,
+            threadCounts.GetValueOrDefault(r.Id),
+            latestActivity.GetValueOrDefault(r.Id))).ToList();
+    }
 
     private static string? NormalizeName(string? name)
     {
@@ -78,7 +87,14 @@ public class RoomService(AppDbContext db, IMemoryCache cache)
         return name[..Math.Min(name.Length, 60)];
     }
 
-    private static string? NormalizeSlug(string? slug) => Slug.Normalize(slug);
+    private static string? NormalizeSlug(string? slug)
+    {
+        slug = slug?.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(slug)) return null;
+        slug = Regex.Replace(slug, "^#+", "");
+        slug = Regex.Replace(slug, "[^a-z0-9]+", "-").Trim('-');
+        return string.IsNullOrWhiteSpace(slug) ? null : slug[..Math.Min(slug.Length, 60)];
+    }
 }
 
 public sealed record CreateRoomResult(Room? Entity, RoomDto? Dto, string? Error)

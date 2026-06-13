@@ -1,0 +1,104 @@
+{
+  "batch": "abstraction_fitness",
+  "batch_index": 1,
+  "assessments": {
+    "abstraction_fitness": 82.0
+  },
+  "dimension_notes": {
+    "abstraction_fitness": {
+      "evidence": [
+        "holistic_context.abstractions reports wrapper_rate 0.009, total_wrappers 1, one_impl_interface_count 0, delegation_heavy_class_count 0, facade_module_count 0, typed_dict_violation_count 0, and dict_any_annotation_count 0.",
+        "src/lib/api-client.ts lines 22-71 centralize fetch behavior, token attachment, refresh retry, JSON/form body handling, and 204 handling rather than just forwarding RequestInit.",
+        "src/lib/sheshi.ts lines 49-123 earns its service layer by translating 404s to null, normalizing createRoom input, validating postMessage body length/content, selecting JSON vs FormData, and mapping auth/backend errors to caller-level errors.",
+        "src/components/ui/menubar.tsx lines 7-80 contains some pass-through Radix wrappers, but most wrappers add styling, refs, icons, data attributes, or design-system defaults; these match the rubric skip for framework/design-system facade components.",
+        "single_use findings for src/routeTree.gen.ts, route modules, src/start.ts, sitemap, error-capture, and sonner are mostly framework lifecycle, route registration, or design-system entry point boundaries rather than abstraction ceremony.",
+        "alb_sheshi/frontend/src/App.tsx lines 137-157 own route, auth, rooms, highlights, presence, room messages, thread state, refresh, saved ids, dialogs, and toast in one component; lines 204-344 also own loading rooms, auth providers, callback parsing, room/thread loading, and SignalR subscription.",
+        "alb_sheshi/frontend/src/App.tsx then passes the same orchestration callbacks and state through many broad component prop objects: Home, RoomView, ThreadView, ThreadCard, ReplyTree, ActionRow, Composer, AuthPage, Profile, and CreateRoomDialog are all defined in the same file.",
+        "src/routes/tema.$messageId.tsx is a 313-line route with recursive ReplyBranch and several hooks, but its ReplyBranch props are locally meaningful and not a cross-feature wrapper chain; the abstraction cost is contained."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high",
+      "sub_axes": {
+        "abstraction_leverage": 87.0,
+        "indirection_cost": 84.0,
+        "interface_honesty": 94.0,
+        "delegation_density": 98.0,
+        "definition_directness": 91.0,
+        "type_discipline": 95.0
+      }
+    }
+  },
+  "dimension_judgment": {
+    "abstraction_fitness": {
+      "dimension_character": "The main root app generally uses abstractions that pay rent: API helpers add auth, retry, body translation, validation, and error normalization, while UI primitives mostly act as design-system adapters rather than empty indirection. There is little evidence of TypeScript ceremony such as one-implementation interface ecosystems, generic helpers with one use, facade-module churn, or delegation-heavy classes. The quality is pulled down by the nested Vite app, where one large App component keeps feature state and orchestration in one file and pushes broad prop bundles through many local components.",
+      "score_rationale": "This is above the 80 anchor because most abstractions improve clarity and safety, and mechanical concern signals largely collapse into legitimate framework or design-system boundaries after reading the code. It is not a 90 because alb_sheshi/frontend/src/App.tsx creates recurring developer friction: feature boundaries are implicit, prop contracts are wide, and callback/state wiring must be understood inside one 1360-line file before changes feel safe. The score reflects a mostly direct, low-ceremony TypeScript codebase with one substantial subsystem-level boundary problem."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "abstraction_fitness",
+      "identifier": "monolithic_frontend_app_boundaries",
+      "summary": "The nested frontend App component centralizes too many feature contracts and passes broad prop bundles through local components.",
+      "related_files": [
+        "alb_sheshi/frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "Lines 137-157 declare route, theme, auth, rooms, highlights, presence, dialog, toast, search, auth providers, callback status, room message, thread, refresh, and saved-message state in the single App component.",
+        "Lines 204-344 keep room/highlight/presence loading, auth provider loading, external auth callback parsing, room message loading, thread loading, and SignalR subscription setup in the same component.",
+        "The same file defines TopBar, RoomRail, Home, RoomView, ThreadView, ThreadCard, ActionRow, ReplyTree, Composer, AuthPage, Profile, CreateRoomDialog, and Dialog; those components receive repeated broad props such as onVote, onSave, onShare, savedIds, requireAuth, rooms, auth, and submit callbacks instead of consuming feature-scoped contracts.",
+        "The detector concern structural::alb_sheshi/frontend/src/App.tsx is confirmed as an abstraction-boundary issue, not because the child components are empty wrappers, but because the file lacks feature-level view model or hook boundaries."
+      ],
+      "suggestion": "Split the nested frontend by feature ownership: move routing/auth/session orchestration into hooks such as useAuthSession, useRoomsFeed, and useThreadState, then move view components into focused files with narrower props. Keep callbacks close to the feature that owns the state so RoomView and ThreadView receive a compact model/actions object or feature-specific handlers rather than the current cross-cutting callback set.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "frontend_feature_boundary_collapse",
+      "concern_verdict": "confirmed",
+      "concern_fingerprint": "structural::alb_sheshi/frontend/src/App.tsx"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "The nested Vite frontend appears to have grown as a single-file application, so UI extraction happened inside the file without corresponding feature-state boundaries.",
+      "The root TanStack app uses more earned service/API abstractions, while the nested app duplicates the product surface with a flatter architecture."
+    ],
+    "likely_symptoms": [
+      "monolithic_frontend_app_boundaries"
+    ],
+    "possible_false_positives": [
+      "single_use route files are mostly TanStack routing or lifecycle artifacts rather than abstraction-fitness defects.",
+      "shadcn/Radix UI wrapper modules look like pass-through wrappers mechanically but act as stable design-system entry points."
+    ]
+  },
+  "context_updates": {
+    "abstraction_fitness": {
+      "add": [
+        {
+          "header": "API helpers add real translation",
+          "description": "The root app's API layers are not decorative wrappers: api-client centralizes auth refresh, body serialization, response handling, and error creation, while sheshi.ts translates backend behavior into UI-facing contracts. These layers reduce caller burden and isolate backend volatility.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "No interface ceremony ecosystem",
+          "description": "The TypeScript code does not show a broad one-implementation interface or delegation-heavy class pattern. Domain interfaces are mostly DTO shapes consumed directly by components and service functions.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Design-system wrappers are mostly intentional",
+          "description": "The shadcn/Radix UI wrappers include pass-through-looking functions, but they are package entry points for styling, refs, icons, slots, and primitive defaults. They should be treated as intentional UI facade components rather than abstraction debt.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Nested frontend keeps boundaries implicit",
+          "description": "alb_sheshi/frontend/src/App.tsx concentrates feature state, data loading, realtime subscriptions, routing, and view components in one file. This is not excess indirection; it is under-factored feature ownership that forces developers to reason about broad prop contracts inside a single subsystem file.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

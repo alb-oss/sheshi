@@ -1,0 +1,112 @@
+{
+  "batch": "api_surface_coherence",
+  "batch_index": 11,
+  "assessments": {
+    "api_surface_coherence": 82.0
+  },
+  "dimension_notes": {
+    "api_surface_coherence": {
+      "evidence": [
+        "src/lib/sheshi.ts exposes a mostly regular async domain wrapper surface: list/get/create/post/toggle/delete/report functions all return Promises and use typed DTO-like inputs for create/post/report.",
+        "src/lib/api-client.ts separates raw response access through api(path, options), JSON access through apiJson<T>(path, options), and multipart access through apiForm<T>(path, form, options), which gives callers predictable transport helpers.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs and alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs consistently expose controller actions as Task<ActionResult<T>> or Task<IActionResult> with CancellationToken parameters.",
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessageService.cs uses explicit result records for create/delete/report outcomes instead of throwing or overloading return types.",
+        "The same message-listing concept is exposed as Promise<MessageRow[]> from src/lib/sheshi.ts but as Promise<CursorPage<Message>> from alb_sheshi/frontend/src/api.ts, while the two server copies mirror that split with IReadOnlyList<MessageDto> versus CursorPageDto<MessageDto>.",
+        "alb_sheshi/frontend/src/api.ts places auth token first for write calls like createRoom(token, input), postMessage(token, input), upvote(token, id), but last/optional for read calls like messages(roomId, cursor, token), thread(id, token), highlights(mode, token)."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "medium"
+    }
+  },
+  "dimension_judgment": {
+    "api_surface_coherence": {
+      "dimension_character": "The active API surfaces are mostly coherent within each local area: transport helpers are small, most domain functions are async and typed, and server controllers use familiar ASP.NET action shapes. The main developer friction comes from duplicated legacy/current client-server surfaces that expose the same message and room concepts with different response envelopes and auth-token conventions.",
+      "score_rationale": "This sits in the solid-but-uneven range: a developer can usually predict how to call a function after seeing one sibling, especially in src/lib/sheshi.ts and the newer C# services. It does not reach strong territory because the repository contains two production-shaped API clients and server copies whose similar names mask different pagination and parameter contracts, so cross-area changes require checking each surface rather than trusting a single convention."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "duplicate_message_pagination_shapes",
+      "summary": "Message listing APIs expose arrays in one app surface and cursor pages in the parallel app surface",
+      "related_files": [
+        "src/lib/sheshi.ts",
+        "alb_sheshi/frontend/src/api.ts",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs"
+      ],
+      "evidence": [
+        "src/lib/sheshi.ts listMessages(roomId: string): Promise<MessageRow[]> calls /api/rooms/{roomId}/messages and returns a bare MessageRow array.",
+        "alb_sheshi/frontend/src/api.ts api.messages(roomId, cursor, token) calls the same endpoint family and returns Promise<CursorPage<Message>> with items and next_cursor.",
+        "server/Sheshi.Api/Features/Messages/MessagesController.cs ListRoomMessages returns ActionResult<IReadOnlyList<MessageDto>>, while alb_sheshi/server/Sheshi.Api/Features/Messages/MessagesController.cs ListRoomMessages returns ActionResult<CursorPageDto<MessageDto>>.",
+        "alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs defines CursorPageDto<T>, but the root server copy has no equivalent envelope for the same resource family."
+      ],
+      "suggestion": "Pick one production API shape for message collections. Prefer the cursor-page envelope if pagination is the intended direction, then update the older src/lib/sheshi.ts/root server surface or clearly retire the duplicate legacy copy so developers do not have to infer which contract applies.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "parallel_legacy_current_api_surfaces"
+    },
+    {
+      "dimension": "api_surface_coherence",
+      "identifier": "token_parameter_position_drift",
+      "summary": "Frontend API methods place auth tokens in different positions across similar calls",
+      "related_files": [
+        "alb_sheshi/frontend/src/api.ts",
+        "alb_sheshi/frontend/src/App.tsx"
+      ],
+      "evidence": [
+        "alb_sheshi/frontend/src/api.ts write methods put token first: createRoom(token, input), postMessage(token, input), upvote(token, id), removeUpvote(token, id).",
+        "Read methods in the same exported api object put token last and optional: messages(roomId, cursor, token), thread(id, token), highlights(mode, token), while me(token) is token-only.",
+        "Calling an authenticated paginated read requires a placeholder cursor argument, e.g. messages(roomId, null, token), which is easy to get wrong under edge cases where a caller has a token but no cursor."
+      ],
+      "suggestion": "Normalize exported API method signatures around a single convention, such as api.messages({ roomId, cursor, token }) for optional query/auth parameters or token-first for every authenticated call. The object-argument shape is the simpler fix for reads because it removes positional placeholders.",
+      "confidence": "medium",
+      "impact_scope": "module",
+      "fix_scope": "single_edit",
+      "root_cause_cluster": "parallel_legacy_current_api_surfaces"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Parallel legacy/current app copies preserve different endpoint and client conventions for the same domain concepts.",
+      "Optional read parameters were modeled positionally, which makes auth and pagination arguments compete for call-site order."
+    ],
+    "likely_symptoms": [
+      "token_parameter_position_drift"
+    ],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "api_surface_coherence": {
+      "add": [
+        {
+          "header": "Consistent async domain wrappers",
+          "description": "The main src/lib/sheshi.ts client surface gives developers a regular async vocabulary for rooms, messages, threads, votes, deletes, reports, and highlights. Most operations return typed Promises and keep create/post/report payloads in input objects rather than long parameter lists.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Layered transport helper shapes",
+          "description": "src/lib/api-client.ts gives raw, JSON, and multipart calls distinct helper names, which keeps most endpoint wrappers from hand-rolling fetch behavior. That separation makes the common JSON path predictable while still leaving an escape hatch for file upload and raw no-content responses.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Typed service result records",
+          "description": "The newer alb_sheshi server services use explicit result records for create/delete/report outcomes, making controller failure handling visible without overloading null or exception behavior. This improves API honesty at the service-controller boundary.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel API surface drift",
+          "description": "The repository carries root and alb_sheshi client/server surfaces for the same room/message domain, and those surfaces have diverged on pagination envelopes, DTO fields, and token placement. Developers have to check which copy they are touching before assuming the contract.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

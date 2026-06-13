@@ -219,8 +219,6 @@ namespace Sheshi.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -232,28 +230,6 @@ namespace Sheshi.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("Sheshi.Api.Domain.DailyStat", b =>
-                {
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Messages")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("NewUsers")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Reports")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Votes")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Date");
-
-                    b.ToTable("DailyStats");
                 });
 
             modelBuilder.Entity("Sheshi.Api.Domain.Message", b =>
@@ -276,42 +252,129 @@ namespace Sheshi.Api.Migrations
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Depth")
-                        .HasColumnType("integer");
-
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("ReplyCount")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("RoomId")
                         .HasColumnType("uuid");
-
-                    b.Property<Guid>("RootMessageId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("VoteCount")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("ParentId");
 
-                    b.HasIndex("RoomId", "CreatedAt", "Id")
-                        .IsDescending(false, true, true)
+                    b.HasIndex("RoomId", "CreatedAt")
+                        .IsDescending(false, true)
                         .HasFilter("\"ParentId\" IS NULL");
 
-                    b.HasIndex("RootMessageId", "CreatedAt", "Id");
-
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("Sheshi.Api.Domain.ModerationAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TargetType", "TargetId");
+
+                    b.ToTable("ModerationActions");
+                });
+
+            modelBuilder.Entity("Sheshi.Api.Domain.ModerationFlag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Evidence")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ResolvedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RuleKey")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResolvedById");
+
+                    b.HasIndex("AuthorId", "Status");
+
+                    b.HasIndex("MessageId", "RuleKey")
+                        .IsUnique();
+
+                    b.HasIndex("RoomId", "Status");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("ModerationFlags");
                 });
 
             modelBuilder.Entity("Sheshi.Api.Domain.RefreshToken", b =>
@@ -367,21 +430,14 @@ namespace Sheshi.Api.Migrations
                     b.Property<Guid>("ReporterId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTimeOffset?>("ResolvedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("MessageId");
 
                     b.HasIndex("ReporterId");
-
-                    b.HasIndex("Status");
 
                     b.ToTable("Reports");
                 });
@@ -398,9 +454,6 @@ namespace Sheshi.Api.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<DateTimeOffset?>("LatestActivityAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -408,9 +461,6 @@ namespace Sheshi.Api.Migrations
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int>("ThreadCount")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -432,8 +482,6 @@ namespace Sheshi.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("MessageId", "UserId");
-
-                    b.HasIndex("CreatedAt");
 
                     b.HasIndex("UserId");
 
@@ -515,6 +563,34 @@ namespace Sheshi.Api.Migrations
                     b.Navigation("Parent");
 
                     b.Navigation("Room");
+                });
+
+            modelBuilder.Entity("Sheshi.Api.Domain.ModerationFlag", b =>
+                {
+                    b.HasOne("Sheshi.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Sheshi.Api.Domain.Message", "Message")
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Sheshi.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ResolvedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Sheshi.Api.Domain.Room", null)
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
                 });
 
             modelBuilder.Entity("Sheshi.Api.Domain.Report", b =>

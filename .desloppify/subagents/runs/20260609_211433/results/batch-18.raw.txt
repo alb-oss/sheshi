@@ -1,0 +1,98 @@
+{
+  "batch": "contract_coherence",
+  "batch_index": 18,
+  "assessments": {
+    "contract_coherence": 82.0
+  },
+  "dimension_notes": {
+    "contract_coherence": {
+      "evidence": [
+        "src/lib/sheshi.ts keeps read APIs honest: getRoomBySlug, getMessage, and getThread all advertise Promise<... | null> and convert only 404 ApiError responses to null while rethrowing other failures.",
+        "src/lib/token-store.ts separates read/write contracts clearly: getStoredTokens only reads localStorage and validates shape, while setStoredTokens and clearStoredTokens perform storage mutation and emit listener notifications.",
+        "src/lib/api-client.ts:49-58 declares apiJson<T> as Promise<T>, but line 57 returns undefined as T for every 204 response, so non-void call sites can receive a value excluded by the signature.",
+        "src/lib/realtime.ts:7-17 exports getRealtimeConnection as a getter, but the first call constructs and stores a HubConnection singleton; src/hooks/use-auth.ts:87-89 similarly names getAuthSnapshot like a read while init() can start token loading and subscribe to storage updates."
+      ],
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "contract_coherence": {
+      "dimension_character": "The codebase mostly has straightforward contracts: domain read helpers use explicit nullable returns for not-found cases, mutation helpers are named as mutations, and token storage exposes a clear read/write/subscribe split. The main unevenness is concentrated in infrastructural helpers where generic response types and getter-style lazy initialization make callers trust more than the implementation actually guarantees.",
+      "score_rationale": "This lands in the solid-but-uneven range: most feature-facing APIs behave as their names and signatures suggest, but the shared API client and singleton/auth helpers create recurring contract friction at subsystem boundaries. The issues are not pervasive enough to make the code hard to work in, but they do mean developers must inspect these helpers before relying on their apparent surface."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "contract_coherence",
+      "identifier": "api_json_204_type_lie",
+      "summary": "apiJson<T> can return undefined despite promising Promise<T>",
+      "related_files": [
+        "src/lib/api-client.ts"
+      ],
+      "evidence": [
+        "src/lib/api-client.ts:49 declares export async function apiJson<T>(...): Promise<T>.",
+        "src/lib/api-client.ts:57 returns undefined as T whenever the HTTP response status is 204.",
+        "Callers use both apiJson<void> for no-content endpoints and apiJson<ApiUser>/apiJson<Room[]> for data endpoints, so the helper's public contract does not encode which calls may return no body."
+      ],
+      "suggestion": "Split the contract into explicit helpers, for example keep apiJson<T>() for JSON responses that must parse a body and add apiNoContent() or apiJson<T | void>() overloads for 204-capable endpoints. Remove the blanket undefined as T cast so non-void callers cannot silently accept no-content responses.",
+      "confidence": "high",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "shared_client_contract_overbroad"
+    },
+    {
+      "dimension": "contract_coherence",
+      "identifier": "getter_names_hide_initialization",
+      "summary": "Getter-style exports hide initialization side effects",
+      "related_files": [
+        "src/lib/realtime.ts",
+        "src/hooks/use-auth.ts"
+      ],
+      "evidence": [
+        "src/lib/realtime.ts:7 exports getRealtimeConnection(), but lines 10-15 construct and cache a new HubConnection on the first call.",
+        "src/hooks/use-auth.ts:87 exports getAuthSnapshot(), but line 88 calls init(), and init() at lines 55-61 can start loadUserFromTokens() and subscribe to token-store changes.",
+        "Pure getters elsewhere, such as src/lib/token-store.ts:13 getStoredTokens(), only read and return state, so these exported get* APIs are surprising by comparison."
+      ],
+      "suggestion": "Rename the side-effecting entry points to make initialization explicit, such as ensureRealtimeConnection() and initializeAuthAndGetSnapshot(), or split each into a pure peek/get function plus an ensure/init function used by callers that want construction.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "lazy_singleton_getters"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Shared infrastructure helpers optimize for convenient call sites, but the generic names and types do not encode response-body and initialization contracts."
+    ],
+    "likely_symptoms": [
+      "getter_names_hide_initialization"
+    ],
+    "possible_false_positives": []
+  },
+  "context_updates": {
+    "contract_coherence": {
+      "add": [
+        {
+          "header": "Not-found reads advertise null",
+          "description": "The main domain read helpers make the 404-to-null behavior explicit in their return types, so callers can distinguish absence from other API failures without reading every implementation.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Token storage verbs match effects",
+          "description": "The token-store module keeps read, write, clear, and subscribe responsibilities separated behind names that accurately describe their side effects.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Infrastructure helpers overstate contracts",
+          "description": "The shared API and singleton/auth helpers favor convenience over precise contracts, which is why their signatures and getter names hide important runtime behavior at subsystem boundaries.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

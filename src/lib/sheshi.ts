@@ -1,0 +1,210 @@
+import { api, ApiError, apiForm, apiJson, apiNoContent } from "@/lib/api-client";
+
+export type SheshiErrorCode = "EMPTY" | "TOO_LONG" | "UNAUTH" | "RATE_LIMITED" | "INVALID_IMAGE";
+
+export class SheshiError extends Error {
+  code: SheshiErrorCode;
+  status?: number;
+
+  constructor(code: SheshiErrorCode, options: { cause?: unknown; status?: number } = {}) {
+    super(code, { cause: options.cause });
+    this.name = "SheshiError";
+    this.code = code;
+    this.status = options.status;
+  }
+}
+
+function toMessageMutationError(error: unknown): SheshiError | null {
+  if (!(error instanceof ApiError)) return null;
+  if (error.status === 401) return new SheshiError("UNAUTH", { cause: error, status: 401 });
+  if (error.status === 429) return new SheshiError("RATE_LIMITED", { cause: error, status: 429 });
+  const code = apiErrorCode(error);
+  if (code === "TOO_LONG") return new SheshiError("TOO_LONG", { cause: error, status: error.status });
+  if (code === "EMPTY") return new SheshiError("EMPTY", { cause: error, status: error.status });
+  if (code === "INVALID_IMAGE" || code === "UNSUPPORTED_IMAGE_TYPE" || code === "IMAGE_DIMENSIONS_TOO_LARGE" || code === "IMAGE_TOO_LARGE")
+    return new SheshiError("INVALID_IMAGE", { cause: error, status: error.status });
+  return null;
+}
+
+function apiErrorCode(error: ApiError) {
+  const payload = error.payload as { error?: string; errors?: string[] } | undefined;
+  return payload?.error ?? payload?.errors?.[0];
+}
+
+export interface Room {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  thread_count?: number;
+  latest_activity_at?: string | null;
+}
+
+export interface Profile {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+export interface MessageRow {
+  id: string;
+  room_id: string;
+  author_id: string;
+  parent_id: string | null;
+  body: string;
+  image_url: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  author?: Profile | null;
+  upvotes?: number;
+  reply_count?: number;
+  voted?: boolean;
+}
+
+export interface ReplyNode {
+  message: MessageRow;
+  replies: ReplyNode[];
+  depth: number;
+}
+
+export interface CursorPage<T> {
+  items: T[];
+  next_cursor: string | null;
+}
+
+export interface ThreadData {
+  root: MessageRow;
+  replies: ReplyNode[];
+}
+
+export function listRooms(): Promise<Room[]> {
+  return apiJson<Room[]>("/api/rooms");
+}
+
+export async function getRoomBySlug(slug: string): Promise<Room | null> {
+  try {
+    return await apiJson<Room>(`/api/rooms/${encodeURIComponent(slug)}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export function createRoom(input: { name: string; description?: string | null }): Promise<Room> {
+  return apiJson<Room>("/api/rooms", {
+    method: "POST",
+    body: {
+      name: input.name,
+      description: input.description || null,
+    },
+  });
+}
+
+export function listMessages(
+  roomId: string,
+  cursor?: string | null,
+  limit = 40,
+): Promise<CursorPage<MessageRow>> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  return apiJson<CursorPage<MessageRow>>(`/api/rooms/${roomId}/messages?${params.toString()}`);
+}
+
+export async function getMessage(id: string): Promise<MessageRow | null> {
+  try {
+    return await apiJson<MessageRow>(`/api/messages/${id}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export function listReplies(
+  parentId: string,
+  cursor?: string | null,
+  limit = 80,
+): Promise<CursorPage<MessageRow>> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  return apiJson<CursorPage<MessageRow>>(`/api/messages/${parentId}/replies?${params.toString()}`);
+}
+
+export async function getThread(messageId: string): Promise<ThreadData | null> {
+  try {
+    return await apiJson<ThreadData>(`/api/threads/${messageId}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export async function postMessage(input: {
+  room_id: string;
+  body: string;
+  parent_id?: string | null;
+  image?: File | null;
+}): Promise<MessageRow> {
+  const body = input.body.trim();
+  if (!body && !input.image) throw new SheshiError("EMPTY");
+  if (body.length > 2000) throw new SheshiError("TOO_LONG");
+
+  try {
+    if (input.image) {
+      const form = new FormData();
+      form.set("room_id", input.room_id);
+      if (input.parent_id) form.set("parent_id", input.parent_id);
+      form.set("body", body);
+      form.set("image", input.image);
+      return await apiForm<MessageRow>("/api/messages", form);
+    }
+
+    return await apiJson<MessageRow>("/api/messages", {
+      method: "POST",
+      body: { room_id: input.room_id, parent_id: input.parent_id ?? null, body },
+    });
+  } catch (error) {
+    const sheshiError = toMessageMutationError(error);
+    if (sheshiError) throw sheshiError;
+    throw error;
+  }
+}
+
+export async function toggleVote(messageId: string, currentlyVoted: boolean) {
+  try {
+    if (currentlyVoted) await api(`/api/messages/${messageId}/vote`, { method: "DELETE" });
+    else await api(`/api/messages/${messageId}/vote`, { method: "PUT" });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) throw new SheshiError("UNAUTH", { cause: error, status: 401 });
+    if (error instanceof ApiError && error.status === 429) throw new SheshiError("RATE_LIMITED", { cause: error, status: 429 });
+    throw error;
+  }
+}
+
+export function softDeleteMessage(id: string): Promise<void> {
+  return apiNoContent(`/api/messages/${id}`, { method: "DELETE" });
+}
+
+export type ReportReason = "spam" | "hate" | "doxxing" | "violence" | "other";
+export async function submitReport(input: {
+  message_id: string;
+  reason: ReportReason;
+  note?: string;
+}) {
+  try {
+    await api(`/api/messages/${input.message_id}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: input.reason, note: input.note || null }),
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) throw new SheshiError("UNAUTH", { cause: error, status: 401 });
+    throw error;
+  }
+}
+
+export type HighlightMode = "hot" | "top" | "replied";
+
+export function listHighlights(mode: HighlightMode): Promise<MessageRow[]> {
+  return apiJson<MessageRow[]>(`/api/highlights?mode=${encodeURIComponent(mode)}`);
+}

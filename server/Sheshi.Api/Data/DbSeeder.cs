@@ -12,6 +12,14 @@ public static class DbSeeder
         ("sheshi", "#sheshi", "Diskutimi kryesor publik."),
     ];
 
+    private static readonly string[] LegacySeedRoomSlugs =
+    [
+        "vjosa-narta",
+        "tirana",
+        "shkodra",
+        "korca"
+    ];
+
     public static async Task SeedAsync(IServiceProvider services)
     {
         using var scope = services.CreateScope();
@@ -25,6 +33,11 @@ public static class DbSeeder
         }
 
         var db = sp.GetRequiredService<AppDbContext>();
+        var legacyRooms = await db.Rooms
+            .Where(r => LegacySeedRoomSlugs.Contains(r.Slug))
+            .ToListAsync();
+        db.Rooms.RemoveRange(legacyRooms);
+
         foreach (var (slug, name, description) in SeedRooms)
         {
             var room = await db.Rooms.SingleOrDefaultAsync(r => r.Slug == slug);
@@ -58,7 +71,6 @@ public static class DbSeeder
             {
                 Id = Guid.NewGuid(),
                 Email = email,
-                EmailConfirmed = true, // operator-configured account, no inbox round-trip needed
                 UserName = await CreateAvailableUsernameAsync(userManager, email),
                 DisplayName = string.IsNullOrWhiteSpace(configuration["SeedAdmin:DisplayName"])
                     ? "Sheshi Admin"
@@ -76,27 +88,6 @@ public static class DbSeeder
             if (!await userManager.IsInRoleAsync(user, role))
                 await userManager.AddToRoleAsync(user, role);
         }
-
-        if (!user.EmailConfirmed)
-        {
-            user.EmailConfirmed = true;
-            await userManager.UpdateAsync(user);
-        }
-
-        if (!await userManager.CheckPasswordAsync(user, password))
-            await ResetConfiguredPasswordAsync(userManager, user, password);
-    }
-
-    private static async Task ResetConfiguredPasswordAsync(
-        UserManager<ApplicationUser> userManager,
-        ApplicationUser user,
-        string password)
-    {
-        var token = await userManager.GeneratePasswordResetTokenAsync(user);
-        var reset = await userManager.ResetPasswordAsync(user, token, password);
-        if (!reset.Succeeded)
-            throw new InvalidOperationException("Seed admin password reset failed: " +
-                                                string.Join("; ", reset.Errors.Select(e => e.Description)));
     }
 
     private static async Task<string> CreateAvailableUsernameAsync(

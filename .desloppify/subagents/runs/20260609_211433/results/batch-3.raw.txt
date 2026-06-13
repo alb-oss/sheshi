@@ -1,0 +1,114 @@
+{
+  "batch": "convention_outlier",
+  "batch_index": 3,
+  "assessments": {
+    "convention_outlier": 76.0
+  },
+  "dimension_notes": {
+    "convention_outlier": {
+      "evidence": [
+        "Root frontend modules follow predictable TanStack conventions: route files export `Route = createFileRoute(...)`, feature components use named component exports, and shared UI primitives live under `src/components/ui`.",
+        "`components.json` explicitly maps the shadcn UI alias to `src/components/ui`, so files such as `alert-dialog.tsx`, `dropdown-menu.tsx`, and `hover-card.tsx` match third-party component naming conventions rather than local drift.",
+        "The root backend uses a clear feature-folder convention under `server/Sheshi.Api/Features/{Messages,Rooms,Moderation}` with sibling `*Controller.cs`, `*Dtos.cs`, and service files where needed.",
+        "A second production-shaped tree exists under `alb_sheshi` with its own frontend package and server solution; many files duplicate root paths but differ in behavior and structure.",
+        "`server/README.md` instructs developers to run `dotnet run --project server/Sheshi.Api`, while `alb_sheshi/server/Sheshi.Api` also contains controllers, migrations, tests, and app settings."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "convention_outlier": {
+      "dimension_character": "Within the current root app, conventions are mostly coherent: React routes, feature components, shadcn UI primitives, and ASP.NET feature folders each have recognizable local patterns. The main developer-facing problem is that a parallel `alb_sheshi` application tree duplicates the same domains with different implementation conventions, making it unclear which tree is canonical when searching or extending behavior.",
+      "score_rationale": "This is better than a fragmented codebase because the active root areas are internally consistent and the mechanical UI naming signal is explainable by shadcn conventions. It lands below the solid 80 anchor because the duplicated app/server roots create recurring navigation ambiguity across major production-looking areas, so developers cannot fully trust that one observed pattern holds everywhere."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "convention_outlier",
+      "identifier": "parallel_app_roots",
+      "summary": "Parallel root and `alb_sheshi` app trees expose divergent conventions for the same domains",
+      "related_files": [
+        "server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs",
+        "src/routes/index.tsx",
+        "alb_sheshi/frontend/src/App.tsx",
+        "server/README.md"
+      ],
+      "evidence": [
+        "`server/README.md` directs local backend work to `server/Sheshi.Api`, but `alb_sheshi/server/Sheshi.Api` contains a separate solution-shaped backend with controllers, migrations, tests, and appsettings.",
+        "`server/Sheshi.Api/Features/Rooms/RoomsController.cs` performs room normalization and persistence inline in the controller, while `alb_sheshi/server/Sheshi.Api/Features/Rooms/RoomsController.cs` delegates to `RoomService`, applies rate limiting attributes, and restricts create to admin role.",
+        "`src/routes/index.tsx` uses TanStack file routing and extracted route/component modules, while `alb_sheshi/frontend/src/App.tsx` implements routing, auth state, theme state, and UI composition in a single default-export App component.",
+        "The two backend trees have same relative file names but differ in DTO shape, e.g. `alb_sheshi/server/Sheshi.Api/Features/Messages/MessageDtos.cs` adds `RootMessageId`, `Depth`, and `CursorPageDto<T>` absent from the root `server` DTO file."
+      ],
+      "suggestion": "Choose one canonical app/server tree for production development. Move any still-needed changes from the other tree into the canonical location, then archive, delete, or clearly mark the non-canonical tree outside the production source path so developers do not have to infer which convention to follow.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor"
+    },
+    {
+      "dimension": "convention_outlier",
+      "identifier": "ui_kebab_case_signal_dismissed",
+      "summary": "Dismissed: shadcn UI compound component filenames are intentional, not local naming drift",
+      "related_files": [
+        "components.json",
+        "src/components/ui/alert-dialog.tsx",
+        "src/components/ui/button.tsx"
+      ],
+      "evidence": [
+        "`components.json` configures shadcn with `aliases.ui` set to `@/components/ui`, establishing `src/components/ui` as generated/shared UI primitive space.",
+        "`alert-dialog.tsx` follows the standard multi-part Radix/shadcn pattern with named exports such as `AlertDialog`, `AlertDialogContent`, and `AlertDialogCancel`; `button.tsx` similarly exports `Button` and `buttonVariants`.",
+        "Compound primitive filenames such as `alert-dialog.tsx`, `dropdown-menu.tsx`, and `hover-card.tsx` describe multi-word component families and do not impede navigation inside the UI primitive directory."
+      ],
+      "suggestion": "No code change recommended for this signal; keep the shadcn filename convention in `src/components/ui`.",
+      "confidence": "high",
+      "impact_scope": "local",
+      "fix_scope": "single_edit",
+      "concern_verdict": "dismissed",
+      "concern_fingerprint": "naming::src/components/ui::kebab-case",
+      "reasoning": "The detected minority kebab-case files are standard compound shadcn/Radix primitive names in a directory explicitly configured for shadcn components."
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "A newer root app layout and an older or alternate `alb_sheshi` layout appear to coexist without an explicit canonical boundary."
+    ],
+    "likely_symptoms": [
+      "ui_kebab_case_signal_dismissed"
+    ],
+    "possible_false_positives": [
+      "naming::src/components/ui::kebab-case"
+    ]
+  },
+  "context_updates": {
+    "convention_outlier": {
+      "add": [
+        {
+          "header": "Root frontend conventions are cohesive",
+          "description": "The current `src` frontend separates file routes, feature components, hooks, library API helpers, and shadcn UI primitives in predictable places. This lets developers transfer patterns across route and component modules without learning a new local style per file.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Shadcn UI naming is intentional",
+          "description": "The kebab-case compound filenames under `src/components/ui` come from the configured shadcn primitive layer, where multi-word component families naturally use names like `alert-dialog` and `dropdown-menu`. Treating that as naming drift would push against the external convention developers already expect.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Parallel app roots obscure canonical code",
+          "description": "The repository contains both root `src`/`server` code and an `alb_sheshi` app/server tree with overlapping domains but divergent implementation patterns. Because both trees look production-shaped and differ behaviorally, developers must inspect project wiring before trusting a convention they find.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Backend feature folders are locally predictable",
+          "description": "Inside the root backend, feature folders group controllers, DTOs, and services by domain instead of scattering related API code across unrelated directories. This supports navigation once the developer is in the canonical `server/Sheshi.Api` tree.",
+          "settled": true,
+          "positive": true
+        }
+      ]
+    }
+  }
+}

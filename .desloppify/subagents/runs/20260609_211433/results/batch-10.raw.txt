@@ -1,0 +1,135 @@
+{
+  "batch": "test_strategy",
+  "batch_index": 10,
+  "assessments": {
+    "test_strategy": 62.0
+  },
+  "dimension_notes": {
+    "test_strategy": {
+      "evidence": [
+        "server/Sheshi.Api.Tests/ApiFactory.cs boots the ASP.NET API through WebApplicationFactory against a throwaway PostgreSQL Testcontainers database, so backend tests exercise migrations, seeding, routing, persistence, auth, and middleware together rather than only unit-level behavior.",
+        "server/Sheshi.Api.Tests/CoreApiTests.cs covers room creation, message/reply/thread traversal, voting, report validation, highlight retrieval, and authorization rules through HTTP calls.",
+        "server/Sheshi.Api.Tests/AuthFlowTests.cs covers register/login/refresh/logout/profile/password-reset flows with a captured IEmailSender test double.",
+        "server/Sheshi.Api.Tests/RealtimeStorageModerationTests.cs covers SignalR change notification, presence counts, multipart image upload, moderation role gates, report resolution, bans, and role grants.",
+        "package.json has build/lint/format scripts but no test script, no Vitest/Jest/Playwright/Testing Library dependency, and find/rg show no real frontend test files under src or alb_sheshi/frontend/src.",
+        "src/lib/api-client.ts, src/lib/sheshi.ts, src/hooks/use-auth.ts, src/lib/realtime.ts, src/components/Composer.tsx, src/components/MessageCard.tsx, and route components contain API retry, token persistence, realtime subscription, validation, optimistic vote, image upload, and navigation behavior with no frontend unit/component/integration tests.",
+        "alb_sheshi/frontend/src/App.tsx is a 1360 LOC all-in-one frontend with no adjacent tests or package-level test script, reinforcing that frontend behavior is manually validated."
+      ],
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "confidence": "high"
+    }
+  },
+  "dimension_judgment": {
+    "test_strategy": {
+      "dimension_character": "The backend test strategy is materially stronger than average for a small service: it favors HTTP-level and real database integration tests over brittle implementation-coupled unit tests, and it covers the core auth, messaging, moderation, realtime, and storage contracts. The frontend has the opposite profile: important client-side contracts around API retries, token state, composer validation, optimistic mutation, realtime reload behavior, and route flows have no automated harness at all.",
+      "score_rationale": "This lands in significant-drag territory rather than poor because the backend can be changed with some confidence and the existing tests are broad, contract-oriented, and not snapshot-heavy. The score is pulled down hard by the complete absence of frontend tests and the lack of any npm test entrypoint, which means a developer changing the visible product or client API layer cannot trust automation to catch regressions."
+    }
+  },
+  "issues": [
+    {
+      "dimension": "test_strategy",
+      "identifier": "frontend_has_no_test_harness",
+      "summary": "Frontend-critical API, auth, realtime, route, and component behavior has no automated test harness",
+      "related_files": [
+        "package.json",
+        "src/lib/api-client.ts",
+        "src/lib/sheshi.ts",
+        "src/hooks/use-auth.ts",
+        "src/lib/realtime.ts",
+        "src/components/Composer.tsx",
+        "src/components/MessageCard.tsx",
+        "src/routes/tema.$messageId.tsx",
+        "src/routes/index.tsx",
+        "src/routes/moderim.tsx",
+        "src/routes/dhoma.$slug.tsx"
+      ],
+      "evidence": [
+        "package.json defines dev/build/lint/format but no test script and has no frontend test dependencies such as Vitest, Testing Library, Playwright, or Jest.",
+        "src/lib/api-client.ts implements token injection, 401 refresh/retry, token clearing on refresh failure, JSON/form request helpers, and ApiError conversion without tests.",
+        "src/lib/sheshi.ts translates backend status/error payloads into UI-facing errors like UNAUTH, EMPTY, and TOO_LONG and switches between JSON and multipart posting, but there are no tests asserting those client contracts.",
+        "src/hooks/use-auth.ts owns global auth state through useSyncExternalStore, token subscriptions, and async /api/me loading, but no tests verify initialization, sign-out, refresh, or invalid-token behavior.",
+        "src/components/Composer.tsx and src/components/MessageCard.tsx contain validation, image constraints, imperative prefill/focus behavior, optimistic voting rollback, delete/report gates, and keyboard submit behavior with no component tests.",
+        "src/routes/tema.$messageId.tsx wires getThread, listRooms, SignalR changed handlers, JoinThread/LeaveThread, sessionStorage reply intent, nested reply rendering, collapse state, and scroll behavior with no route-level or integration test."
+      ],
+      "suggestion": "Add a frontend test setup and start with a small contract-focused suite: Vitest unit tests for api-client/sheshi/token-store/use-auth, React Testing Library tests for Composer and MessageCard user flows, and one route/integration test around thread reload/realtime subscription behavior. Add an npm test script so these run alongside lint/build.",
+      "confidence": "high",
+      "impact_scope": "codebase",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "frontend_test_gap",
+      "concern_verdict": "confirmed",
+      "concern_fingerprint": "test_coverage::src/lib/sheshi.ts"
+    },
+    {
+      "dimension": "test_strategy",
+      "identifier": "legacy_frontend_monolith_untested",
+      "summary": "The duplicate alb_sheshi frontend keeps a large monolithic app path with no tests",
+      "related_files": [
+        "alb_sheshi/frontend/package.json",
+        "alb_sheshi/frontend/src/App.tsx",
+        "alb_sheshi/frontend/src/api.ts"
+      ],
+      "evidence": [
+        "desloppify includes alb_sheshi/frontend/src/App.tsx in scope, and the file is a 1360 LOC frontend module with no adjacent test files.",
+        "alb_sheshi/frontend/src/api.ts is the client API boundary for that frontend, but there are no tests around its request/response contracts.",
+        "The repository contains server tests under both server/Sheshi.Api.Tests and alb_sheshi/server/Sheshi.Api.Tests, but no equivalent frontend test coverage under alb_sheshi/frontend."
+      ],
+      "suggestion": "Either mark alb_sheshi/frontend as archived/excluded if it is not an active production path, or give it the same minimal frontend test harness recommended for src so App-level API/auth/message flows are covered before further changes.",
+      "confidence": "medium",
+      "impact_scope": "subsystem",
+      "fix_scope": "multi_file_refactor",
+      "root_cause_cluster": "frontend_test_gap",
+      "concern_verdict": "confirmed",
+      "concern_fingerprint": "test_coverage::alb_sheshi/frontend/src/App.tsx"
+    }
+  ],
+  "retrospective": {
+    "root_causes": [
+      "Backend migration work appears to have received deliberate integration coverage, while the React clients were left without a chosen test runner or ownership boundary for UI/API contract tests.",
+      "Duplicated frontend trees make it unclear which client surface should own regression coverage, increasing the chance both remain manually tested."
+    ],
+    "likely_symptoms": [
+      "legacy_frontend_monolith_untested"
+    ],
+    "possible_false_positives": [
+      "test_coverage::src/routeTree.gen.ts is generated TanStack router output and should not require custom tests.",
+      "test_coverage findings on low-logic shadcn/Radix wrapper components may be lower priority than client API, auth, realtime, and route behavior."
+    ]
+  },
+  "context_updates": {
+    "test_strategy": {
+      "add": [
+        {
+          "header": "Backend integration tests use real boundaries",
+          "description": "The ASP.NET test suite boots the application through WebApplicationFactory against Testcontainers PostgreSQL, so the tests validate HTTP routing, EF mappings, migrations, seeded roles, auth, and persistence together. This gives backend developers meaningful confidence without coupling tests to controller internals.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Backend covers core product flows",
+          "description": "Existing server tests exercise auth lifecycle, profile updates, rooms, messages, replies, voting, reports, highlights, moderation, SignalR notifications, presence, and multipart uploads. The coverage is concentrated on behavior users and API clients depend on.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "No snapshot testing dependency observed",
+          "description": "The current test portfolio is assertion-based HTTP and model verification, not snapshot-driven. That avoids the common fragility where large serialized outputs become the main oracle.",
+          "settled": true,
+          "positive": true
+        },
+        {
+          "header": "Frontend has no automated test layer",
+          "description": "The React client contains stateful API, auth, realtime, route, and component behavior but the package has no test script or frontend testing dependencies. Developers changing the client must rely on build/lint and manual exploration rather than automated regression checks.",
+          "settled": true,
+          "positive": false
+        },
+        {
+          "header": "Generated router output should be skipped",
+          "description": "src/routeTree.gen.ts is generated TanStack router output, so its detector signal is not strategically important coverage debt. Tests should target routes and navigation behavior, not the generated tree file itself.",
+          "settled": true,
+          "positive": false
+        }
+      ]
+    }
+  }
+}

@@ -1,8 +1,15 @@
 using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
 
 namespace Sheshi.Api.Storage;
 
-public class LocalFileImageStorage(IOptions<StorageOptions> options) : IImageStorage
+public class LocalFileImageStorage(
+    IOptions<StorageOptions> options,
+    IOptions<ImageSafetyOptions> imageSafetyOptions) : IImageStorage
 {
     private static readonly IReadOnlyDictionary<string, string> Extensions = new Dictionary<string, string>
     {
@@ -12,73 +19,90 @@ public class LocalFileImageStorage(IOptions<StorageOptions> options) : IImageSto
     };
 
     private readonly StorageOptions _options = options.Value;
+    private readonly ImageSafetyOptions _imageSafety = imageSafetyOptions.Value;
 
     public async Task<string> SaveAsync(Stream stream, string contentType, CancellationToken ct = default)
     {
+        contentType = contentType.Trim().ToLowerInvariant();
         if (!Extensions.TryGetValue(contentType, out var extension))
             throw new ImageStorageException("UNSUPPORTED_IMAGE_TYPE");
+
+        await using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, ct);
+        if (buffer.Length > _options.MaxBytes)
+            throw new ImageStorageException("IMAGE_TOO_LARGE");
+
+        var sanitized = await SanitizeAsync(buffer.ToArray(), contentType, ct);
 
         Directory.CreateDirectory(_options.UploadPath);
         var fileName = $"{Guid.NewGuid():N}{extension}";
         var path = Path.Combine(_options.UploadPath, fileName);
-        var tempPath = $"{path}.tmp";
-
-        try
-        {
-            {
-                await using var file = new FileStream(
-                    tempPath,
-                    FileMode.CreateNew,
-                    FileAccess.Write,
-                    FileShare.None,
-                    bufferSize: 81920,
-                    useAsync: true);
-
-                var buffer = new byte[81920];
-                long total = 0;
-                int read;
-                var headerChecked = false;
-                while ((read = await stream.ReadAsync(buffer, ct)) > 0)
-                {
-                    if (!headerChecked)
-                    {
-                        // The Content-Type header is attacker-controlled; trust
-                        // the file's magic bytes, not the label.
-                        if (!HasValidSignature(buffer, read, contentType))
-                            throw new ImageStorageException("INVALID_IMAGE");
-                        headerChecked = true;
-                    }
-
-                    total += read;
-                    if (total > _options.MaxBytes)
-                        throw new ImageStorageException("IMAGE_TOO_LARGE");
-
-                    await file.WriteAsync(buffer.AsMemory(0, read), ct);
-                }
-
-                if (!headerChecked) throw new ImageStorageException("INVALID_IMAGE");
-            }
-
-            File.Move(tempPath, path);
-        }
-        catch
-        {
-            if (File.Exists(tempPath)) File.Delete(tempPath);
-            throw;
-        }
+        await File.WriteAllBytesAsync(path, sanitized, ct);
 
         return $"{_options.PublicBaseUrl.TrimEnd('/')}/{fileName}";
     }
 
-    private static bool HasValidSignature(byte[] buffer, int count, string contentType) => contentType switch
+    private async Task<byte[]> SanitizeAsync(byte[] bytes, string contentType, CancellationToken ct)
     {
-        "image/jpeg" => count >= 3 && buffer[0] == 0xFF && buffer[1] == 0xD8 && buffer[2] == 0xFF,
-        "image/png" => count >= 8 &&
-                       buffer[0] == 0x89 && buffer[1] == 0x50 && buffer[2] == 0x4E && buffer[3] == 0x47 &&
-                       buffer[4] == 0x0D && buffer[5] == 0x0A && buffer[6] == 0x1A && buffer[7] == 0x0A,
-        "image/webp" => count >= 12 &&
-                        buffer[0] == (byte)'R' && buffer[1] == (byte)'I' && buffer[2] == (byte)'F' && buffer[3] == (byte)'F' &&
-                        buffer[8] == (byte)'W' && buffer[9] == (byte)'E' && buffer[10] == (byte)'B' && buffer[11] == (byte)'P',
-        _ => false
-    };
+        try
+        {
+            var detected = Image.DetectFormat(bytes);
+            if (detected is null || !MatchesContentType(detected, contentType))
+                throw new ImageStorageException("INVALID_IMAGE");
+
+            using var image = Image.Load(bytes);
+            var pixels = (long)image.Width * image.Height;
+            if (image.Width <= 0 ||
+                image.Height <= 0 ||
+                image.Width > _imageSafety.MaxWidth ||
+                image.Height > _imageSafety.MaxHeight ||
+                pixels > _imageSafety.MaxPixels)
+            {
+                throw new ImageStorageException("IMAGE_DIMENSIONS_TOO_LARGE");
+            }
+
+            StripMetadata(image);
+
+            await using var output = new MemoryStream();
+            await SaveInClaimedFormatAsync(image, output, contentType, ct);
+            if (output.Length > _options.MaxBytes)
+                throw new ImageStorageException("IMAGE_TOO_LARGE");
+            return output.ToArray();
+        }
+        catch (ImageStorageException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is InvalidImageContentException or UnknownImageFormatException or NotSupportedException)
+        {
+            throw new ImageStorageException("INVALID_IMAGE");
+        }
+    }
+
+    private static bool MatchesContentType(IImageFormat format, string contentType) =>
+        format.MimeTypes.Any(m => string.Equals(m, contentType, StringComparison.OrdinalIgnoreCase));
+
+    private static void StripMetadata(Image image)
+    {
+        image.Metadata.ExifProfile = null;
+        image.Metadata.XmpProfile = null;
+        image.Metadata.IptcProfile = null;
+        image.Metadata.IccProfile = null;
+        foreach (var frame in image.Frames)
+        {
+            frame.Metadata.ExifProfile = null;
+            frame.Metadata.XmpProfile = null;
+            frame.Metadata.IptcProfile = null;
+            frame.Metadata.IccProfile = null;
+        }
+    }
+
+    private static Task SaveInClaimedFormatAsync(Image image, Stream output, string contentType, CancellationToken ct) =>
+        contentType switch
+        {
+            "image/jpeg" => image.SaveAsJpegAsync(output, new JpegEncoder { Quality = 88, SkipMetadata = true }, ct),
+            "image/png" => image.SaveAsPngAsync(output, new PngEncoder { SkipMetadata = true }, ct),
+            "image/webp" => image.SaveAsWebpAsync(output, new WebpEncoder { Quality = 90, SkipMetadata = true }, ct),
+            _ => throw new ImageStorageException("UNSUPPORTED_IMAGE_TYPE")
+        };
 }

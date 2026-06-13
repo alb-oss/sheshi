@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Sheshi.Api.Features.Moderation;
 
 public record ModReportDto(
@@ -8,7 +10,31 @@ public record ModReportDto(
     string? Note,
     string Status,
     string MessageBody,
-    Guid MessageAuthorId);
+    Guid MessageAuthorId,
+    Guid RoomId,
+    string RoomSlug,
+    string Severity,
+    DateTimeOffset CreatedAt,
+    double AgeHours,
+    int AuthorReportCount,
+    int AuthorOpenReportCount,
+    int AuthorOpenFlagCount,
+    ModActorDto? Author,
+    ModActorDto? Reporter);
+
+public record ReportQuery
+{
+    public string Status { get; init; } = "open";
+    public string? Reason { get; init; }
+    [property: JsonPropertyName("room_id")]
+    public string? RoomId { get; init; }
+    [property: JsonPropertyName("min_severity")]
+    public string? MinSeverity { get; init; }
+    [property: JsonPropertyName("repeat_offender")]
+    public bool RepeatOffender { get; init; }
+    public string Sort { get; init; } = "oldest";
+    public int Limit { get; init; } = 50;
+}
 
 public record ModUserDto(
     Guid Id,
@@ -20,84 +46,65 @@ public record ModUserDto(
 
 public record UpdateRoleRequest(string Role, bool Grant);
 
-public record ModAnalyticsDto(
-    ModAnalyticsTotalsDto Totals,
-    ModAnalyticsWindowDto Last24Hours,
-    ModReportAnalyticsDto Reports,
-    ModUserAnalyticsDto Users,
-    ModActiveUsersDto ActiveUsers,
-    ModGrowthDto Growth,
-    ModEngagementDto Engagement,
-    ModModerationHealthDto ModerationHealth,
-    IReadOnlyList<ModTrendPointDto> Trend,
-    IReadOnlyList<ModRoomAnalyticsDto> TopRooms,
-    IReadOnlyList<ModPostAnalyticsDto> TopPosts,
-    IReadOnlyList<ModAuthorAnalyticsDto> TopAuthors);
-
-// Distinct users who posted or voted within each window.
-public record ModActiveUsersDto(int Daily, int Weekly, int Monthly);
-
-// Current 7-day window vs the prior 7-day window for the headline metrics.
-public record ModGrowthDto(ModGrowthPointDto Users, ModGrowthPointDto Messages, ModGrowthPointDto Votes);
-
-public record ModGrowthPointDto(int Current, int Previous);
-
-// How much discussion threads actually generate.
-public record ModEngagementDto(double AnsweredThreadsPct, double AvgRepliesPerThread);
-
-// Moderation health: resolution time, open backlog age, and content-quality rates.
-public record ModModerationHealthDto(
-    double? AvgResolutionHours,
-    double? OpenBacklogAvgAgeHours,
-    double ReportsPerThousandMessages,
-    double DeletionRatePct);
-
-public record ModAuthorAnalyticsDto(Guid Id, string Author, int Messages);
-
-public record ModAnalyticsTotalsDto(
-    int Rooms,
-    int Users,
-    int Threads,
-    int Replies,
-    int Messages,
-    int Votes,
-    int Reports);
-
-public record ModAnalyticsWindowDto(
-    int Users,
-    int Threads,
-    int Replies,
-    int Messages,
-    int Votes,
-    int Reports);
-
-public record ModReportAnalyticsDto(int Open, int Resolved, int Dismissed);
-
-public record ModUserAnalyticsDto(int Banned, int Moderators, int Admins);
-
-public record ModTrendPointDto(
-    string Date,
-    int Users,
-    int Messages,
-    int Votes,
-    int Reports);
-
-public record ModRoomAnalyticsDto(
+public record ModActionDto(
     Guid Id,
-    string Name,
-    string Slug,
-    int Threads,
-    int Replies,
-    int Votes,
-    int Reports,
-    DateTimeOffset? LatestActivityAt);
+    Guid ActorId,
+    string ActionType,
+    string TargetType,
+    Guid TargetId,
+    string? Reason,
+    DateTimeOffset CreatedAt,
+    ModActorDto Actor,
+    IReadOnlyDictionary<string, string> Metadata);
 
-public record ModPostAnalyticsDto(
+public record ModActorDto(Guid Id, string? Username, string? DisplayName);
+
+public record ActionQuery
+{
+    [property: JsonPropertyName("action_type")]
+    public string? ActionType { get; init; }
+    [property: JsonPropertyName("target_type")]
+    public string? TargetType { get; init; }
+    [property: JsonPropertyName("actor_id")]
+    public string? ActorId { get; init; }
+    public int Limit { get; init; } = 100;
+}
+
+public record ModFlagDto(
     Guid Id,
-    string Body,
-    string RoomName,
-    string Author,
-    int Depth,
-    int Upvotes,
-    int Replies,
+    Guid MessageId,
+    Guid RoomId,
+    Guid AuthorId,
+    string RuleKey,
+    string Category,
+    string Severity,
+    double Score,
+    string Evidence,
+    string Status,
     DateTimeOffset CreatedAt);
+
+public record FlagQuery
+{
+    public string Status { get; init; } = "open";
+    public string? Category { get; init; }
+    public string? Severity { get; init; }
+    public string? RuleKey { get; init; }
+    public int Limit { get; init; } = 50;
+}
+
+public record ModerationMetricsDto(
+    int OpenReports,
+    int OpenFlags,
+    [property: JsonPropertyName("average_resolution_hours_7d")]
+    double? AverageResolutionHours7d,
+    double? OldestOpenItemHours,
+    [property: JsonPropertyName("resolved_reports_7d")]
+    int ResolvedReports7d,
+    [property: JsonPropertyName("bans_7d")]
+    int Bans7d,
+    [property: JsonPropertyName("deleted_messages_7d")]
+    int DeletedMessages7d,
+    IReadOnlyList<MetricBucketDto> ReportsByReason,
+    IReadOnlyList<MetricBucketDto> FlagsByRule);
+
+public record MetricBucketDto(string Key, int Count);
