@@ -150,24 +150,51 @@ public class AuthController(
         var result = await HttpContext.AuthenticateAsync(AuthSchemes.External);
         if (!result.Succeeded || result.Principal is null) return BadRequest(new { error = "EXTERNAL_AUTH_FAILED" });
 
-        var email = result.Principal.FindFirstValue(ClaimTypes.Email);
-        if (string.IsNullOrWhiteSpace(email)) return BadRequest(new { error = "EXTERNAL_EMAIL_MISSING" });
+        // The (provider, subject) pair is the only trustworthy identity from an external login.
+        string? provider = null;
+        result.Properties?.Items.TryGetValue("provider", out provider);
+        var providerKey = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(providerKey))
+            return BadRequest(new { error = "EXTERNAL_AUTH_FAILED" });
 
-        var user = await userManager.FindByEmailAsync(email);
+        // 1) Resolve by the linked external identity first — never by email alone.
+        var user = await userManager.FindByLoginAsync(provider, providerKey);
         if (user is null)
         {
-            user = new ApplicationUser
+            var email = NormalizeEmail(result.Principal.FindFirstValue(ClaimTypes.Email));
+            if (email is null) return BadRequest(new { error = "EXTERNAL_EMAIL_MISSING" });
+
+            var existing = await userManager.FindByEmailAsync(email);
+            if (existing is not null)
             {
-                Id = Guid.NewGuid(),
-                Email = email,
-                UserName = CreateUsername(email),
-                DisplayName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? email.Split('@')[0],
-                AvatarUrl = result.Principal.FindFirstValue("urn:google:picture")
-            };
-            var create = await userManager.CreateAsync(user);
-            if (!create.Succeeded) return BadRequest(new { errors = create.Errors.Select(e => e.Description).ToArray() });
-            await userManager.AddToRoleAsync(user, Roles.User);
+                // 2) Never seize a local account via a matching email unless its owner has proven
+                //    control of that email (confirmed). Otherwise an attacker controlling an OAuth
+                //    account with the victim's email could take over the local account.
+                if (!existing.EmailConfirmed) return BadRequest(new { error = "EXTERNAL_ACCOUNT_CONFLICT" });
+                user = existing;
+            }
+            else
+            {
+                user = new ApplicationUser
+                {
+                    Id = Guid.NewGuid(),
+                    Email = email,
+                    EmailConfirmed = true, // the provider has verified this address
+                    UserName = CreateUsername(email),
+                    DisplayName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? email.Split('@')[0],
+                    AvatarUrl = result.Principal.FindFirstValue("urn:google:picture")
+                };
+                var create = await userManager.CreateAsync(user);
+                if (!create.Succeeded) return BadRequest(new { errors = create.Errors.Select(e => e.Description).ToArray() });
+                await userManager.AddToRoleAsync(user, Roles.User);
+            }
+
+            // 3) Record the external login so subsequent logins resolve by (provider, subject).
+            var link = await userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerKey, provider));
+            if (!link.Succeeded) return BadRequest(new { errors = link.Errors.Select(e => e.Description).ToArray() });
         }
+
+        if (user.IsBanned) return Forbid();
 
         await HttpContext.SignOutAsync(AuthSchemes.External);
         var tokens = await tokenService.CreateAuthResponseAsync(user, ct);

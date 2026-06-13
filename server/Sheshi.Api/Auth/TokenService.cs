@@ -38,13 +38,28 @@ public class TokenService(
     public async Task<AuthResponse?> RotateRefreshTokenAsync(string rawToken, CancellationToken ct = default)
     {
         var hash = HashRefreshToken(rawToken);
-        var token = await db.RefreshTokens.SingleOrDefaultAsync(t => t.TokenHash == hash, ct);
-        if (token is null || !token.IsActive) return null;
+        var token = await db.RefreshTokens.AsNoTracking().SingleOrDefaultAsync(t => t.TokenHash == hash, ct);
+        if (token is null) return null;
+
+        // Replay detection: a refresh on an already-revoked-but-not-expired token means a
+        // previously-rotated (possibly stolen) token is being reused → revoke every session.
+        if (token.RevokedAt is not null && token.ExpiresAt > DateTimeOffset.UtcNow)
+        {
+            await RevokeAllRefreshTokensAsync(token.UserId, ct);
+            return null;
+        }
+        if (!token.IsActive) return null;
+
+        // Single-use, atomically: only one concurrent caller wins the revoke (1 row updated);
+        // racers see 0 rows and are rejected, so a token can never fork two live sessions.
+        var revoked = await db.RefreshTokens
+            .Where(t => t.Id == token.Id && t.RevokedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, DateTimeOffset.UtcNow), ct);
+        if (revoked == 0) return null;
 
         var user = await userManager.FindByIdAsync(token.UserId.ToString());
         if (user is null) return null;
 
-        token.RevokedAt = DateTimeOffset.UtcNow;
         return await CreateAuthResponseAsync(user, ct);
     }
 

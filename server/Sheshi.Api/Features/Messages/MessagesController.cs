@@ -95,6 +95,8 @@ public class MessagesController(
         if (user is null) return Unauthorized();
         if (user.IsBanned) return Forbid();
 
+        // Open posting (deliberate, Reddit-style): root threads AND replies are open to any
+        // signed-in, non-banned user — no admin gate. Product decision, see the rewrite master-spec.
         var body = request.Body?.Trim() ?? "";
         var hasImage = parsed.Image is not null && parsed.Image.Length > 0;
         if (body.Length == 0 && !hasImage) return BadRequest(new { error = "EMPTY" });
