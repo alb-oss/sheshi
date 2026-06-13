@@ -29,6 +29,34 @@ type ReplyTarget = {
   excerpt?: string;
 };
 
+// Pure, immutable tree updates for super-realtime delta-apply (Phase A).
+function updateNode(nodes: ReplyNode[], id: string, fn: (m: MessageRow) => MessageRow): ReplyNode[] {
+  return nodes.map((n) =>
+    n.message.id === id
+      ? { ...n, message: fn(n.message) }
+      : { ...n, replies: updateNode(n.replies, id, fn) });
+}
+function hasNode(nodes: ReplyNode[], id: string): boolean {
+  return nodes.some((n) => n.message.id === id || hasNode(n.replies, id));
+}
+function insertUnderParent(
+  nodes: ReplyNode[],
+  parentId: string,
+  msg: MessageRow,
+): { nodes: ReplyNode[]; inserted: boolean } {
+  let inserted = false;
+  const out = nodes.map((n) => {
+    if (n.message.id === parentId) {
+      inserted = true;
+      return { ...n, replies: [...n.replies, { message: msg, replies: [], depth: n.depth + 1 }] };
+    }
+    const r = insertUnderParent(n.replies, parentId, msg);
+    if (r.inserted) inserted = true;
+    return { ...n, replies: r.nodes };
+  });
+  return { nodes: out, inserted };
+}
+
 function ThreadPage() {
   const { messageId } = Route.useParams();
   const [thread, setThread] = useState<ThreadData | null>(null);
@@ -118,14 +146,46 @@ function ThreadPage() {
 
   useEffect(() => {
     let disposed = false;
-    let handler: (() => void) | null = null;
     reload();
+
+    // Super-realtime: mutate the thread tree in place from typed events — no full reload.
+    const blank = (m: MessageRow): MessageRow => ({
+      ...m, deleted_at: new Date().toISOString(), body: "", image_url: null,
+    });
+    const onCreated = (p: { message: MessageRow; root_id: string | null }) => {
+      const msg = p.message;
+      if (!msg || msg.parent_id == null) return;
+      if (p.root_id && p.root_id !== joinedThreadId) return; // a reply in another thread
+      setThread((prev) => {
+        if (!prev) return prev;
+        if (msg.id === prev.root.id || hasNode(prev.replies, msg.id)) return prev; // dedupe
+        if (msg.parent_id === prev.root.id)
+          return { ...prev, replies: [...prev.replies, { message: msg, replies: [], depth: 1 }] };
+        const r = insertUnderParent(prev.replies, msg.parent_id!, msg);
+        if (!r.inserted) { reload(); return prev; } // parent not loaded → fall back to a refetch
+        return { ...prev, replies: r.nodes };
+      });
+    };
+    const onVote = (p: { message_id: string; upvotes: number }) =>
+      setThread((prev) =>
+        !prev ? prev
+          : prev.root.id === p.message_id
+            ? { ...prev, root: { ...prev.root, upvotes: p.upvotes } }
+            : { ...prev, replies: updateNode(prev.replies, p.message_id, (m) => ({ ...m, upvotes: p.upvotes })) });
+    const onDeleted = (p: { id: string }) =>
+      setThread((prev) =>
+        !prev ? prev
+          : prev.root.id === p.id
+            ? { ...prev, root: blank(prev.root) }
+            : { ...prev, replies: updateNode(prev.replies, p.id, blank) });
+
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise
       .then((connection) => {
         if (disposed) return;
-        handler = reload;
-        connection.on("changed", handler);
+        connection.on("message_created", onCreated);
+        connection.on("vote_changed", onVote);
+        connection.on("message_deleted", onDeleted);
         void invokeRealtime("JoinThread", joinedThreadId);
       })
       .catch(() => {});
@@ -133,7 +193,9 @@ function ThreadPage() {
       disposed = true;
       connectionPromise
         .then((connection) => {
-          if (handler) connection.off("changed", handler);
+          connection.off("message_created", onCreated);
+          connection.off("vote_changed", onVote);
+          connection.off("message_deleted", onDeleted);
           void invokeRealtime("LeaveThread", joinedThreadId);
         })
         .catch(() => {});
