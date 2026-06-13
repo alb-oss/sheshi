@@ -36,7 +36,6 @@ function RoomPage({ slug }: { slug: string }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const [loading, setLoading] = useState(true);
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const firstIdRef = useRef<string | null>(null);
 
@@ -82,35 +81,52 @@ function RoomPage({ slug }: { slug: string }) {
       .finally(() => setLoading(false));
   };
 
-  // schedule a debounced reload so realtime spam doesn't trigger fetch storm
-  const scheduleReload = () => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    refreshTimer.current = setTimeout(reload, 300);
-  };
-
   useEffect(() => {
     if (!room) return;
+    const roomId = room.id;
     let disposed = false;
-    let handler: (() => void) | null = null;
     reload();
+
+    // Super-realtime (Phase 1b): apply typed delta events to local state — no refetch.
+    // Other people's posts, votes and deletes appear instantly.
+    const onCreated = (p: { message: MessageRow; root_id: string | null }) => {
+      const msg = p.message;
+      if (!msg || msg.room_id !== roomId) return;
+      if (msg.parent_id == null) {
+        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [msg, ...prev]));
+        requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" }));
+      } else if (p.root_id) {
+        // a reply: bump its top-level ancestor's reply count in the feed
+        setMessages((prev) =>
+          prev.map((m) => (m.id === p.root_id ? { ...m, reply_count: (m.reply_count ?? 0) + 1 } : m)));
+      }
+    };
+    const onVote = (p: { message_id: string; upvotes: number }) =>
+      setMessages((prev) => prev.map((m) => (m.id === p.message_id ? { ...m, upvotes: p.upvotes } : m)));
+    const onDeleted = (p: { id: string }) =>
+      setMessages((prev) =>
+        prev.map((m) => (m.id === p.id ? { ...m, deleted_at: new Date().toISOString(), body: "", image_url: null } : m)));
+
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise
       .then((connection) => {
         if (disposed) return;
-        handler = scheduleReload;
-        connection.on("changed", handler);
-        void invokeRealtime("JoinRoom", room.id);
+        connection.on("message_created", onCreated);
+        connection.on("vote_changed", onVote);
+        connection.on("message_deleted", onDeleted);
+        void invokeRealtime("JoinRoom", roomId);
       })
       .catch(() => {});
     return () => {
       disposed = true;
       connectionPromise
         .then((connection) => {
-          if (handler) connection.off("changed", handler);
-          void invokeRealtime("LeaveRoom", room.id);
+          connection.off("message_created", onCreated);
+          connection.off("vote_changed", onVote);
+          connection.off("message_deleted", onDeleted);
+          void invokeRealtime("LeaveRoom", roomId);
         })
         .catch(() => {});
-      if (refreshTimer.current) clearTimeout(refreshTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id, userId]);
