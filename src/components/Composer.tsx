@@ -18,6 +18,13 @@ interface Props {
   placeholder?: string;
   replyContext?: { label: string; excerpt?: string } | null;
   onClearReplyContext?: () => void;
+  // Inline (Reddit-style) reply: renders directly under a comment instead of docked at the
+  // bottom. `compact` drops the docked top border and tightens the chrome; `autoFocus` grabs
+  // the caret on mount (so the comment scrolls into view + the mobile keyboard opens);
+  // `onCancel` adds an explicit dismiss button next to send.
+  autoFocus?: boolean;
+  compact?: boolean;
+  onCancel?: () => void;
 }
 
 export interface ComposerHandle {
@@ -33,6 +40,9 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     placeholder,
     replyContext,
     onClearReplyContext,
+    autoFocus,
+    compact,
+    onCancel,
   },
   ref,
 ) {
@@ -71,6 +81,12 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     if (!replyContext) return;
     setBody((current) => stripLeadingReplyMentions(current));
   }, [replyContext?.label]);
+
+  // Inline reply: take focus on mount so the targeted comment scrolls into view and the
+  // mobile keyboard opens immediately (the whole point of the Reddit-style inline box).
+  useEffect(() => {
+    if (autoFocus) textareaRef.current?.focus();
+  }, [autoFocus]);
 
   function clearImage() {
     setImage(null);
@@ -145,8 +161,22 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   const canSend = (!!body.trim() || !!image) && !posting;
 
   return (
-    <form onSubmit={onSubmit} className="border-t border-border bg-background px-2 py-2 sm:px-4 sm:py-3">
-      <div className="bg-card border border-border rounded-sm focus-within:border-primary/60 transition-colors">
+    <form
+      onSubmit={onSubmit}
+      className={cn(
+        compact
+          ? "pb-3 pt-1"
+          : "border-t border-border bg-background px-2 py-2 sm:px-4 sm:py-3",
+      )}
+    >
+      <div
+        className={cn(
+          "bg-card border rounded-sm transition-colors",
+          compact
+            ? "border-primary/40 focus-within:border-primary/60"
+            : "border-border focus-within:border-primary/60",
+        )}
+      >
         {replyContext && (
           <div className="flex items-start justify-between gap-2 border-b border-border bg-primary/5 px-3 py-2 sm:items-center sm:gap-3 sm:px-3.5">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -239,6 +269,15 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             >
               {body.length}/2000
             </span>
+            {onCancel ? (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="inline-flex h-9 items-center rounded-sm px-2.5 text-xs font-bold uppercase tracking-widest text-foreground/45 transition-colors hover:bg-background hover:text-foreground"
+              >
+                {sq.chat.cancel}
+              </button>
+            ) : null}
             <button
               type="submit"
               disabled={!canSend}
