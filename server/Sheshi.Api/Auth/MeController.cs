@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,35 +11,16 @@ namespace Sheshi.Api.Auth;
 [ApiController]
 [Authorize]
 [Route("api/me")]
-public partial class MeController(
+public class MeController(
     UserManager<ApplicationUser> userManager,
     TokenService tokenService,
     UserStatsService userStats) : ControllerBase
 {
-    // Lowercase letters, digits, underscore; 3–20 chars. Keeps handles anonymous-friendly and URL-safe.
-    [GeneratedRegex("^[a-z0-9_]{3,20}$")]
-    private static partial Regex UsernameRegex();
-
     [HttpGet]
     public async Task<ActionResult<UserDto>> Get(CancellationToken ct)
     {
         var user = await GetCurrentUserAsync();
         return user is null ? Unauthorized() : Ok(await WithKarmaAsync(user, ct));
-    }
-
-    // A few free, anonymous handle suggestions for the profile picker's shuffle button.
-    [HttpGet("username-suggestions")]
-    public async Task<ActionResult<UsernameSuggestionsDto>> UsernameSuggestions()
-    {
-        var suggestions = new List<string>();
-        for (var attempt = 0; attempt < 25 && suggestions.Count < 5; attempt++)
-        {
-            var candidate = UsernameGenerator.Suggestion();
-            if (suggestions.Contains(candidate)) continue;
-            if (await userManager.FindByNameAsync(candidate) is null)
-                suggestions.Add(candidate);
-        }
-        return Ok(new UsernameSuggestionsDto(suggestions));
     }
 
     [EnableRateLimiting("writes")]
@@ -53,7 +33,7 @@ public partial class MeController(
         if (request.Username is not null)
         {
             var username = request.Username.Trim().ToLowerInvariant();
-            if (!UsernameRegex().IsMatch(username))
+            if (!UsernameGenerator.IsValid(username))
                 return BadRequest(new { error = "INVALID_USERNAME" });
             if (!string.Equals(username, user.UserName, StringComparison.OrdinalIgnoreCase))
             {

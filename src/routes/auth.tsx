@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { apiJson, apiNoContent, getApiBaseUrl } from "@/lib/api-client";
+import { ApiError, apiJson, apiNoContent, getApiBaseUrl } from "@/lib/api-client";
 import { setAuthTokens } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
@@ -23,8 +24,10 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [providers, setProviders] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [shuffling, setShuffling] = useState(false);
 
   useEffect(() => {
     apiJson<string[]>("/api/auth/providers")
@@ -32,19 +35,45 @@ function AuthPage() {
       .catch(() => setProviders([]));
   }, []);
 
+  async function shuffleUsername() {
+    setShuffling(true);
+    try {
+      const res = await apiJson<{ suggestions: string[] }>("/api/usernames/suggestions");
+      if (res.suggestions[0]) setUsername(res.suggestions[0]);
+    } catch {
+      toast.error(sq.errors.generic);
+    } finally {
+      setShuffling(false);
+    }
+  }
+
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
       const endpoint = mode === "signup" ? "/api/auth/register" : "/api/auth/login";
-      const result = await apiJson<AuthResponse>(endpoint, {
-        method: "POST",
-        body: { email, password, display_name: email.split("@")[0] },
-      });
+      // On signup we send the chosen username (blank => the server generates an anonymous one) and
+      // deliberately omit display_name so it falls back to the handle — never the email local part.
+      const body =
+        mode === "signup"
+          ? { email, password, username: username.trim().toLowerCase() || undefined }
+          : { email, password };
+      const result = await apiJson<AuthResponse>(endpoint, { method: "POST", body });
       await setAuthTokens({ accessToken: result.access_token, refreshToken: result.refresh_token });
       navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : sq.errors.generic);
+      if (error instanceof ApiError) {
+        const code = (error.payload as { error?: string } | undefined)?.error;
+        toast.error(
+          error.status === 409
+            ? "Ky username është i zënë."
+            : code === "INVALID_USERNAME"
+              ? "Username i pavlefshëm (3–20 shenja: a–z, 0–9, _)."
+              : (error.payload as { errors?: string[] } | undefined)?.errors?.[0] ?? sq.errors.generic,
+        );
+      } else {
+        toast.error(error instanceof Error ? error.message : sq.errors.generic);
+      }
     } finally {
       setBusy(false);
     }
@@ -71,9 +100,9 @@ function AuthPage() {
     <div className="min-h-dvh flex items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <span className="inline-block h-7 w-7 rounded-sm bg-primary" />
-            <span className="font-bold text-2xl tracking-tight">{sq.appName}</span>
+          <Link to="/" className="inline-flex items-center justify-center">
+            <img src="/sheshi-logo-light.png" alt={sq.appName} className="block dark:hidden h-10 w-auto" />
+            <img src="/sheshi-logo-dark.png" alt={sq.appName} className="hidden dark:block h-10 w-auto" />
           </Link>
           <h1 className="mt-4 text-xl font-semibold">{sq.auth.title}</h1>
           <p className="text-sm text-muted-foreground mt-1">{sq.auth.subtitle}</p>
@@ -108,6 +137,36 @@ function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
+          {mode === "signup" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="un">Username</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="un"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  maxLength={20}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder="zgjidh ose lëre bosh"
+                  className="lowercase"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={shuffleUsername}
+                  disabled={shuffling}
+                  title="Sugjero një username anonim"
+                  aria-label="Sugjero një username anonim"
+                  className="h-10 w-10 shrink-0 p-0"
+                >
+                  <Shuffle className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Opsionale — lëre bosh për një emër anonim.</p>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="pw">{sq.auth.password}</Label>
             <Input
