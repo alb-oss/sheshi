@@ -262,6 +262,34 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         deleted!.DeletedAt.Should().NotBeNull();
     }
 
+    // Regression: a brand-new post with zero votes and zero replies must NOT top "hot" over an
+    // engaged post — the old recency-dominated formula ranked empty newest posts first.
+    [Fact]
+    public async Task Hot_highlights_rank_engaged_posts_above_newer_empty_ones()
+    {
+        var client = factory.CreateClient();
+        var author = await RegisterAsync(client, "hot-author");
+        var voter = await RegisterAsync(client, "hot-voter");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        UseBearer(client, author.AccessToken);
+        var engaged = (await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "engaged post" })).Content.ReadFromJsonAsync<MessageDto>())!;
+        var empty = (await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "brand new empty post" })).Content.ReadFromJsonAsync<MessageDto>())!;
+
+        UseBearer(client, voter.AccessToken);
+        (await client.PutAsJsonAsync($"/api/messages/{engaged.Id}/vote", new { value = 1 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var hot = await client.GetFromJsonAsync<MessageDto[]>("/api/highlights?mode=hot");
+        hot.Should().NotBeNull();
+        var ids = hot!.Select(h => h.Id).ToList();
+        ids.Should().Contain(engaged.Id).And.Contain(empty.Id);
+        ids.IndexOf(engaged.Id).Should().BeLessThan(ids.IndexOf(empty.Id),
+            "an engaged post must outrank a newer zero-engagement post in hot");
+    }
+
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
         var email = $"{label}-{Guid.NewGuid():N}@example.com";
