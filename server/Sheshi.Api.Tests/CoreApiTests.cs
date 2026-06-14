@@ -327,6 +327,42 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             "within the grace window the more-engaged (3 replies) post must outrank a fresher 1-upvote post");
     }
 
+    [Fact]
+    public async Task Karma_reflects_votes_and_activity_and_profile_lists_posts_vs_comments()
+    {
+        var client = factory.CreateClient();
+        var alice = await RegisterAsync(client, "karma-alice");
+        var bob = await RegisterAsync(client, "karma-bob");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        // Alice contributes a root post + a reply (2 contributions).
+        UseBearer(client, alice.AccessToken);
+        var post = await (await client.PostAsJsonAsync("/api/messages", new { room_id = room.Id, body = "alice post" }))
+            .Content.ReadFromJsonAsync<MessageDto>();
+        var reply = await (await client.PostAsJsonAsync("/api/messages", new { room_id = room.Id, parent_id = post!.Id, body = "alice reply" }))
+            .Content.ReadFromJsonAsync<MessageDto>();
+
+        // Fresh user has no votes/messages → karma 0.
+        UseBearer(client, bob.AccessToken);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(0);
+
+        // Bob upvotes Alice's post (net +1 received).
+        (await client.PutAsJsonAsync($"/api/messages/{post.Id}/vote", new { value = 1 })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // karma = UpvoteWeight(2)*netVotes(1) + contributions(2) = 4.
+        UseBearer(client, alice.AccessToken);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(4);
+
+        // Profile lists separate posts from comments, scoped to the author.
+        var posts = await client.GetFromJsonAsync<CursorPageDto<MessageDto>>($"/api/users/{alice.User.Id}/messages?type=posts");
+        posts!.Items.Should().ContainSingle(m => m.Id == post.Id);
+        posts.Items.Should().NotContain(m => m.Id == reply!.Id);
+
+        var comments = await client.GetFromJsonAsync<CursorPageDto<MessageDto>>($"/api/users/{alice.User.Id}/messages?type=comments");
+        comments!.Items.Should().ContainSingle(m => m.Id == reply!.Id);
+        comments.Items.Should().NotContain(m => m.Id == post.Id);
+    }
+
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
         var email = $"{label}-{Guid.NewGuid():N}@example.com";
@@ -392,7 +428,8 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         [property: JsonPropertyName("display_name")] string? DisplayName,
         [property: JsonPropertyName("avatar_url")] string? AvatarUrl,
         [property: JsonPropertyName("roles")] string[] Roles,
-        [property: JsonPropertyName("is_banned")] bool IsBanned);
+        [property: JsonPropertyName("is_banned")] bool IsBanned,
+        [property: JsonPropertyName("karma")] int Karma = 0);
 
     private sealed record AuthorDto(
         [property: JsonPropertyName("id")] Guid Id,

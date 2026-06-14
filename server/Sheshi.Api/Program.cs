@@ -49,6 +49,7 @@ builder.Services.AddScoped<ModerationActionLogger>();
 builder.Services.AddScoped<ModerationMetricsService>();
 builder.Services.AddScoped<ModerationRuleEngine>();
 builder.Services.AddScoped<RoomService>();
+builder.Services.AddScoped<Sheshi.Api.Features.Users.UserStatsService>();
 builder.Services.AddScoped<IImageStorage, ImageStorage>();
 builder.Services.AddScoped<IVideoStorage, VideoStorage>();
 // Sink selection: "s3" uploads validated bytes to S3-compatible object storage (MinIO/S3/R2);
