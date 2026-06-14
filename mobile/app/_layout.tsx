@@ -18,8 +18,9 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: theme.bg },
           }}
         >
-          <Stack.Screen name="index" options={{ title: "Sheshi", headerLargeTitle: true }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="tema/[id]" options={{ title: "Tema" }} />
+          <Stack.Screen name="dhoma/[slug]" options={{ title: "Dhomë" }} />
           <Stack.Screen name="auth" options={{ title: "Hyr", presentation: "modal" }} />
         </Stack>
       </SafeAreaProvider>

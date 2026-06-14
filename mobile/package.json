@@ -9,6 +9,7 @@
     "android": "expo start --android"
   },
   "dependencies": {
+    "@expo/vector-icons": "^14.0.4",
     "expo": "~52.0.0",
     "expo-constants": "~17.0.3",
     "expo-haptics": "~14.0.0",

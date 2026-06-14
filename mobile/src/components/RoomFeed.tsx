@@ -10,15 +10,15 @@ import {
   Text,
   View,
 } from "react-native";
-import { Stack, router } from "expo-router";
-import { getRoomBySlug, listMessages, logout } from "@/api";
+import { router } from "expo-router";
+import { getRoomBySlug, listMessages } from "@/api";
 import { PostCard } from "@/components/PostCard";
 import { Composer } from "@/components/Composer";
 import { useAuth } from "@/useAuth";
 import { theme } from "@/theme";
 import type { MessageRow, Room } from "@/types";
 
-export default function Feed() {
+export function RoomFeed({ slug }: { slug: string }) {
   const { user } = useAuth();
   const [room, setRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<MessageRow[]>([]);
@@ -34,16 +34,22 @@ export default function Feed() {
   }, []);
 
   useEffect(() => {
+    let alive = true;
+    setLoading(true);
     (async () => {
       try {
-        const r = await getRoomBySlug("sheshi");
+        const r = await getRoomBySlug(slug);
+        if (!alive) return;
         setRoom(r);
         if (r) await reload(r.id);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
-  }, [reload]);
+    return () => {
+      alive = false;
+    };
+  }, [slug, reload]);
 
   const onRefresh = useCallback(async () => {
     if (!room) return;
@@ -76,20 +82,6 @@ export default function Feed() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 96 : 0}
     >
-      <Stack.Screen
-        options={{
-          headerRight: () =>
-            user ? (
-              <Pressable hitSlop={8} onPress={() => logout()}>
-                <Text style={styles.headerBtn}>Dil</Text>
-              </Pressable>
-            ) : (
-              <Pressable hitSlop={8} onPress={() => router.push("/auth")}>
-                <Text style={[styles.headerBtn, { color: theme.primary }]}>Hyr</Text>
-              </Pressable>
-            ),
-        }}
-      />
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={theme.primary} />
@@ -112,10 +104,14 @@ export default function Feed() {
         />
       )}
       {room && user ? (
-        <Composer roomId={room.id} onPosted={(m) => setMessages((prev) => [m, ...prev])} />
+        <Composer
+          roomId={room.id}
+          placeholder={`Shkruaj në ${room.name}…`}
+          onPosted={(m) => setMessages((prev) => [m, ...prev])}
+        />
       ) : room ? (
         <Pressable onPress={() => router.push("/auth")} style={styles.signInBar}>
-          <Text style={styles.signInText}>Hyr për të postuar në sheshi</Text>
+          <Text style={styles.signInText}>Hyr për të postuar në {room.name}</Text>
         </Pressable>
       ) : null}
     </KeyboardAvoidingView>
@@ -126,7 +122,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: theme.bg },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   sep: { height: StyleSheet.hairlineWidth, backgroundColor: theme.border, marginLeft: 62 },
-  headerBtn: { color: theme.text, fontWeight: "800", fontSize: 16 },
   signInBar: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.border,
