@@ -88,7 +88,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Sheshi është chat-i qytetar live për shqiptarët — diskuto, mbështet dhe vër në fokus mesazhet që kanë rëndësi.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/sheshi-icon.png" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:image", content: "/sheshi-icon.png" },
       { name: "twitter:title", content: "Sheshi — Zëri qytetar i Shqipërisë" },
       {
         name: "twitter:description",
@@ -97,6 +99,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     links: [
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

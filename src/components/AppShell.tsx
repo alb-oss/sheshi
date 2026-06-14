@@ -75,9 +75,12 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
       {/* Top header */}
       <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
         <Link to="/" className="group flex min-h-10 items-center gap-3">
-          <div
-            className="w-7 h-7 bg-primary rounded-lg group-hover:scale-110 transition-transform"
-            aria-hidden
+          <img
+            src="/sheshi-icon.png"
+            alt="Sheshi"
+            width={28}
+            height={28}
+            className="w-7 h-7 rounded-lg group-hover:scale-110 transition-transform"
           />
           <div className="flex flex-col leading-none">
             <span className="font-display font-bold tracking-tighter text-lg">SHESHI</span>
