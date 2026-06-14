@@ -27,10 +27,20 @@ public class AuthController(
         if (email is null || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest(new { error = "INVALID_REGISTER_REQUEST" });
 
-        // Anonymous by default: the handle is a random Albanian word-pair, never derived from the
-        // email, and the display name falls back to that same handle (not the email local part) so
-        // nothing leaks identity. Users can pick a different username on their profile.
-        var username = UsernameGenerator.Anonymous();
+        // The user may pick a handle; if they leave it blank we generate an anonymous word-pair.
+        // Either way the handle is never derived from the email, and the display name falls back to
+        // it (not the email local part) so nothing leaks identity.
+        string username;
+        if (!string.IsNullOrWhiteSpace(request.Username))
+        {
+            username = request.Username.Trim().ToLowerInvariant();
+            if (!UsernameGenerator.IsValid(username)) return BadRequest(new { error = "INVALID_USERNAME" });
+        }
+        else
+        {
+            username = UsernameGenerator.Anonymous();
+        }
+
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid(),
@@ -42,7 +52,12 @@ public class AuthController(
         };
 
         var result = await userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded) return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+        if (!result.Succeeded)
+        {
+            // A chosen handle that's taken comes back as a friendly 409 so the form can prompt for another.
+            if (result.Errors.Any(e => e.Code == "DuplicateUserName")) return Conflict(new { error = "USERNAME_TAKEN" });
+            return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+        }
 
         await userManager.AddToRoleAsync(user, Roles.User);
         return Ok(await tokenService.CreateAuthResponseAsync(user, ct));

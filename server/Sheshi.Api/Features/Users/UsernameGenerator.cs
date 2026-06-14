@@ -1,11 +1,20 @@
+using System.Text.RegularExpressions;
+
 namespace Sheshi.Api.Features.Users;
 
 // Reddit-style anonymous handles, mostly-English word pairs (Albanian ones read a bit odd). Words are
 // ASCII and short (adjective ≤6, noun ≤7) so every result satisfies the username rule [a-z0-9_]{3,20}.
 // `Anonymous()` uses a hex suffix to stay unique without a registration retry loop; `Suggestion()`
 // uses a friendlier number for the profile picker.
-public static class UsernameGenerator
+public static partial class UsernameGenerator
 {
+    // The single source of truth for a valid handle: lowercase letters, digits, underscore; 3–20
+    // chars. Used at registration, on the profile editor, and to keep generated names conformant.
+    [GeneratedRegex("^[a-z0-9_]{3,20}$")]
+    private static partial Regex Pattern();
+
+    public static bool IsValid(string username) => Pattern().IsMatch(username);
+
     private static readonly string[] Adjectives =
     [
         "brave", "quiet", "swift", "calm", "bold", "lucky", "witty", "noble", "eager", "keen",

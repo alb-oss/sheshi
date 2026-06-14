@@ -377,8 +377,8 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         UseBearer(client, alice.AccessToken);
 
-        // Shuffle suggestions: five free, valid handles.
-        var suggestions = await client.GetFromJsonAsync<SuggestionsDto>("/api/me/username-suggestions");
+        // Shuffle suggestions: five free, valid handles (public endpoint).
+        var suggestions = await client.GetFromJsonAsync<SuggestionsDto>("/api/usernames/suggestions");
         suggestions!.Suggestions.Should().HaveCount(5);
         suggestions.Suggestions.Should().OnlyContain(s => Regex.IsMatch(s, "^[a-z0-9_]{3,20}$"));
 
@@ -397,6 +397,34 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         UseBearer(client, bob.AccessToken);
         (await client.PatchAsJsonAsync("/api/me", new { username = picked })).StatusCode
             .Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Register_accepts_a_chosen_username_and_rejects_taken_or_invalid()
+    {
+        var client = factory.CreateClient();
+        var chosen = "user_" + Guid.NewGuid().ToString("N")[..10];
+
+        // Pick a username at signup — it sticks.
+        var reg = await client.PostAsJsonAsync("/api/auth/register",
+            new { email = $"pick-{Guid.NewGuid():N}@example.com", password = "Password123!", username = chosen });
+        reg.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await reg.Content.ReadFromJsonAsync<AuthResponse>())!.User.Username.Should().Be(chosen);
+
+        // Same handle again → 409 taken.
+        var dup = await client.PostAsJsonAsync("/api/auth/register",
+            new { email = $"pick2-{Guid.NewGuid():N}@example.com", password = "Password123!", username = chosen });
+        dup.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        // Invalid charset/length → 400.
+        var bad = await client.PostAsJsonAsync("/api/auth/register",
+            new { email = $"pick3-{Guid.NewGuid():N}@example.com", password = "Password123!", username = "AB" });
+        bad.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Blank username → anonymous generated handle.
+        var anon = await client.PostAsJsonAsync("/api/auth/register",
+            new { email = $"pick4-{Guid.NewGuid():N}@example.com", password = "Password123!" });
+        (await anon.Content.ReadFromJsonAsync<AuthResponse>())!.User.Username.Should().MatchRegex("^[a-z]+_[a-z]+_[0-9a-f]{4}$");
     }
 
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)

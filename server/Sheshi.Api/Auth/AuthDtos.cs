@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Sheshi.Api.Auth;
 
-public record RegisterRequest(string Email, string Password, string? DisplayName);
+public record RegisterRequest(string Email, string Password, string? DisplayName, string? Username = null);
 
 public record LoginRequest(string Email, string Password);
 
