@@ -14,7 +14,9 @@ public record ForgotPasswordRequest(string Email);
 
 public record ResetPasswordRequest(string Email, string Token, string Password);
 
-public record UpdateProfileRequest(string? DisplayName);
+public record UpdateProfileRequest(string? DisplayName, string? Username = null);
+
+public record UsernameSuggestionsDto(IReadOnlyList<string> Suggestions);
 
 public record UserDto(
     Guid Id,

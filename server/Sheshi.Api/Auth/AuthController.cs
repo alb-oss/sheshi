@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Email;
+using Sheshi.Api.Features.Users;
 
 namespace Sheshi.Api.Auth;
 
@@ -27,13 +27,17 @@ public class AuthController(
         if (email is null || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest(new { error = "INVALID_REGISTER_REQUEST" });
 
+        // Anonymous by default: the handle is a random Albanian word-pair, never derived from the
+        // email, and the display name falls back to that same handle (not the email local part) so
+        // nothing leaks identity. Users can pick a different username on their profile.
+        var username = UsernameGenerator.Anonymous();
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid(),
             Email = email,
-            UserName = CreateUsername(email),
+            UserName = username,
             DisplayName = string.IsNullOrWhiteSpace(request.DisplayName)
-                ? email.Split('@')[0]
+                ? username
                 : request.DisplayName.Trim()[..Math.Min(request.DisplayName.Trim().Length, 60)]
         };
 
@@ -175,13 +179,14 @@ public class AuthController(
             }
             else
             {
+                var oauthUsername = UsernameGenerator.Anonymous();
                 user = new ApplicationUser
                 {
                     Id = Guid.NewGuid(),
                     Email = email,
                     EmailConfirmed = true, // the provider has verified this address
-                    UserName = CreateUsername(email),
-                    DisplayName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? email.Split('@')[0],
+                    UserName = oauthUsername,
+                    DisplayName = result.Principal.FindFirstValue(ClaimTypes.Name) ?? oauthUsername,
                     AvatarUrl = result.Principal.FindFirstValue("urn:google:picture")
                 };
                 var create = await userManager.CreateAsync(user);
@@ -230,11 +235,4 @@ public class AuthController(
         return string.IsNullOrWhiteSpace(email) || !email.Contains('@') ? null : email;
     }
 
-    private static string CreateUsername(string email)
-    {
-        var id = Guid.NewGuid().ToString("N")[..4];
-        var local = Regex.Replace(email.Split('@')[0].ToLowerInvariant(), "[^a-z0-9_]+", "_").Trim('_');
-        if (string.IsNullOrWhiteSpace(local)) local = "user";
-        return $"{local}_{id}";
-    }
 }
