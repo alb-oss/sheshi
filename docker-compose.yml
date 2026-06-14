@@ -18,5 +18,39 @@ services:
     ports:
       - "1025:1025"   # SMTP
       - "8025:8025"   # web UI
+  # S3-compatible object storage for uploads (Storage:Provider=s3). Local dev creds are the obvious
+  # MinIO defaults; real S3/R2 keys live in secrets, never here.
+  minio:
+    image: minio/minio:latest
+    container_name: sheshi-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # web console
+    volumes:
+      - sheshi-minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  # One-shot: wait for MinIO, create the bucket (idempotent), and grant anonymous read so the
+  # public URLs the API returns are fetchable without presigning.
+  minio-init:
+    image: minio/mc:latest
+    container_name: sheshi-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/sheshi-uploads &&
+      mc anonymous set download local/sheshi-uploads
+      "
 volumes:
   sheshi-db-data:
+  sheshi-minio-data:
