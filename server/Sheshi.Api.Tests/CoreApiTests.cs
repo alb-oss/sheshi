@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -363,6 +364,41 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         comments.Items.Should().NotContain(m => m.Id == post.Id);
     }
 
+    [Fact]
+    public async Task Username_is_anonymous_at_signup_editable_and_unique()
+    {
+        var client = factory.CreateClient();
+        var alice = await RegisterAsync(client, "uname-alice");
+        var bob = await RegisterAsync(client, "uname-bob");
+
+        // Anonymous by default: word_word_hex, never derived from the email local part.
+        alice.User.Username.Should().MatchRegex("^[a-z]+_[a-z]+_[0-9a-f]{4}$");
+        alice.User.Username.Should().NotContain("uname-alice");
+
+        UseBearer(client, alice.AccessToken);
+
+        // Shuffle suggestions: five free, valid handles.
+        var suggestions = await client.GetFromJsonAsync<SuggestionsDto>("/api/me/username-suggestions");
+        suggestions!.Suggestions.Should().HaveCount(5);
+        suggestions.Suggestions.Should().OnlyContain(s => Regex.IsMatch(s, "^[a-z0-9_]{3,20}$"));
+
+        // Pick a new username; it sticks.
+        const string picked = "qytetar_anonim_7";
+        var patched = await (await client.PatchAsJsonAsync("/api/me", new { username = picked }))
+            .Content.ReadFromJsonAsync<UserDto>();
+        patched!.Username.Should().Be(picked);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Username.Should().Be(picked);
+
+        // Invalid charset/length → 400.
+        (await client.PatchAsJsonAsync("/api/me", new { username = "AB" })).StatusCode
+            .Should().Be(HttpStatusCode.BadRequest);
+
+        // Taken → 409 (Bob can't grab Alice's handle).
+        UseBearer(client, bob.AccessToken);
+        (await client.PatchAsJsonAsync("/api/me", new { username = picked })).StatusCode
+            .Should().Be(HttpStatusCode.Conflict);
+    }
+
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
         var email = $"{label}-{Guid.NewGuid():N}@example.com";
@@ -436,6 +472,9 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         [property: JsonPropertyName("username")] string? Username,
         [property: JsonPropertyName("display_name")] string? DisplayName,
         [property: JsonPropertyName("avatar_url")] string? AvatarUrl);
+
+    private sealed record SuggestionsDto(
+        [property: JsonPropertyName("suggestions")] string[] Suggestions);
 
     private sealed record MessageDto(
         [property: JsonPropertyName("id")] Guid Id,
