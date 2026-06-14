@@ -148,8 +148,10 @@ builder.Services
         options.Password.RequiredLength = 10;
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = true;
+        // Don't force an uppercase letter or a symbol — length + a digit is enough, and these rules
+        // mostly just frustrate users into predictable patterns ("Password1!").
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
         options.Lockout.AllowedForNewUsers = true;
         options.Lockout.MaxFailedAccessAttempts = builder.Configuration.GetValue("Auth:Lockout:MaxFailedAccessAttempts", 5);
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(builder.Configuration.GetValue("Auth:Lockout:Minutes", 15));
