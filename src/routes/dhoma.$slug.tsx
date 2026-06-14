@@ -220,7 +220,9 @@ function RoomPage({ slug }: { slug: string }) {
               <div className="text-sm text-foreground/60">{sq.chat.empty}</div>
             </div>
           ) : (
-            <div className="py-2">
+            // Chat-style stream: dense compact messages with hairline separators — fast to scan,
+            // each still votable and clickable through to its thread.
+            <div className="flex flex-col divide-y divide-border/40 py-1">
               {messages.map((m) => (
                 <MessageCard
                   key={m.id}
@@ -228,6 +230,7 @@ function RoomPage({ slug }: { slug: string }) {
                   roomSlug={slug}
                   currentUserId={userId}
                   onChanged={reload}
+                  compact
                 />
               ))}
               {cursor && (

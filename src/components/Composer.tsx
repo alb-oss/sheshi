@@ -47,6 +47,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   ref,
 ) {
   const [body, setBody] = useState("");
+  const [focused, setFocused] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
@@ -159,6 +160,10 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
 
   const over = body.length > 1800;
   const canSend = (!!body.trim() || !!image) && !posting;
+  // Reddit-style mobile "join conversation" bar: until the box is focused or has content it's a
+  // slim one-line prompt — the toolbar (image · counter · send) only appears once you engage.
+  // Always expanded on desktop and for the inline reply composer.
+  const expanded = compact || focused || !!body.trim() || !!image;
 
   return (
     <form
@@ -236,6 +241,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
           onChange={(e) => setBody(e.target.value)}
           placeholder={placeholder || sq.chat.placeholder}
           maxLength={2000}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           className="block w-full bg-transparent border-none outline-none text-base leading-relaxed py-2.5 px-3 resize-none text-foreground placeholder:text-foreground/40 min-h-[44px] max-h-[200px] overflow-y-auto no-scrollbar sm:px-3.5 sm:py-3 sm:text-[15px] sm:min-h-[48px]"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -244,7 +251,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             }
           }}
         />
-        <div className="flex items-center px-2.5 pb-2 pt-1">
+        <div className={cn("items-center px-2.5 pb-2 pt-1", expanded ? "flex" : "hidden sm:flex")}>
           <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
             <input
               ref={imageInputRef}
