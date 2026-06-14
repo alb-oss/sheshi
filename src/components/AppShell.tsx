@@ -156,8 +156,9 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
           </div>
         </aside>
 
-        {/* Center */}
-        <main className="flex-1 min-w-0 flex flex-col bg-background">{children}</main>
+        {/* Center. overflow-y-auto so pages that don't manage their own scroll (moderim,
+            profili, fokus) can scroll; room/thread fill h-full and scroll internally. */}
+        <main className="flex-1 min-w-0 flex flex-col overflow-y-auto bg-background">{children}</main>
 
         {/* Right column */}
         {right && (
