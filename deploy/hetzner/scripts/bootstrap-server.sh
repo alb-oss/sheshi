@@ -112,7 +112,7 @@ EOF
 
 install_app_files() {
   install -d -o root -g "$GROUP" -m 0750 "$ROOT" "$ROOT/compose" "$ROOT/scripts" "$ROOT/secrets" "$ROOT/sealed"
-  install -d -o root -g "$GROUP" -m 0770 "$ROOT/env" "$ROOT/state"
+  install -d -o root -g "$GROUP" -m 2770 "$ROOT/env" "$ROOT/state"
   install -o root -g "$GROUP" -m 0640 "$REPO_ROOT/deploy/hetzner/docker-compose.prod.yml" "$ROOT/compose/docker-compose.prod.yml"
   install -o root -g "$GROUP" -m 0640 "$REPO_ROOT/deploy/hetzner/Caddyfile" "$ROOT/compose/Caddyfile"
   install -o root -g "$GROUP" -m 0750 "$REPO_ROOT"/deploy/hetzner/scripts/*.sh "$ROOT/scripts/"
@@ -122,6 +122,8 @@ install_app_files() {
   fi
   chown root:"$GROUP" "$ROOT/env/production.env"
   chmod 0660 "$ROOT/env/production.env"
+
+  find "$ROOT/state" -maxdepth 1 -type f -exec chown root:"$GROUP" {} + -exec chmod 0660 {} +
 }
 
 configure_docker() {

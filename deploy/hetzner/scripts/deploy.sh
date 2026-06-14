@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 007
 
 TAG="${1:?usage: deploy.sh IMAGE_TAG}"
 ROOT="${SHESHI_ROOT:-/opt/sheshi}"

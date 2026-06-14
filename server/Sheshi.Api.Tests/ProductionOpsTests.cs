@@ -106,11 +106,22 @@ public class ProductionOpsTests
         bootstrap.Should().Contain("unattended-upgrades");
         bootstrap.Should().Contain("fail2ban");
         bootstrap.Should().Contain("restrict,command=");
-        bootstrap.Should().Contain("-m 0770 \"$ROOT/env\" \"$ROOT/state\"");
+        bootstrap.Should().Contain("-m 2770 \"$ROOT/env\" \"$ROOT/state\"");
         bootstrap.Should().Contain("chmod 0660 \"$ROOT/env/production.env\"");
         bootstrap.Should().Contain("debian|ubuntu");
         bootstrap.Should().Contain("https://download.docker.com/linux/$docker_os");
         bootstrap.Should().NotContain("https://download.docker.com/linux/ubuntu ${VERSION_CODENAME}");
+    }
+
+    [Fact]
+    public void Deploy_state_files_remain_group_writable_for_the_deploy_user()
+    {
+        var bootstrap = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/scripts/bootstrap-server.sh"));
+        var deploy = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/scripts/deploy.sh"));
+
+        deploy.Should().Contain("umask 007");
+        bootstrap.Should().Contain("install -d -o root -g \"$GROUP\" -m 2770 \"$ROOT/env\" \"$ROOT/state\"");
+        bootstrap.Should().Contain("find \"$ROOT/state\" -maxdepth 1 -type f -exec chown root:\"$GROUP\" {} + -exec chmod 0660 {} +");
     }
 
     [Fact]
