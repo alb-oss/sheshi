@@ -46,6 +46,11 @@ function RoomPage({ slug }: { slug: string }) {
   // anchor the viewport when older messages load in at the top.
   const scrollToBottomRef = useRef(false);
   const olderAdjustRef = useRef<number | null>(null);
+  // Restore the reader's scroll position when they come back to this room (e.g. after opening a
+  // thread from the middle of the feed) instead of force-scrolling to the bottom. Persisted per
+  // room in sessionStorage and consumed once, on the initial load.
+  const restoreScrollRef = useRef<number | null>(null);
+  const scrollKey = `sheshi:feed-scroll:${slug}`;
 
   useEffect(() => {
     listRooms()
@@ -84,7 +89,14 @@ function RoomPage({ slug }: { slug: string }) {
         firstIdRef.current = firstId;
         // Chat mode: land on the latest message (bottom) on first load or when the newest changed
         // (e.g. right after you post). Applied in the layout effect once the list has rendered.
-        scrollToBottomRef.current = Boolean(loading || isNew);
+        // Exception: on the very first load, if we have a saved scroll position for this room
+        // (set when the reader scrolled before leaving), restore that instead of jumping to bottom.
+        const saved = loading && typeof window !== "undefined" ? window.sessionStorage.getItem(scrollKey) : null;
+        if (saved !== null) {
+          restoreScrollRef.current = Number(saved);
+        } else {
+          scrollToBottomRef.current = Boolean(loading || isNew);
+        }
         // FEED MODE (newest at top) — kept for later:
         // requestAnimationFrame(() => {
         //   if ((loading || isNew) && scrollRef.current)
@@ -123,6 +135,12 @@ function RoomPage({ slug }: { slug: string }) {
     // Chat mode: you're "caught up" near the BOTTOM; older history loads when you scroll near the TOP.
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 40 && newCount > 0) setNewCount(0);
     if (cursor && el.scrollTop < 400) loadMore();
+    // Remember where the reader is, so returning to this room (after opening a thread) lands here.
+    try {
+      window.sessionStorage.setItem(scrollKey, String(el.scrollTop));
+    } catch {
+      // sessionStorage disabled — restore is best-effort.
+    }
     // FEED MODE — kept for later:
     // if (el.scrollTop < 40 && newCount > 0) setNewCount(0);
     // if (cursor && el.scrollHeight - el.scrollTop - el.clientHeight < 400) loadMore();
@@ -135,6 +153,12 @@ function RoomPage({ slug }: { slug: string }) {
     if (olderAdjustRef.current != null) {
       el.scrollTop += el.scrollHeight - olderAdjustRef.current; // keep older-load from jumping the view
       olderAdjustRef.current = null;
+      return;
+    }
+    if (restoreScrollRef.current != null) {
+      // Clamp in case the feed is now shorter than when we left.
+      el.scrollTop = Math.min(restoreScrollRef.current, el.scrollHeight);
+      restoreScrollRef.current = null;
       return;
     }
     if (scrollToBottomRef.current) {
