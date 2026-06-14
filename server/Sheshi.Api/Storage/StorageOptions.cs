@@ -20,7 +20,9 @@ public class S3StorageOptions
     public string Endpoint { get; set; } = "http://localhost:9000";
     public string Bucket { get; set; } = "sheshi-uploads";
     public string AccessKey { get; set; } = "";
+    public string AccessKeyFile { get; set; } = "";
     public string SecretKey { get; set; } = "";
+    public string SecretKeyFile { get; set; } = "";
     public string Region { get; set; } = "us-east-1";
     // MinIO (and most non-AWS S3) need path-style URLs (host/bucket/key) rather than virtual-hosted
     // (bucket.host/key). Keep true for MinIO; AWS S3 works with either.

@@ -1,12 +1,15 @@
-.PHONY: build backend-build frontend-build frontend-dev
+.PHONY: build backend-build backend-test frontend-build frontend-dev
 
 build: backend-build frontend-build
 
 backend-build:
-	cd alb_sheshi/server && dotnet build Sheshi.sln
+	dotnet build server/Sheshi.sln
+
+backend-test:
+	dotnet test server/Sheshi.sln
 
 frontend-build:
-	cd alb_sheshi/frontend && npm run build
+	npm run frontend:build
 
 frontend-dev:
-	cd alb_sheshi/frontend && npm run dev
+	npm run dev

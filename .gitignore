@@ -7,6 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+.env
+.env.*
+!.env.example
+
 node_modules
 dist
 dist-ssr
@@ -15,10 +19,22 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.local/
 
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
+
+# Production deploy local state
+deploy/hetzner/*.env
+deploy/hetzner/secrets/*
+!deploy/hetzner/secrets/
+!deploy/hetzner/secrets/README.md
+!deploy/hetzner/secrets/*.sops.yaml
+!deploy/hetzner/secrets/*.sops.yaml.example
+*.agekey
+*age-key*.txt
+*age*.key
 
 # Editor directories and files
 .vscode/*

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using Sheshi.Api.Configuration;
 
 namespace Sheshi.Api.Email;
 
@@ -27,7 +28,7 @@ public class SmtpEmailSender(IConfiguration configuration, ILogger<SmtpEmailSend
         };
 
         var username = configuration["Smtp:Username"];
-        var password = configuration["Smtp:Password"];
+        var password = configuration.GetSecretValue("Smtp:Password");
         if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
             client.Credentials = new NetworkCredential(username, password);
 

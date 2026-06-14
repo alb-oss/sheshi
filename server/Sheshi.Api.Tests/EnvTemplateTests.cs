@@ -17,6 +17,12 @@ public class EnvTemplateTests
         envTemplate.Should().Contain("http://localhost:3001");
         envTemplate.Should().Contain("Frontend__BaseUrl=http://localhost:3001");
         envTemplate.Should().Contain("SeedAdmin__Email=");
-        envTemplate.Should().NotContain("SUPABASE");
+        envTemplate.Should().Contain("Storage__Provider=local");
+        envTemplate.Should().Contain("Storage__S3__Bucket=");
+        envTemplate.Should().Contain("Storage__S3__Endpoint=");
+        envTemplate.Should().Contain("Storage__S3__AccessKeyFile=");
+        envTemplate.Should().Contain("Storage__S3__SecretKeyFile=");
+        envTemplate.Should().NotContain(string.Concat("SUPA", "BASE"));
+        envTemplate.Should().NotContain(string.Join("_", "alb", "sheshi"));
     }
 }

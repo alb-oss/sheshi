@@ -6,20 +6,31 @@ using Amazon.Runtime;
 using Amazon.S3;
 using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Sheshi.Api.Auth;
+using Sheshi.Api.Configuration;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Email;
 using Sheshi.Api.Features.Messages;
 using Sheshi.Api.Features.Moderation;
 using Sheshi.Api.Features.Rooms;
+using Sheshi.Api.Health;
 using Sheshi.Api.Realtime;
 using Sheshi.Api.Storage;
+
+var migrateOnly = args.Contains("--migrate-only", StringComparer.OrdinalIgnoreCase);
+if (migrateOnly)
+{
+    args = args
+        .Where(arg => !string.Equals(arg, "--migrate-only", StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +46,8 @@ builder.Services.AddControllers()
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.PostConfigure<JwtOptions>(o =>
+    o.SigningKey = builder.Configuration.GetRequiredSecretValue("Jwt:SigningKey"));
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
 // Anchor uploads to a stable absolute path under the content root, so files saved in one run
 // aren't orphaned (404) when the app later starts from a different working directory.
@@ -60,9 +73,18 @@ if (string.Equals(builder.Configuration["Storage:Provider"], "s3", StringCompari
     builder.Services.AddSingleton<IAmazonS3>(sp =>
     {
         var s3 = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<StorageOptions>>().Value.S3;
-        var config = new AmazonS3Config { ForcePathStyle = s3.ForcePathStyle, AuthenticationRegion = s3.Region };
+        if (string.IsNullOrWhiteSpace(s3.Bucket))
+            throw new InvalidOperationException("Storage:S3:Bucket is required when Storage:Provider=s3.");
+
+        var accessKey = builder.Configuration.GetRequiredSecretValue("Storage:S3:AccessKey");
+        var secretKey = builder.Configuration.GetRequiredSecretValue("Storage:S3:SecretKey");
+        var config = new AmazonS3Config
+        {
+            ForcePathStyle = s3.ForcePathStyle,
+            AuthenticationRegion = string.IsNullOrWhiteSpace(s3.Region) ? "us-east-1" : s3.Region
+        };
         if (!string.IsNullOrWhiteSpace(s3.Endpoint)) config.ServiceURL = s3.Endpoint;
-        return new AmazonS3Client(new BasicAWSCredentials(s3.AccessKey, s3.SecretKey), config);
+        return new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), config);
     });
     builder.Services.AddScoped<IBlobStore, S3BlobStore>();
 }
@@ -106,9 +128,18 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
-builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddDbContext<AppDbContext>((sp, o) =>
+    o.UseNpgsql(sp.GetRequiredService<IConfiguration>().GetRequiredSecretValue("ConnectionStrings:Default")));
 
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
@@ -128,6 +159,7 @@ builder.Services
     .AddDefaultTokenProviders();
 
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
+jwt.SigningKey = builder.Configuration.GetRequiredSecretValue("Jwt:SigningKey");
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey));
 var auth = builder.Services
     .AddAuthentication(options =>
@@ -211,7 +243,7 @@ try
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var autoMigrate = app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:AutoMigrate");
+    var autoMigrate = migrateOnly || app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:AutoMigrate");
     if (autoMigrate)
     {
         await db.Database.MigrateAsync();
@@ -229,6 +261,11 @@ catch (Exception ex)
     throw;
 }
 
+if (migrateOnly)
+{
+    return;
+}
+
 // Configure the HTTP request pipeline.
 // Catch-all so an unhandled exception never returns a raw stack trace / server paths to the
 // client in ANY environment — structured 500 instead. (Defense in depth; fail closed.)
@@ -242,6 +279,11 @@ app.UseExceptionHandler(handler => handler.Run(async context =>
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
+
+if (app.Configuration.GetValue<bool>("Proxy:TrustForwardedHeaders"))
+{
+    app.UseForwardedHeaders();
 }
 
 // Use the same (PostConfigured, absolute) options the image storage writes to, so serving and
@@ -265,6 +307,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ChatHub>("/hub");
 
+app.MapGet("/health/live", () => "live");
+app.MapGet("/health/ready", ReadinessChecks.CheckAsync);
 app.MapGet("/health", () => "ok");
 
 app.Run();
