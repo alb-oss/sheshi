@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Sheshi",
+    "slug": "sheshi-mobile",
+    "scheme": "sheshi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "al.sheshi.mobile"
+    },
+    "android": {
+      "package": "al.sheshi.mobile"
+    },
+    "plugins": ["expo-router"],
+    "extra": {
+      "apiBase": "http://localhost:5080"
+    }
+  }
+}
