@@ -45,12 +45,14 @@ export default function TabsLayout() {
         },
         tabBarBackground: () => (
           <View style={StyleSheet.absoluteFill}>
+            {/* Liquid glass: a strong frost that the feed visibly blurs through, with only a thin
+                tint on top for legibility (not a near-opaque bar). */}
             <BlurView
               tint={mode === "dark" ? "systemChromeMaterialDark" : "systemChromeMaterialLight"}
-              intensity={mode === "dark" ? 36 : 64}
+              intensity={mode === "dark" ? 55 : 90}
               style={StyleSheet.absoluteFill}
             />
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.glass }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.glass, opacity: 0.5 }]} />
           </View>
         ),
         tabBarHideOnKeyboard: true,
@@ -78,6 +80,14 @@ export default function TabsLayout() {
           title: "Dhoma",
           tabBarLabel: "Dhoma",
           tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profili"
+        options={{
+          title: "Profili",
+          tabBarLabel: "Profili",
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-circle" size={size} color={color} />,
         }}
       />
     </Tabs>
