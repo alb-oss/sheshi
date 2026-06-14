@@ -138,7 +138,8 @@ public class MessagesController(
         };
         db.Messages.Add(message);
         await db.SaveChangesAsync(ct);
-        await moderationRuleEngine.EvaluateAsync(message, ct);
+        var autoFlags = await moderationRuleEngine.EvaluateAsync(message, ct);
+        if (autoFlags.Count > 0) await realtime.ModerationChangedAsync(ct); // live flag queue
 
         var rootId = await GetThreadRootIdAsync(message, ct);
         var broadcast = (await messageService.EnrichAsync([message], null, ct)).Single();
@@ -227,6 +228,7 @@ public class MessagesController(
             Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim()
         });
         await db.SaveChangesAsync(ct);
+        await realtime.ModerationChangedAsync(ct); // live moderation queue
 
         return Created($"/api/messages/{id}/report", null);
     }

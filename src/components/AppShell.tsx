@@ -44,17 +44,25 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
     const onPresence = (event: { room_id: string; count: number }) => {
       setPresence((current) => ({ ...current, [event.room_id]: event.count }));
     };
+    // A new public room appears in every sidebar live (deduped against optimistic inserts).
+    const onRoomCreated = (room: Room) => {
+      setRooms((current) => (current.some((r) => r.id === room.id) ? current : [...current, room]));
+    };
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise
       .then((connection) => {
         if (disposed) return;
         connection.on("presence", onPresence);
+        connection.on("room_created", onRoomCreated);
       })
       .catch(() => {});
     return () => {
       disposed = true;
       connectionPromise
-        .then((connection) => connection.off("presence", onPresence))
+        .then((connection) => {
+          connection.off("presence", onPresence);
+          connection.off("room_created", onRoomCreated);
+        })
         .catch(() => {});
     };
   }, []);
