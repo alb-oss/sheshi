@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ using Sheshi.Api.Email;
 using Sheshi.Api.Features.Messages;
 using Sheshi.Api.Features.Moderation;
 using Sheshi.Api.Features.Rooms;
+using Sheshi.Api.Health;
 using Sheshi.Api.Realtime;
 using Sheshi.Api.Storage;
 
@@ -85,6 +87,15 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowCredentials();
     });
+});
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 builder.Services.AddDbContext<AppDbContext>(o =>
@@ -225,6 +236,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+if (app.Configuration.GetValue<bool>("Proxy:TrustForwardedHeaders"))
+{
+    app.UseForwardedHeaders();
+}
+
 // Use the same (PostConfigured, absolute) options the image storage writes to, so serving and
 // saving always point at the same directory.
 var uploadPath = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<StorageOptions>>().Value.UploadPath;
@@ -246,6 +262,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ChatHub>("/hub");
 
+app.MapGet("/health/live", () => "live");
+app.MapGet("/health/ready", ReadinessChecks.CheckAsync);
 app.MapGet("/health", () => "ok");
 
 app.Run();
