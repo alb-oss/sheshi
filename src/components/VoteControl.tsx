@@ -11,12 +11,10 @@ import { toast } from "sonner";
 export function VoteControl({
   message,
   currentUserId,
-  onChanged,
   compact,
 }: {
   message: MessageRow;
   currentUserId: string | null;
-  onChanged?: () => void;
   compact?: boolean;
 }) {
   const [score, setScore] = useState(message.score ?? 0);
@@ -44,8 +42,10 @@ export function VoteControl({
     if (next !== 0) setPop((p) => p + 1);
     setBusy(true);
     try {
+      // No refetch: the optimistic state above + the realtime `vote_changed` echo (which the
+      // feed/thread apply to local state) keep the score current. A full reload here would
+      // re-fetch the whole page on every click and flicker.
       await setVote(message.id, next as -1 | 0 | 1);
-      onChanged?.();
     } catch (error) {
       setMyVote(prevVote);
       setScore(prevScore);

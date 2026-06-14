@@ -223,7 +223,7 @@ export function MessageCard({
             className="mt-1.5 flex flex-wrap items-center gap-1"
             onClick={opensThread ? (e) => e.stopPropagation() : undefined}
           >
-            <VoteControl message={message} currentUserId={currentUserId} onChanged={onChanged} compact={compact} />
+            <VoteControl message={message} currentUserId={currentUserId} compact={compact} />
 
             {onReply ? (
               <button type="button" onClick={() => onReply(message)} className={actionBtn}>
@@ -259,7 +259,7 @@ export function MessageCard({
               <span className="hidden sm:inline">{saved ? sq.chat.saved : sq.chat.save}</span>
             </button>
 
-            {currentUserId && (
+            {currentUserId && !isOwn && (
               <button
                 type="button"
                 onClick={() => setReportOpen(true)}
