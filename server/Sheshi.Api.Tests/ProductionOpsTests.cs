@@ -126,6 +126,25 @@ public class ProductionOpsTests
     }
 
     [Fact]
+    public void Api_container_healthcheck_uses_an_allowed_production_host_header()
+    {
+        var compose = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/docker-compose.prod.yml"));
+
+        compose.Should().Contain("curl -fsS -H 'Host: api.sheshi.live' http://localhost:8080/health/ready");
+    }
+
+    [Fact]
+    public void Backup_script_initializes_the_restic_repository_on_first_run()
+    {
+        var backup = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/scripts/backup-now.sh"));
+
+        backup.Should().Contain("restic -r \"$RESTIC_REPOSITORY\" snapshots");
+        backup.Should().Contain("restic -r \"$RESTIC_REPOSITORY\" init");
+        backup.Should().Contain("backup_storage_access_key");
+        backup.Should().Contain("backup_storage_secret_key");
+    }
+
+    [Fact]
     public void Secrets_apply_rejects_missing_or_placeholder_values()
     {
         var apply = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/scripts/secrets-apply.sh"));
