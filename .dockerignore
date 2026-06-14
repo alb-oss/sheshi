@@ -11,6 +11,7 @@ dist-ssr
 .vinxi
 .tanstack
 .nitro
+.local
 server/**/bin
 server/**/obj
 .env
