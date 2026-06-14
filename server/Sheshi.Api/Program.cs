@@ -49,6 +49,7 @@ builder.Services.AddScoped<ModerationRuleEngine>();
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
 builder.Services.AddSingleton<PresenceTracker>();
+builder.Services.AddSingleton<HighlightsTicker>();
 builder.Services.AddScoped<RealtimeNotifier>();
 builder.Services.AddSignalR().AddJsonProtocol(o =>
 {

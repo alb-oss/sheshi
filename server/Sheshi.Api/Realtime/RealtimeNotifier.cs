@@ -7,7 +7,7 @@ namespace Sheshi.Api.Realtime;
 // Each write broadcasts a TYPED event carrying the payload the client applies in place
 // (no refetch). The legacy "changed" signal is still emitted alongside every event so any
 // not-yet-upgraded consumer keeps working during the transition.
-public class RealtimeNotifier(IHubContext<ChatHub> hub)
+public class RealtimeNotifier(IHubContext<ChatHub> hub, HighlightsTicker highlightsTicker)
 {
     public async Task MessageCreatedAsync(MessageDto message, Guid? threadRootId, CancellationToken ct = default)
         => await BroadcastAsync(message.RoomId, threadRootId, "message_created",
@@ -44,9 +44,9 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub)
         if (threadRootId is not null)
             await hub.Clients.Group(GroupNames.Thread(threadRootId.Value)).SendAsync(evt, payload, ct);
         await MessageChangedAsync(roomId, threadRootId, ct); // legacy fallback
-        // Global tick so the cross-room "Hot" panel (joined to no group) can refresh.
-        // Coarse + payload-free; the client debounces the refetch. Throttle server-side at scale.
-        await hub.Clients.All.SendAsync("highlights_changed", ct);
+        // Global tick so the cross-room "Hot" panel (joined to no group) can refresh. Coalesced
+        // server-side (≤1 broadcast / few seconds) so a write burst doesn't fan out to every client.
+        highlightsTicker.Request();
     }
 }
 
