@@ -20,6 +20,7 @@ public class MessagesController(
     UserManager<ApplicationUser> userManager,
     MessageService messageService,
     IImageStorage imageStorage,
+    IVideoStorage videoStorage,
     RealtimeNotifier realtime,
     ModerationActionLogger actionLogger,
     ModerationRuleEngine moderationRuleEngine) : ControllerBase
@@ -88,6 +89,8 @@ public class MessagesController(
     [Authorize]
     [EnableRateLimiting("writes")]
     [HttpPost("messages")]
+    [RequestSizeLimit(55 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 55 * 1024 * 1024)]
     public async Task<ActionResult<MessageDto>> PostMessage(CancellationToken ct)
     {
         var parsed = await ReadPostMessageAsync(ct);
@@ -102,7 +105,8 @@ public class MessagesController(
         // signed-in, non-banned user — no admin gate. Product decision, see the rewrite master-spec.
         var body = request.Body?.Trim() ?? "";
         var hasImage = parsed.Image is not null && parsed.Image.Length > 0;
-        if (body.Length == 0 && !hasImage) return BadRequest(new { error = "EMPTY" });
+        var hasVideo = parsed.Video is not null && parsed.Video.Length > 0;
+        if (body.Length == 0 && !hasImage && !hasVideo) return BadRequest(new { error = "EMPTY" });
         if (body.Length > 2000) return BadRequest(new { error = "TOO_LONG" });
 
         if (!await db.Rooms.AnyAsync(r => r.Id == request.RoomId, ct)) return NotFound(new { error = "ROOM_NOT_FOUND" });
@@ -115,17 +119,23 @@ public class MessagesController(
         }
 
         string? imageUrl = null;
-        if (hasImage)
+        string? videoUrl = null;
+        try
         {
-            try
+            if (hasImage)
             {
                 await using var stream = parsed.Image!.OpenReadStream();
                 imageUrl = await imageStorage.SaveAsync(stream, parsed.Image.ContentType, ct);
             }
-            catch (ImageStorageException ex)
+            if (hasVideo)
             {
-                return BadRequest(new { error = ex.Code });
+                await using var stream = parsed.Video!.OpenReadStream();
+                videoUrl = await videoStorage.SaveAsync(stream, parsed.Video.ContentType, ct);
             }
+        }
+        catch (ImageStorageException ex)
+        {
+            return BadRequest(new { error = ex.Code });
         }
 
         var message = new Message
@@ -134,7 +144,8 @@ public class MessagesController(
             AuthorId = user.Id,
             ParentId = request.ParentId,
             Body = body,
-            ImageUrl = imageUrl
+            ImageUrl = imageUrl,
+            VideoUrl = videoUrl
         };
         db.Messages.Add(message);
         await db.SaveChangesAsync(ct);
@@ -318,30 +329,30 @@ public class MessagesController(
             .ToList();
     }
 
-    private async Task<(PostMessageRequest? Request, IFormFile? Image, ActionResult<MessageDto>? Error)> ReadPostMessageAsync(CancellationToken ct)
+    private async Task<(PostMessageRequest? Request, IFormFile? Image, IFormFile? Video, ActionResult<MessageDto>? Error)> ReadPostMessageAsync(CancellationToken ct)
     {
         if (Request.HasFormContentType)
         {
             var form = await Request.ReadFormAsync(ct);
             if (!Guid.TryParse(form["room_id"], out var roomId))
-                return (null, null, BadRequest(new { error = "INVALID_ROOM_ID" }));
+                return (null, null, null, BadRequest(new { error = "INVALID_ROOM_ID" }));
 
             Guid? parentId = null;
             var parentRaw = form["parent_id"].ToString();
             if (!string.IsNullOrWhiteSpace(parentRaw))
             {
                 if (!Guid.TryParse(parentRaw, out var parsedParentId))
-                    return (null, null, BadRequest(new { error = "INVALID_PARENT_ID" }));
+                    return (null, null, null, BadRequest(new { error = "INVALID_PARENT_ID" }));
                 parentId = parsedParentId;
             }
 
             var body = form["body"].ToString();
-            return (new PostMessageRequest(roomId, parentId, body), form.Files.GetFile("image"), null);
+            return (new PostMessageRequest(roomId, parentId, body), form.Files.GetFile("image"), form.Files.GetFile("video"), null);
         }
 
         var request = await Request.ReadFromJsonAsync<PostMessageRequest>(RequestJsonOptions, cancellationToken: ct);
         return request is null
-            ? (null, null, BadRequest(new { error = "INVALID_MESSAGE_REQUEST" }))
-            : (request, null, null);
+            ? (null, null, null, BadRequest(new { error = "INVALID_MESSAGE_REQUEST" }))
+            : (request, null, null, null);
     }
 }

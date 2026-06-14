@@ -104,6 +104,7 @@ public class MessageService(AppDbContext db)
             m.ParentId,
             m.Body,
             m.ImageUrl,
+            m.VideoUrl,
             m.DeletedAt,
             m.CreatedAt,
             authors.GetValueOrDefault(m.AuthorId),

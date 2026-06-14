@@ -11,6 +11,7 @@ public record MessageDto(
     Guid? ParentId,
     string Body,
     string? ImageUrl,
+    string? VideoUrl,
     DateTimeOffset? DeletedAt,
     DateTimeOffset CreatedAt,
     AuthorDto? Author,

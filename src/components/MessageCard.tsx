@@ -217,6 +217,17 @@ export function MessageCard({
             }}
           />
         ) : null}
+        {!isDeleted && message.video_url ? (
+          <video
+            src={message.video_url}
+            controls
+            playsInline
+            preload="metadata"
+            className="mt-2.5 max-h-96 max-w-full rounded-xl border border-border bg-black"
+            // Card-level click opens the thread; don't let video scrubbing trigger navigation.
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : null}
 
         {!isDeleted && (
           <div

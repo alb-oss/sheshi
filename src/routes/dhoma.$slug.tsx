@@ -175,7 +175,7 @@ function RoomPage({ slug }: { slug: string }) {
       setMessages((prev) => prev.map((m) => (m.id === p.message_id ? { ...m, score: p.score } : m)));
     const onDeleted = (p: { id: string }) =>
       setMessages((prev) =>
-        prev.map((m) => (m.id === p.id ? { ...m, deleted_at: new Date().toISOString(), body: "", image_url: null } : m)));
+        prev.map((m) => (m.id === p.id ? { ...m, deleted_at: new Date().toISOString(), body: "", image_url: null, video_url: null } : m)));
 
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise

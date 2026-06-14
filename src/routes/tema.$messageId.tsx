@@ -146,7 +146,7 @@ function ThreadPage() {
 
     // Super-realtime: mutate the thread tree in place from typed events — no full reload.
     const blank = (m: MessageRow): MessageRow => ({
-      ...m, deleted_at: new Date().toISOString(), body: "", image_url: null,
+      ...m, deleted_at: new Date().toISOString(), body: "", image_url: null, video_url: null,
     });
     const onCreated = (p: { message: MessageRow; root_id: string | null }) => {
       const msg = p.message;

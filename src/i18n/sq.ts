@@ -87,5 +87,6 @@ export const sq = {
     auth: "Kërkohet autentikim.",
     rateLimited: "Shumë veprime në pak kohë. Provo pas pak.",
     imageInvalid: "Imazhi nuk pranohet. Ngarko PNG, JPG ose WebP të vlefshëm.",
+    videoInvalid: "Videoja nuk pranohet. Ngarko MP4, WebM ose MOV nën 50 MB.",
   },
 } as const;
