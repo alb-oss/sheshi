@@ -48,9 +48,10 @@ public class HighlightsController(AppDbContext db, MessageService messageService
 
         var candidates = await db.Messages.AsNoTracking().Where(m => candidateIds.Contains(m.Id)).ToListAsync(ct);
         var enriched = await messageService.EnrichAsync(candidates, User.GetUserId(), ct);
+        var now = DateTimeOffset.UtcNow;
         var ranked = mode switch
         {
-            "hot" => enriched.OrderByDescending(HotScore),
+            "hot" => enriched.OrderByDescending(m => HotScore(m, now)).ThenByDescending(m => m.CreatedAt),
             "top" => enriched.OrderByDescending(m => m.Score).ThenByDescending(m => m.CreatedAt),
             _ => enriched.OrderByDescending(m => m.ReplyCount).ThenByDescending(m => m.CreatedAt)
         };
@@ -58,15 +59,15 @@ public class HighlightsController(AppDbContext db, MessageService messageService
         return Ok(ranked.Take(10).ToList());
     }
 
-    // Reddit's "hot" algorithm over the net score (up − down): sign- and time-weighted, so
-    // rank decays with age and a downvoted post sinks below a zero-score one of the same age.
-    private const long RedditEpoch = 1134028003L;
-    private static double HotScore(MessageDto message)
+    // "Hot" = engagement decayed by age (Hacker-News style gravity). Engagement is the net vote
+    // score plus replies at half a vote each, so a thread with zero votes AND zero replies scores
+    // 0 and cannot top the list purely by being newest (the old Reddit-epoch formula was recency-
+    // dominated for low scores). A downvoted post goes negative and sinks; gravity 1.5 still lets a
+    // fresh, engaged post outrank an older one.
+    private static double HotScore(MessageDto m, DateTimeOffset now)
     {
-        var s = message.Score;
-        var order = Math.Log10(Math.Max(Math.Abs(s), 1));
-        var sign = Math.Sign(s);
-        var seconds = message.CreatedAt.ToUnixTimeSeconds() - RedditEpoch;
-        return sign * order + seconds / 45000.0;
+        var engagement = m.Score + 0.5 * m.ReplyCount;
+        var ageHours = Math.Max(0, (now - m.CreatedAt).TotalHours);
+        return engagement / Math.Pow(ageHours + 2.0, 1.5);
     }
 }
