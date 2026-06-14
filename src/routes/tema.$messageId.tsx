@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Composer, type ComposerHandle } from "@/components/Composer";
@@ -246,6 +246,19 @@ function ThreadPage() {
             </div>
           ) : (
             <>
+              {/* This page renders ANY message as a thread root; when that message is itself a
+                  reply, surface a way up to the post it answers. */}
+              {root.parent_id ? (
+                <Link
+                  to="/tema/$messageId"
+                  params={{ messageId: root.parent_id }}
+                  className="flex items-center gap-2 border-b border-border bg-card/40 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-foreground/55 transition-colors hover:bg-card hover:text-primary sm:px-6"
+                >
+                  <ChevronUp className="h-4 w-4" aria-hidden />
+                  {sq.chat.viewParent}
+                </Link>
+              ) : null}
+
               <MessageCard
                 message={root}
                 roomSlug={slug}
