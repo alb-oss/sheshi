@@ -84,8 +84,8 @@ export function HighlightsPanel({
       <div className="px-5 pt-5 pb-4 border-b border-border">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <Flame className="w-7 h-7 text-primary" aria-hidden />
-            <h3 className="font-lively font-bold tracking-tight text-2xl leading-none text-foreground">
+            <Flame className="w-4 h-4 text-primary" aria-hidden />
+            <h3 className="font-display font-bold tracking-tight uppercase text-sm">
               {sq.fokus.title}
             </h3>
           </div>

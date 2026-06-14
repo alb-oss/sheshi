@@ -78,19 +78,19 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
           <img
             src="/sheshi-icon.png"
             alt="Sheshi"
-            width={28}
-            height={28}
-            className="block dark:hidden w-7 h-7 rounded-lg group-hover:scale-110 transition-transform"
+            width={36}
+            height={36}
+            className="block dark:hidden w-9 h-9 rounded-lg group-hover:scale-110 transition-transform"
           />
           <img
             src="/sheshi-icon-dark.png"
             alt="Sheshi"
-            width={28}
-            height={28}
-            className="hidden dark:block w-7 h-7 rounded-lg group-hover:scale-110 transition-transform"
+            width={36}
+            height={36}
+            className="hidden dark:block w-9 h-9 rounded-lg group-hover:scale-110 transition-transform"
           />
           <div className="flex flex-col leading-none">
-            <span className="font-display font-bold tracking-tighter text-lg">SHESHI</span>
+            <span className="font-lively font-bold tracking-tight text-xl">SHESHI</span>
             <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/50 mt-0.5">
               Zëri qytetar live
             </span>
