@@ -290,6 +290,43 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             "an engaged post must outrank a newer zero-engagement post in hot");
     }
 
+    // Engagement-first: within the 24h grace window time is irrelevant, so a discussed (comment-heavy)
+    // older post outranks a fresher one with a single upvote.
+    [Fact]
+    public async Task Hot_highlights_favor_engagement_over_recency_within_the_grace_window()
+    {
+        var client = factory.CreateClient();
+        var author = await RegisterAsync(client, "hot-eng-author");
+        var commenter = await RegisterAsync(client, "hot-eng-commenter");
+        var voter = await RegisterAsync(client, "hot-eng-voter");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        // discussed post (created first → older): 0 votes but 3 replies
+        UseBearer(client, author.AccessToken);
+        var discussed = (await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "discussed thread" })).Content.ReadFromJsonAsync<MessageDto>())!;
+        UseBearer(client, commenter.AccessToken);
+        for (var i = 0; i < 3; i++)
+            (await client.PostAsJsonAsync("/api/messages",
+                new { room_id = room.Id, parent_id = discussed.Id, body = $"reply {i}" }))
+                .StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // fresher post with a single upvote (less total engagement)
+        UseBearer(client, author.AccessToken);
+        var fresh = (await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "fresh one upvote" })).Content.ReadFromJsonAsync<MessageDto>())!;
+        UseBearer(client, voter.AccessToken);
+        (await client.PutAsJsonAsync($"/api/messages/{fresh.Id}/vote", new { value = 1 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var hot = await client.GetFromJsonAsync<MessageDto[]>("/api/highlights?mode=hot");
+        hot.Should().NotBeNull();
+        var ids = hot!.Select(h => h.Id).ToList();
+        ids.Should().Contain(discussed.Id).And.Contain(fresh.Id);
+        ids.IndexOf(discussed.Id).Should().BeLessThan(ids.IndexOf(fresh.Id),
+            "within the grace window the more-engaged (3 replies) post must outrank a fresher 1-upvote post");
+    }
+
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
         var email = $"{label}-{Guid.NewGuid():N}@example.com";
