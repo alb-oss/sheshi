@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
 import { SheshiError, submitReport, type ReportReason } from "@/lib/sheshi";
+import { markReported } from "@/lib/reported";
 import { toast } from "sonner";
 
 interface Props {
@@ -32,6 +33,8 @@ export function ReportDialog({ open, onOpenChange, messageId }: Props) {
     setSubmitting(true);
     try {
       await submitReport({ message_id: messageId, reason, note: note.slice(0, 500) });
+      // Remember locally so the card disables the action and shows it as reported.
+      markReported(messageId);
       toast.success(sq.report.submitted);
       onOpenChange(false);
       setNote("");
