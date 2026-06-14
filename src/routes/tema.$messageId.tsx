@@ -324,7 +324,7 @@ function ReplyBranch({
   // branch nudges its own children right — not a cumulative margin), and CAPPED so deep
   // threads stop indenting instead of crushing the column on mobile. Children render outside
   // the comment's left padding so only this small step compounds, never the padding.
-  const INDENT_STEP = 12;
+  const INDENT_STEP = 16;
   const MAX_INDENT_DEPTH = 7;
   const indentStep = node.depth > 1 && node.depth <= MAX_INDENT_DEPTH ? INDENT_STEP : 0;
 

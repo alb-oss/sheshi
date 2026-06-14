@@ -176,10 +176,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     >
       <div
         className={cn(
-          "bg-card border rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary/20",
-          compact
-            ? "border-primary/40 focus-within:border-primary/60"
-            : "border-border focus-within:border-primary/60",
+          "bg-card border border-border rounded-2xl transition-colors focus-within:border-foreground/25",
+          compact && "border-primary/30",
         )}
       >
         {replyContext && (
@@ -290,8 +288,10 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
               disabled={!canSend}
               aria-label={sq.chat.send}
               className={cn(
-                "inline-flex h-9 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-xs font-bold uppercase tracking-widest text-primary-foreground transition-colors sm:px-4",
-                canSend ? "hover:bg-primary/85" : "opacity-40 cursor-not-allowed",
+                "inline-flex h-9 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full px-4 text-xs font-bold uppercase tracking-widest transition-colors sm:px-4",
+                canSend
+                  ? "bg-primary text-primary-foreground hover:bg-primary/85"
+                  : "bg-secondary text-foreground/35 cursor-not-allowed",
               )}
             >
               <span className="hidden sm:inline">{sq.chat.send}</span>
