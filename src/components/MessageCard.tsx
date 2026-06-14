@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Flag,
   MessageSquare,
+  MoreHorizontal,
   Share2,
   Trash2,
   X,
@@ -29,6 +30,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface Props {
@@ -70,7 +77,6 @@ export function MessageCard({
   const isOwn = currentUserId && currentUserId === message.author_id;
 
   const name = message.author?.display_name || message.author?.username || "anonim";
-  const handle = "@" + (message.author?.username || "anonim");
   const initials = name
     .split(/\s+/)
     .map((p) => p[0])
@@ -223,7 +229,6 @@ export function MessageCard({
             </button>
           )}
           <span className="truncate font-bold">{name}</span>
-          <span className="truncate text-foreground/40">{handle}</span>
           <span className="text-foreground/30">·</span>
           <span className="shrink-0 text-foreground/40">{time}</span>
         </div>
@@ -297,51 +302,36 @@ export function MessageCard({
               </Link>
             ) : null}
 
-            <button type="button" onClick={() => void onShare()} aria-label={sq.share.action} className={actionBtn}>
-              <Share2 className="h-4 w-4" aria-hidden />
-              <span className="hidden sm:inline">{sq.share.action}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onToggleSave}
-              aria-label={saved ? sq.chat.unsave : sq.chat.save}
-              aria-pressed={saved}
-              className={cn(actionBtn, saved && "text-primary hover:text-primary")}
-            >
-              <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} aria-hidden />
-              <span className="hidden sm:inline">{saved ? sq.chat.saved : sq.chat.save}</span>
-            </button>
-
-            {currentUserId && !isOwn && (
-              <button
-                type="button"
-                onClick={() => setReportOpen(true)}
-                disabled={reported}
-                aria-label={reported ? sq.chat.reported : sq.chat.report}
-                title={reported ? sq.chat.reported : sq.chat.report}
-                className={cn(
-                  actionBtn,
-                  reported
-                    ? "px-2.5 text-primary hover:bg-transparent hover:text-primary cursor-default"
-                    : "px-2",
-                )}
-              >
-                <Flag className="h-4 w-4" fill={reported ? "currentColor" : "none"} aria-hidden />
-                {reported ? <span>{sq.chat.reported}</span> : null}
-              </button>
-            )}
-            {isOwn && (
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteOpen(true)}
-                aria-label={sq.chat.delete}
-                title={sq.chat.delete}
-                className={cn(actionBtn, "px-2 hover:text-primary")}
-              >
-                <Trash2 className="h-4 w-4" aria-hidden />
-              </button>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" aria-label="Më shumë" className={cn(actionBtn, "px-2")}>
+                  <MoreHorizontal className="h-4 w-4" aria-hidden />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => void onShare()}>
+                  <Share2 className="h-4 w-4" aria-hidden /> {sq.share.action}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={onToggleSave}>
+                  <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} aria-hidden />
+                  {saved ? sq.chat.saved : sq.chat.save}
+                </DropdownMenuItem>
+                {currentUserId && !isOwn ? (
+                  <DropdownMenuItem disabled={reported} onSelect={() => setReportOpen(true)}>
+                    <Flag className="h-4 w-4" fill={reported ? "currentColor" : "none"} aria-hidden />
+                    {reported ? sq.chat.reported : sq.chat.report}
+                  </DropdownMenuItem>
+                ) : null}
+                {isOwn ? (
+                  <DropdownMenuItem
+                    onSelect={() => setConfirmDeleteOpen(true)}
+                    className="text-primary focus:text-primary"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden /> {sq.chat.delete}
+                  </DropdownMenuItem>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
