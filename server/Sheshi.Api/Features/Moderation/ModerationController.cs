@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Sheshi.Api.Auth;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
+using Sheshi.Api.Realtime;
 
 namespace Sheshi.Api.Features.Moderation;
 
@@ -19,7 +20,8 @@ public class ModerationController(
     UserManager<ApplicationUser> userManager,
     ModerationActionLogger actionLogger,
     ModerationMetricsService metricsService,
-    TokenService tokenService) : ControllerBase
+    TokenService tokenService,
+    RealtimeNotifier realtime) : ControllerBase
 {
     [HttpGet("reports")]
     public async Task<ActionResult<IReadOnlyList<ModReportDto>>> Reports([FromQuery] ReportQuery query, CancellationToken ct = default)
@@ -173,6 +175,7 @@ public class ModerationController(
 
         await tokenService.RevokeAllRefreshTokensAsync(user.Id);
         await actionLogger.LogAsync(User, ModerationActionTypes.UserBanned, "user", user.Id);
+        await realtime.ModerationChangedAsync();
         return NoContent();
     }
 
@@ -187,6 +190,7 @@ public class ModerationController(
         if (!result.Succeeded) return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
 
         await actionLogger.LogAsync(User, ModerationActionTypes.UserUnbanned, "user", user.Id);
+        await realtime.ModerationChangedAsync();
         return NoContent();
     }
 
@@ -212,6 +216,7 @@ public class ModerationController(
             "role",
             user.Id,
             Roles.Moderator);
+        await realtime.ModerationChangedAsync();
         return NoContent();
     }
 
@@ -313,6 +318,7 @@ public class ModerationController(
                 ["new_status"] = status.ToString().ToLowerInvariant()
             }),
             ct: ct);
+        await realtime.ModerationChangedAsync(ct);
         return NoContent();
     }
 
@@ -337,6 +343,7 @@ public class ModerationController(
                 ["rule_key"] = flag.RuleKey
             }),
             ct: ct);
+        await realtime.ModerationChangedAsync(ct);
         return NoContent();
     }
 

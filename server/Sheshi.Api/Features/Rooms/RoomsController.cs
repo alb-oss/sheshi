@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Features.Moderation;
+using Sheshi.Api.Realtime;
 
 namespace Sheshi.Api.Features.Rooms;
 
 [ApiController]
 [Route("api/rooms")]
-public class RoomsController(RoomService rooms, ModerationActionLogger actionLogger) : ControllerBase
+public class RoomsController(RoomService rooms, ModerationActionLogger actionLogger, RealtimeNotifier realtime) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<RoomDto>>> List(CancellationToken ct)
@@ -33,6 +34,7 @@ public class RoomsController(RoomService rooms, ModerationActionLogger actionLog
         if (result.Error is not null) return BadRequest(new { error = result.Error });
 
         await actionLogger.LogAsync(User, ModerationActionTypes.RoomCreated, "room", result.Entity!.Id, ct: ct);
+        await realtime.RoomCreatedAsync(result.Dto!, ct); // appears in every sidebar/grid live
         return CreatedAtAction(nameof(GetBySlug), new { slug = result.Entity.Slug }, result.Dto);
     }
 }

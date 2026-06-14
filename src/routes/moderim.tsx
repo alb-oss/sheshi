@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ExternalLink, ShieldCheck, Trash2, UserX } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sq } from "@/i18n/sq";
 import { api, apiJson, apiNoContent } from "@/lib/api-client";
+import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
 import { useAuth } from "@/hooks/use-auth";
 import { Roles, canAdmin, canModerate, hasRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -147,6 +148,36 @@ const flagCategories = [
 
 const rowCard = "rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/15";
 const emptyBox = "rounded-xl border border-border bg-card/60 p-6 text-center text-sm text-foreground/45";
+
+// Live moderation queue: join the moderator SignalR group and debounce-refetch on any
+// report/flag/action change (mod_changed). Used by every panel so the dashboard stays current.
+function useModerationLive(reload: () => void) {
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+  useEffect(() => {
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tick = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!disposed) reloadRef.current();
+      }, 600);
+    };
+    const conn = ensureRealtimeStarted();
+    conn
+      .then((c) => {
+        if (disposed) return;
+        c.on("mod_changed", tick);
+        void invokeRealtime("JoinModeration");
+      })
+      .catch(() => {});
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      conn.then((c) => c.off("mod_changed", tick)).catch(() => {});
+    };
+  }, []);
+}
 
 function ModerimPage() {
   const { user, isReady } = useAuth();
@@ -296,13 +327,14 @@ function MetricsPanel() {
   const [metrics, setMetrics] = useState<ModerationMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    setIsLoading(true);
+  const load = useCallback(() => {
     apiJson<ModerationMetrics>("/api/mod/metrics")
       .then(setMetrics)
       .catch(() => setMetrics(null))
       .finally(() => setIsLoading(false));
   }, []);
+  useEffect(() => load(), [load]);
+  useModerationLive(load);
 
   if (isLoading) return <SkeletonGrid />;
   if (!metrics) return <div className={emptyBox}>Metrikat nuk u ngarkuan.</div>;
@@ -504,6 +536,7 @@ function FlagsPanel() {
   }, [status, category]);
 
   useEffect(() => load(), [load]);
+  useModerationLive(load);
   const { deleteMessage, banAuthor } = useEnforcement(load);
 
   async function updateFlagStatus(id: string, action: "resolve" | "dismiss") {
@@ -594,6 +627,7 @@ function ReportsPanel() {
   }, [status, reason, severity, repeatOnly, sort]);
 
   useEffect(() => load(), [load]);
+  useModerationLive(load);
   const { deleteMessage, banAuthor } = useEnforcement(load);
 
   async function updateReportStatus(id: string, action: "resolve" | "dismiss") {
@@ -688,6 +722,7 @@ function ActionsPanel() {
   }, [actionType, targetType]);
 
   useEffect(() => load(), [load]);
+  useModerationLive(load);
 
   return (
     <div className="space-y-3">
@@ -760,6 +795,7 @@ function UsersPanel({ isAdmin }: { isAdmin: boolean }) {
     search();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useModerationLive(search);
 
   async function post(path: string) {
     try {

@@ -24,6 +24,15 @@ public class ChatHub(PresenceTracker presenceTracker) : Hub
     public Task LeaveThread(Guid messageId) =>
         Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.Thread(messageId));
 
+    // Live moderation queue — only moderators/admins may join (the JWT carries the role claims).
+    public Task JoinModeration() =>
+        Context.User?.IsInRole("moderator") == true || Context.User?.IsInRole("admin") == true
+            ? Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Moderators())
+            : Task.CompletedTask;
+
+    public Task LeaveModeration() =>
+        Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.Moderators());
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var changed = presenceTracker.Disconnect(Context.ConnectionId);

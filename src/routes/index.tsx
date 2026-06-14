@@ -20,6 +20,7 @@ import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
 import { apiJson, ApiError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { ensureRealtimeStarted } from "@/lib/realtime";
 import { createRoom, listRooms, type Room } from "@/lib/sheshi";
 
 export const Route = createFileRoute("/")({
@@ -74,6 +75,29 @@ function HomePage() {
 
   useEffect(() => {
     reload();
+    // Live: per-room presence counts + newly created rooms, without a manual refresh.
+    let disposed = false;
+    const onPresence = (e: { room_id: string; count: number }) =>
+      setPresence((current) => ({ ...current, [e.room_id]: e.count }));
+    const onRoomCreated = (room: Room) =>
+      setRooms((current) => (current.some((r) => r.id === room.id) ? current : [room, ...current]));
+    const conn = ensureRealtimeStarted();
+    conn
+      .then((c) => {
+        if (disposed) return;
+        c.on("presence", onPresence);
+        c.on("room_created", onRoomCreated);
+      })
+      .catch(() => {});
+    return () => {
+      disposed = true;
+      conn
+        .then((c) => {
+          c.off("presence", onPresence);
+          c.off("room_created", onRoomCreated);
+        })
+        .catch(() => {});
+    };
   }, []);
 
   async function onCreateRoom(event: React.FormEvent) {

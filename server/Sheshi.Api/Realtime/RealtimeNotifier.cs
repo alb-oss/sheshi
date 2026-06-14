@@ -21,6 +21,15 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub)
         => await BroadcastAsync(roomId, threadRootId, "message_deleted",
             new MessageDeletedEvent(messageId, roomId, threadRootId), ct);
 
+    // Coarse tick to the moderator channel — any report/flag/action change. The /moderim panels
+    // debounce a refetch (the queue + metrics can't be cheaply delta-patched).
+    public async Task ModerationChangedAsync(CancellationToken ct = default)
+        => await hub.Clients.Group(GroupNames.Moderators()).SendAsync("mod_changed", ct);
+
+    // A new public room — broadcast to everyone so all sidebars/grids pick it up live.
+    public async Task RoomCreatedAsync(object room, CancellationToken ct = default)
+        => await hub.Clients.All.SendAsync("room_created", room, ct);
+
     // Legacy coarse signal — kept for backward compatibility (debounced-refetch clients).
     public async Task MessageChangedAsync(Guid roomId, Guid? threadId = null, CancellationToken ct = default)
     {
