@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
+import { canAdmin } from "@/lib/roles";
 import { apiJson, ApiError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { ensureRealtimeStarted } from "@/lib/realtime";
@@ -143,7 +144,7 @@ function HomePage() {
               </p>
             </div>
 
-            {user ? (
+            {canAdmin(user) ? (
               <Button
                 type="button"
                 onClick={() => setCreateOpen(true)}
