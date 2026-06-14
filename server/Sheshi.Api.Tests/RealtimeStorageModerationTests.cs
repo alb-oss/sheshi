@@ -208,6 +208,43 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task Multipart_upload_downscales_large_images_to_the_display_target()
+    {
+        var uploadPath = Path.Combine(Path.GetTempPath(), $"sheshi-downscale-{Guid.NewGuid():N}");
+        var client = factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Storage:UploadPath"] = uploadPath,
+                    ["Storage:PublicBaseUrl"] = "http://localhost:5080/uploads"
+                });
+            });
+        }).CreateClient();
+        var user = await RegisterAsync(client, "big-image");
+        var room = await GetRoomAsync(client, "sheshi");
+        UseBearer(client, user.AccessToken);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(room.Id.ToString()), "room_id");
+        var image = new ByteArrayContent(CreateBlankJpeg(2000, 1000));
+        image.Headers.ContentType = MediaTypeHeaderValue.Parse("image/jpeg");
+        form.Add(image, "image", "big.jpg");
+
+        var response = await client.PostAsync("/api/messages", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var message = await response.Content.ReadFromJsonAsync<MessageDto>();
+        var savedName = new Uri(message!.ImageUrl!).Segments.Last();
+        var savedBytes = await File.ReadAllBytesAsync(Path.Combine(uploadPath, savedName));
+        using var saved = Image.Load(savedBytes);
+        // Longest side capped at the display target, aspect ratio preserved (2000x1000 -> 1280x640).
+        saved.Width.Should().Be(1280);
+        saved.Height.Should().Be(640);
+    }
+
+    [Fact]
     public async Task Moderation_endpoints_enforce_roles_and_apply_actions()
     {
         var client = factory.CreateClient();
@@ -235,6 +272,8 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         });
         var message = await postResponse.Content.ReadFromJsonAsync<MessageDto>();
         message.Should().NotBeNull();
+        // Report from a different user — you can't report your own message.
+        UseBearer(client, normal.AccessToken);
         var reportResponse = await client.PostAsJsonAsync($"/api/messages/{message!.Id}/report", new
         {
             reason = "hate",
@@ -549,6 +588,14 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         image[0, 0] = new Rgba32(255, 0, 0, 255);
         using var output = new MemoryStream();
         image.SaveAsPng(output);
+        return output.ToArray();
+    }
+
+    private static byte[] CreateBlankJpeg(int width, int height)
+    {
+        using var image = new Image<Rgba32>(width, height);
+        using var output = new MemoryStream();
+        image.SaveAsJpeg(output);
         return output.ToArray();
     }
 

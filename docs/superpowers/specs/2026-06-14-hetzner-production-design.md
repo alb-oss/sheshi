@@ -308,7 +308,7 @@ Recommended config shape:
 ```text
 Storage__Provider=s3
 Storage__PublicBaseUrl=https://uploads.sheshi.al
-Storage__MaxBytes=5242880
+Storage__MaxBytes=20971520
 Storage__S3__Bucket=sheshi-uploads
 Storage__S3__Endpoint=https://<hetzner-object-storage-endpoint>
 Storage__S3__Region=<region>

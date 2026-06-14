@@ -29,7 +29,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["ConnectionStrings:Default"] = _db.GetConnectionString(),
                 ["Storage:UploadPath"] = uploadPath,
                 ["Storage:PublicBaseUrl"] = "http://localhost:5080/uploads",
-                ["Storage:MaxBytes"] = "5242880",
+                ["Storage:MaxBytes"] = "20971520",
             });
         });
     }

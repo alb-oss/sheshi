@@ -20,7 +20,7 @@ public class S3ImageStorageTests
         var options = Options.Create(new StorageOptions
         {
             PublicBaseUrl = "https://uploads.sheshi.al",
-            MaxBytes = 5242880,
+            MaxBytes = 20 * 1024 * 1024,
             S3 = new S3StorageOptions
             {
                 Bucket = "sheshi-uploads"

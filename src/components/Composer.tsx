@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 // Video cap mirrors the server's MaxVideoBytes (50 MB); the server re-validates type by byte
 // signature so the client check is a fast-fail courtesy, not the trust boundary.
@@ -141,7 +141,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      toast.error("Imazhi duhet të jetë nën 5 MB.");
+      toast.error("Imazhi duhet të jetë nën 20 MB.");
       clearAttachment();
       return;
     }

@@ -3,6 +3,7 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 
 namespace Sheshi.Api.Storage;
 
@@ -37,6 +38,17 @@ public class ImageSanitizer
             }
 
             StripMetadata(image);
+
+            // Downscale so the longest side fits the display target. Aspect ratio is preserved and
+            // images are only ever shrunk.
+            var longest = Math.Max(image.Width, image.Height);
+            if (longest > _imageSafety.MaxDimension)
+            {
+                var size = image.Width >= image.Height
+                    ? new Size(_imageSafety.MaxDimension, 0)
+                    : new Size(0, _imageSafety.MaxDimension);
+                image.Mutate(x => x.Resize(size));
+            }
 
             await using var output = new MemoryStream();
             await SaveInClaimedFormatAsync(image, output, contentType, ct);
@@ -75,9 +87,9 @@ public class ImageSanitizer
     private static Task SaveInClaimedFormatAsync(Image image, Stream output, string contentType, CancellationToken ct) =>
         contentType switch
         {
-            "image/jpeg" => image.SaveAsJpegAsync(output, new JpegEncoder { Quality = 88, SkipMetadata = true }, ct),
+            "image/jpeg" => image.SaveAsJpegAsync(output, new JpegEncoder { Quality = 80, SkipMetadata = true }, ct),
             "image/png" => image.SaveAsPngAsync(output, new PngEncoder { SkipMetadata = true }, ct),
-            "image/webp" => image.SaveAsWebpAsync(output, new WebpEncoder { Quality = 90, SkipMetadata = true }, ct),
+            "image/webp" => image.SaveAsWebpAsync(output, new WebpEncoder { Quality = 80, SkipMetadata = true }, ct),
             _ => throw new ImageStorageException("UNSUPPORTED_IMAGE_TYPE")
         };
 }

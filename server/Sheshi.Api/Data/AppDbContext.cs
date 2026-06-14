@@ -48,6 +48,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             e.Property(r => r.Note).HasMaxLength(500);
             e.HasOne(r => r.Message).WithMany().HasForeignKey(r => r.MessageId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(r => r.Reporter).WithMany().HasForeignKey(r => r.ReporterId).OnDelete(DeleteBehavior.Restrict);
+            // One report per user per message — enforces "report once" at the database level.
+            e.HasIndex(r => new { r.MessageId, r.ReporterId }).IsUnique();
         });
 
         b.Entity<RefreshToken>(e => { e.HasIndex(t => t.TokenHash); e.HasIndex(t => t.UserId); });

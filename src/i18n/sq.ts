@@ -8,6 +8,7 @@ export const sq = {
     fokus: "Në Fokus",
     profile: "Profili",
     admin: "Moderim",
+    saved: "Të ruajtura",
   },
   auth: {
     signIn: "Hyr",
@@ -43,6 +44,7 @@ export const sq = {
     replies: (n: number) => (n === 1 ? "1 përgjigje" : `${n} përgjigje`),
     upvote: "Mbështet",
     report: "Raporto",
+    reported: "Raportuar",
     delete: "Fshij",
     deleted: "[Mesazhi është fshirë]",
     loading: "Po ngarkohet…",

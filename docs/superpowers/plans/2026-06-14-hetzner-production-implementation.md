@@ -240,7 +240,7 @@ Frontend__BaseUrl=http://localhost:3001
 Storage__Provider=local
 Storage__UploadPath=./uploads
 Storage__PublicBaseUrl=http://localhost:5080/uploads
-Storage__MaxBytes=5242880
+Storage__MaxBytes=20971520
 Storage__S3__Bucket=
 Storage__S3__Endpoint=
 Storage__S3__Region=
@@ -713,7 +713,7 @@ public class S3ImageStorageTests
             Options.Create(new StorageOptions
             {
                 PublicBaseUrl = "https://uploads.sheshi.al",
-                MaxBytes = 5242880,
+                MaxBytes = 20 * 1024 * 1024,
                 S3 = new S3StorageOptions
                 {
                     Bucket = "sheshi-uploads"
@@ -791,7 +791,7 @@ public class StorageOptions
     public string Provider { get; set; } = "local";
     public string UploadPath { get; set; } = "./uploads";
     public string PublicBaseUrl { get; set; } = "http://localhost:5080/uploads";
-    public long MaxBytes { get; set; } = 5 * 1024 * 1024;
+    public long MaxBytes { get; set; } = 20 * 1024 * 1024;
     public S3StorageOptions S3 { get; set; } = new();
 }
 
@@ -1269,7 +1269,7 @@ Cors__AllowedOrigins=https://sheshi.al
 AllowedHosts=sheshi.al;api.sheshi.al
 Storage__Provider=s3
 Storage__PublicBaseUrl=https://uploads.sheshi.al
-Storage__MaxBytes=5242880
+Storage__MaxBytes=20971520
 Storage__S3__Bucket=sheshi-uploads
 Storage__S3__Endpoint=https://fsn1.your-objectstorage.com
 Storage__S3__Region=fsn1
