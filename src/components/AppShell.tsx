@@ -74,27 +74,18 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
     <div className="flex flex-col h-dvh w-full overflow-hidden bg-background text-foreground">
       {/* Top header */}
       <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
-        <Link to="/" className="group flex min-h-10 items-center gap-3">
+        <Link to="/" className="group flex min-h-10 items-center" aria-label="Sheshi — Zëri Qytetar Live">
+          {/* Full lockup logo; the variant blends into each theme's navbar background. */}
           <img
-            src="/sheshi-icon.png"
-            alt="Sheshi"
-            width={36}
-            height={36}
-            className="block dark:hidden w-9 h-9 rounded-lg group-hover:scale-110 transition-transform"
+            src="/sheshi-logo-light.png"
+            alt="Sheshi — Zëri Qytetar Live"
+            className="block dark:hidden h-9 w-auto group-hover:opacity-90 transition-opacity"
           />
           <img
-            src="/sheshi-icon-dark.png"
-            alt="Sheshi"
-            width={36}
-            height={36}
-            className="hidden dark:block w-9 h-9 rounded-lg group-hover:scale-110 transition-transform"
+            src="/sheshi-logo-dark.png"
+            alt="Sheshi — Zëri Qytetar Live"
+            className="hidden dark:block h-9 w-auto group-hover:opacity-90 transition-opacity"
           />
-          <div className="flex flex-col leading-none">
-            <span className="font-lively font-bold tracking-tight text-xl">SHESHI</span>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-foreground/50 mt-0.5">
-              Zëri qytetar live
-            </span>
-          </div>
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
