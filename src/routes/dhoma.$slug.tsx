@@ -6,7 +6,8 @@ import { Composer } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
-import { getRoomBySlug, listMessages, listRooms, type MessageRow, type Room } from "@/lib/sheshi";
+import { getRoomBySlug, listMessages, type MessageRow, type Room } from "@/lib/sheshi";
+import { useRooms } from "@/hooks/use-rooms";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
 
 export const Route = createFileRoute("/dhoma/$slug")({
@@ -31,7 +32,7 @@ function RoomRoute() {
 
 function RoomPage({ slug }: { slug: string }) {
   const [room, setRoom] = useState<Room | null>(null);
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const { data: rooms = [] } = useRooms();
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -55,12 +56,6 @@ function RoomPage({ slug }: { slug: string }) {
   const anchorRef = useRef<string | null>(null);
   const scrollKey = `sheshi:feed-scroll:${slug}`;
   const anchorKey = `sheshi:feed-anchor:${slug}`;
-
-  useEffect(() => {
-    listRooms()
-      .then(setRooms)
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
