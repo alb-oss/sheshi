@@ -81,7 +81,11 @@ public record ModFlagDto(
     double Score,
     string Evidence,
     string Status,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string MessageBody,
+    bool MessageDeleted,
+    string RoomSlug,
+    ModActorDto? Author);
 
 public record FlagQuery
 {

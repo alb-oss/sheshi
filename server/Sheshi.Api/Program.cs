@@ -207,6 +207,15 @@ catch (Exception ex)
 }
 
 // Configure the HTTP request pipeline.
+// Catch-all so an unhandled exception never returns a raw stack trace / server paths to the
+// client in ANY environment — structured 500 instead. (Defense in depth; fail closed.)
+app.UseExceptionHandler(handler => handler.Run(async context =>
+{
+    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    context.Response.ContentType = "application/json";
+    await context.Response.WriteAsJsonAsync(new { error = "INTERNAL_ERROR" });
+}));
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
