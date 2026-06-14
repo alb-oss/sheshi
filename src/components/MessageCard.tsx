@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Share2,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -15,6 +16,7 @@ import { sq } from "@/i18n/sq";
 import { cn } from "@/lib/utils";
 import { softDeleteMessage, type MessageRow } from "@/lib/sheshi";
 import { isSaved, onSavedChanged, toggleSaved } from "@/lib/saved";
+import { isReported, onReportedChanged } from "@/lib/reported";
 import { VoteControl } from "./VoteControl";
 import { ReportDialog } from "./ReportDialog";
 import { ShareDialog, type ShareTarget } from "./ShareDialog";
@@ -52,6 +54,8 @@ export function MessageCard({
   const [reportOpen, setReportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const isDeleted = !!message.deleted_at;
   const isOwn = currentUserId && currentUserId === message.author_id;
 
@@ -75,6 +79,21 @@ export function MessageCard({
     setSaved(isSaved(message.id));
     return onSavedChanged(() => setSaved(isSaved(message.id)));
   }, [message.id]);
+
+  useEffect(() => {
+    setReported(isReported(message.id));
+    return onReportedChanged(() => setReported(isReported(message.id)));
+  }, [message.id]);
+
+  // Close the image lightbox on Escape (click-away also closes it).
+  useEffect(() => {
+    if (!viewerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setViewerOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [viewerOpen]);
 
   function onToggleSave() {
     const next = toggleSaved(message.id);
@@ -205,17 +224,28 @@ export function MessageCard({
           {isDeleted ? sq.chat.deleted : message.body}
         </div>
         {!isDeleted && message.image_url ? (
-          <img
-            src={message.image_url}
-            alt=""
-            className="mt-2.5 max-h-96 max-w-full rounded-xl border border-border object-contain"
-            loading="lazy"
-            // Gracefully hide images whose file is missing (e.g. orphaned older uploads)
-            // instead of showing a broken-image icon.
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
+          <button
+            type="button"
+            // Open the image full-screen; stop propagation so it doesn't also open the thread.
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewerOpen(true);
             }}
-          />
+            className="mt-2.5 block cursor-zoom-in"
+            aria-label="Hap imazhin"
+          >
+            <img
+              src={message.image_url}
+              alt=""
+              className="max-h-96 max-w-full rounded-xl border border-border object-contain"
+              loading="lazy"
+              // Gracefully hide images whose file is missing (e.g. orphaned older uploads)
+              // instead of showing a broken-image icon.
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          </button>
         ) : null}
         {!isDeleted && message.video_url ? (
           <video
@@ -274,11 +304,18 @@ export function MessageCard({
               <button
                 type="button"
                 onClick={() => setReportOpen(true)}
-                aria-label={sq.chat.report}
-                title={sq.chat.report}
-                className={cn(actionBtn, "px-2")}
+                disabled={reported}
+                aria-label={reported ? sq.chat.reported : sq.chat.report}
+                title={reported ? sq.chat.reported : sq.chat.report}
+                className={cn(
+                  actionBtn,
+                  reported
+                    ? "px-2.5 text-primary hover:bg-transparent hover:text-primary cursor-default"
+                    : "px-2",
+                )}
               >
-                <Flag className="h-4 w-4" aria-hidden />
+                <Flag className="h-4 w-4" fill={reported ? "currentColor" : "none"} aria-hidden />
+                {reported ? <span>{sq.chat.reported}</span> : null}
               </button>
             )}
             {isOwn && (
@@ -300,6 +337,32 @@ export function MessageCard({
       {shareOpen && (
         <ShareDialog open={shareOpen} onOpenChange={setShareOpen} target={buildShareTarget()} />
       )}
+
+      {viewerOpen && message.image_url ? (
+        // Full-screen image viewer. Click anywhere (or Escape, or the ×) closes it.
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            e.stopPropagation();
+            setViewerOpen(false);
+          }}
+        >
+          <img src={message.image_url} alt="" className="max-h-full max-w-full object-contain" />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewerOpen(false);
+            }}
+            aria-label="Mbyll"
+            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 }

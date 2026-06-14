@@ -44,6 +44,7 @@ export const sq = {
     replies: (n: number) => (n === 1 ? "1 përgjigje" : `${n} përgjigje`),
     upvote: "Mbështet",
     report: "Raporto",
+    reported: "Raportuar",
     delete: "Fshij",
     deleted: "[Mesazhi është fshirë]",
     loading: "Po ngarkohet…",
