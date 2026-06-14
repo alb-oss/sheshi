@@ -24,6 +24,14 @@ using Sheshi.Api.Health;
 using Sheshi.Api.Realtime;
 using Sheshi.Api.Storage;
 
+var migrateOnly = args.Contains("--migrate-only", StringComparer.OrdinalIgnoreCase);
+if (migrateOnly)
+{
+    args = args
+        .Where(arg => !string.Equals(arg, "--migrate-only", StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -231,7 +239,7 @@ try
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var autoMigrate = app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:AutoMigrate");
+    var autoMigrate = migrateOnly || app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Database:AutoMigrate");
     if (autoMigrate)
     {
         await db.Database.MigrateAsync();
@@ -247,6 +255,11 @@ catch (Exception ex)
 {
     startupLogger.LogError(ex, "Database migration or seed failed during startup.");
     throw;
+}
+
+if (migrateOnly)
+{
+    return;
 }
 
 // Configure the HTTP request pipeline.
