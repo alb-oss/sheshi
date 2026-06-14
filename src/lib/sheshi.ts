@@ -57,9 +57,9 @@ export interface MessageRow {
   deleted_at: string | null;
   created_at: string;
   author?: Profile | null;
-  upvotes?: number;
+  score?: number;
   reply_count?: number;
-  voted?: boolean;
+  my_vote?: number; // -1, 0, or 1
 }
 
 export interface ReplyNode {
@@ -170,10 +170,11 @@ export async function postMessage(input: {
   }
 }
 
-export async function toggleVote(messageId: string, currentlyVoted: boolean) {
+// Reddit-style directional vote: value 1 = up, -1 = down, 0 = clear. The server upserts the
+// caller's vote and returns the net score over realtime.
+export async function setVote(messageId: string, value: -1 | 0 | 1) {
   try {
-    if (currentlyVoted) await api(`/api/messages/${messageId}/vote`, { method: "DELETE" });
-    else await api(`/api/messages/${messageId}/vote`, { method: "PUT" });
+    await apiNoContent(`/api/messages/${messageId}/vote`, { method: "PUT", body: { value } });
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) throw new SheshiError("UNAUTH", { cause: error, status: 401 });
     if (error instanceof ApiError && error.status === 429) throw new SheshiError("RATE_LIMITED", { cause: error, status: 429 });

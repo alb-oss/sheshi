@@ -117,7 +117,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
         <span className="text-sm text-foreground/60">{sq.chat.signInToPost}</span>
         <Link
           to="/auth"
-          className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/85 transition-colors rounded-sm"
+          className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/85 transition-colors rounded-full"
         >
           {sq.auth.signIn}
         </Link>
@@ -171,7 +171,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     >
       <div
         className={cn(
-          "bg-card border rounded-sm transition-colors",
+          "bg-card border rounded-2xl transition-all focus-within:ring-2 focus-within:ring-primary/20",
           compact
             ? "border-primary/40 focus-within:border-primary/60"
             : "border-border focus-within:border-primary/60",
@@ -283,7 +283,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
               disabled={!canSend}
               aria-label={sq.chat.send}
               className={cn(
-                "inline-flex h-9 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-sm bg-primary px-3 text-xs font-bold uppercase tracking-widest text-primary-foreground transition-colors sm:px-3",
+                "inline-flex h-9 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-4 text-xs font-bold uppercase tracking-widest text-primary-foreground transition-colors sm:px-4",
                 canSend ? "hover:bg-primary/85" : "opacity-40 cursor-not-allowed",
               )}
             >

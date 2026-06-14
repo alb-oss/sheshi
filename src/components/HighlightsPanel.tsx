@@ -176,7 +176,7 @@ export function HighlightsPanel({
                           </span>
                           <span className="inline-flex items-center gap-1 text-[10px] tabular-nums font-bold text-foreground/60">
                             <ArrowUp className="w-3 h-3" />
-                            {m.upvotes ?? 0}
+                            {m.score ?? 0}
                           </span>
                           {(m.reply_count ?? 0) > 0 && (
                             <span className="inline-flex items-center gap-1 text-[10px] tabular-nums font-bold text-foreground/60">

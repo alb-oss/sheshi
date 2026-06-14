@@ -139,8 +139,8 @@ function RoomPage({ slug }: { slug: string }) {
           prev.map((m) => (m.id === p.root_id ? { ...m, reply_count: (m.reply_count ?? 0) + 1 } : m)));
       }
     };
-    const onVote = (p: { message_id: string; upvotes: number }) =>
-      setMessages((prev) => prev.map((m) => (m.id === p.message_id ? { ...m, upvotes: p.upvotes } : m)));
+    const onVote = (p: { message_id: string; score: number }) =>
+      setMessages((prev) => prev.map((m) => (m.id === p.message_id ? { ...m, score: p.score } : m)));
     const onDeleted = (p: { id: string }) =>
       setMessages((prev) =>
         prev.map((m) => (m.id === p.id ? { ...m, deleted_at: new Date().toISOString(), body: "", image_url: null } : m)));
