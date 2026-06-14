@@ -9,6 +9,7 @@ RUN dotnet publish server/Sheshi.Api/Sheshi.Api.csproj -c Release -o /app/publis
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
+LABEL org.opencontainers.image.source="https://github.com/alb-oss/sheshi"
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 RUN apt-get update \

@@ -40,6 +40,9 @@ jobs:
           context: .
           file: Dockerfile.web
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/alb-oss/sheshi
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}
           tags: |
             ${{ env.WEB_IMAGE }}:${{ github.event.workflow_run.head_sha }}
             ${{ env.WEB_IMAGE }}:main
@@ -56,6 +59,9 @@ jobs:
           context: .
           file: server/Sheshi.Api/Dockerfile
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/alb-oss/sheshi
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}
           tags: |
             ${{ env.API_IMAGE }}:${{ github.event.workflow_run.head_sha }}
             ${{ env.API_IMAGE }}:main

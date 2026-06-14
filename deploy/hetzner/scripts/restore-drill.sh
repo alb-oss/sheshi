@@ -24,8 +24,8 @@ rm -rf "$DRILL_DIR"
 mkdir -p "$DRILL_DIR"
 
 RESTIC_PASSWORD_FILE="$ROOT/secrets/backup_encryption_key" \
-AWS_ACCESS_KEY_ID="$(cat "$ROOT/secrets/object_storage_access_key")" \
-AWS_SECRET_ACCESS_KEY="$(cat "$ROOT/secrets/object_storage_secret_key")" \
+AWS_ACCESS_KEY_ID="$(cat "$ROOT/secrets/backup_storage_access_key")" \
+AWS_SECRET_ACCESS_KEY="$(cat "$ROOT/secrets/backup_storage_secret_key")" \
 restic -r "$RESTIC_REPOSITORY" restore latest --target "$DRILL_DIR"
 
 LATEST_DUMP="$(find "$DRILL_DIR" -name 'sheshi-*.dump' | sort | tail -n 1)"

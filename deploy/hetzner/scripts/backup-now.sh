@@ -25,13 +25,13 @@ docker compose --env-file "$ENV_FILE" -f "$COMPOSE" exec -T db \
   > "$DUMP"
 
 RESTIC_PASSWORD_FILE="$ROOT/secrets/backup_encryption_key" \
-AWS_ACCESS_KEY_ID="$(cat "$ROOT/secrets/object_storage_access_key")" \
-AWS_SECRET_ACCESS_KEY="$(cat "$ROOT/secrets/object_storage_secret_key")" \
+AWS_ACCESS_KEY_ID="$(cat "$ROOT/secrets/backup_storage_access_key")" \
+AWS_SECRET_ACCESS_KEY="$(cat "$ROOT/secrets/backup_storage_secret_key")" \
 restic -r "$RESTIC_REPOSITORY" backup "$DUMP"
 
 RESTIC_PASSWORD_FILE="$ROOT/secrets/backup_encryption_key" \
-AWS_ACCESS_KEY_ID="$(cat "$ROOT/secrets/object_storage_access_key")" \
-AWS_SECRET_ACCESS_KEY="$(cat "$ROOT/secrets/object_storage_secret_key")" \
+AWS_ACCESS_KEY_ID="$(cat "$ROOT/secrets/backup_storage_access_key")" \
+AWS_SECRET_ACCESS_KEY="$(cat "$ROOT/secrets/backup_storage_secret_key")" \
 restic -r "$RESTIC_REPOSITORY" forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --prune
 
 date -Is > "$ROOT/state/last-backup-at"

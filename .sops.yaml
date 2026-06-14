@@ -2,4 +2,4 @@ creation_rules:
   - path_regex: ^deploy/hetzner/secrets/.*\.sops\.yaml$
     age:
       - age1s7x558ammztlrxzvth07rayz8wp4wclqh59nhyrvzelz4tranq7sux2qmt
-    encrypted_regex: "^(db_password|db_connection_string|jwt_signing_key|smtp_password|object_storage_access_key|object_storage_secret_key|backup_encryption_key)$"
+    encrypted_regex: "^(db_password|db_connection_string|jwt_signing_key|smtp_password|object_storage_access_key|object_storage_secret_key|backup_storage_access_key|backup_storage_secret_key|backup_encryption_key)$"

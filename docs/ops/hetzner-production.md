@@ -1,7 +1,7 @@
 # Hetzner Production Runbook
 
 Production runs on one Hetzner Debian 13 or Ubuntu LTS VM using Docker Compose and Caddy.
-Uploaded images/videos and encrypted database backups live in Hetzner Object Storage.
+Uploaded images/videos and encrypted database backups live in Cloudflare R2.
 
 ## Required Host Paths
 
@@ -16,18 +16,18 @@ Uploaded images/videos and encrypted database backups live in Hetzner Object Sto
 ## First Server Bootstrap
 
 1. Create a Debian 13 or Ubuntu LTS VM in Hetzner.
-2. Point Cloudflare DNS records `sheshi.live`, `api.sheshi.live`, and `uploads.sheshi.live` at the VM.
-3. Create a public Hetzner Object Storage bucket named `sheshi-live-uploads`; Caddy proxies
-   `uploads.sheshi.live` to `https://sheshi-live-uploads.fsn1.your-objectstorage.com`.
-4. Generate one admin SSH key and one GitHub deploy SSH key.
-5. Run `deploy/hetzner/scripts/bootstrap-server.sh` as root from a checked-out copy of the repo.
-6. Review `/opt/sheshi/env/production.env` and replace domain/provider placeholders.
-7. Copy `deploy/hetzner/secrets/production.sops.yaml` to `/opt/sheshi/sealed/production.sops.yaml`.
-8. Install the age private key at `/etc/sops/age/keys.txt` with mode `0600`.
-9. Run `/opt/sheshi/scripts/secrets-apply.sh /opt/sheshi/sealed/production.sops.yaml`.
-10. Run `/opt/sheshi/scripts/preflight.sh COMMIT_SHA`.
-11. Add GitHub environment secrets for production deploys: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PRIVATE_KEY`, `PROD_SSH_KNOWN_HOSTS`, and optionally `PROD_SSH_PORT`.
-12. Run `/opt/sheshi/scripts/deploy.sh COMMIT_SHA`.
+2. Point Cloudflare DNS records `sheshi.live` and `api.sheshi.live` at the VM.
+3. Create Cloudflare R2 buckets named `sheshi-live-uploads` and `sheshi-live-backups`.
+4. Add the R2 custom domain `uploads.sheshi.live` to the `sheshi-live-uploads` bucket.
+5. Generate one admin SSH key and one GitHub deploy SSH key.
+6. Run `deploy/hetzner/scripts/bootstrap-server.sh` as root from a checked-out copy of the repo.
+7. Review `/opt/sheshi/env/production.env` and replace domain/provider placeholders.
+8. Copy `deploy/hetzner/secrets/production.sops.yaml` to `/opt/sheshi/sealed/production.sops.yaml`.
+9. Install the age private key at `/etc/sops/age/keys.txt` with mode `0600`.
+10. Run `/opt/sheshi/scripts/secrets-apply.sh /opt/sheshi/sealed/production.sops.yaml`.
+11. Run `/opt/sheshi/scripts/preflight.sh COMMIT_SHA`.
+12. Add GitHub environment secrets for production deploys: `PROD_SSH_HOST`, `PROD_SSH_USER`, `PROD_SSH_PRIVATE_KEY`, `PROD_SSH_KNOWN_HOSTS`, and optionally `PROD_SSH_PORT`.
+13. Run `/opt/sheshi/scripts/deploy.sh COMMIT_SHA`.
 
 Bootstrap command shape:
 
@@ -78,7 +78,16 @@ Required sealed values:
 - `smtp_password`
 - `object_storage_access_key`
 - `object_storage_secret_key`
+- `backup_storage_access_key`
+- `backup_storage_secret_key`
 - `backup_encryption_key`
+
+Use separate bucket-scoped R2 API tokens:
+
+- Uploads token: Object Read & Write for `sheshi-live-uploads`.
+- Backups token: Object Read & Write for `sheshi-live-backups`.
+
+Do not reuse the uploads token for backups. The API container only receives the uploads token; backup scripts only read the backups token.
 
 ## Preflight
 
@@ -89,6 +98,10 @@ Run before the first deploy and before marking the PR ready:
 ```
 
 Preflight verifies required files, non-placeholder secrets, non-placeholder production config, free disk space, Docker Compose rendering, and Caddyfile syntax.
+
+## Automated Deploys
+
+Merging to `main` runs CI, publishes SHA-tagged web/API images to GHCR, then runs the production deploy workflow. The deploy job passes its short-lived `GITHUB_TOKEN` to the VM over SSH stdin so `/opt/sheshi/scripts/deploy.sh` can pull private-or-public GHCR images with a temporary Docker config. The script logs out and removes that Docker config before exiting, so no long-lived GHCR pull token is stored on the VM.
 
 ## Daily Operations
 

@@ -14,7 +14,7 @@ The target shape is:
 - One Hetzner Debian 13 or Ubuntu LTS VM running Docker Compose.
 - Caddy as the public reverse proxy and TLS terminator on the VM.
 - Separate containers for the TanStack web app, the .NET API, Postgres 17, backup jobs, and optional Redis.
-- Hetzner Object Storage for uploaded images and encrypted database backups.
+- Cloudflare R2 for uploaded images and encrypted database backups.
 - GitHub Actions auto-deploying `main` to production after CI passes.
 - GHCR immutable images tagged by commit SHA.
 - Runtime secrets stored on the VM as file secrets, with SOPS + age sealed secrets as the encrypted recovery/declarative copy.
@@ -27,7 +27,7 @@ The goal is not "toy self-hosting." The goal is a boring, reproducible, observab
 - Use Docker Compose, Caddy, and plain scripts rather than Coolify, Dokploy, Kubernetes, or Nomad.
 - Use full automatic deploys from `main` after CI passes.
 - Use Cloudflare in front of Hetzner.
-- Use Hetzner Object Storage for uploaded images and encrypted database backups.
+- Use Cloudflare R2 for uploaded images and encrypted database backups.
 - Keep production email with an external transactional provider. Do not self-host SMTP.
 - Store GitHub deploy secrets separately from runtime app secrets.
 - Keep runtime production secrets on the VM, mounted into containers as Docker Compose secrets, and manage the recovery copy with SOPS + age.
@@ -95,7 +95,7 @@ Hetzner Cloud VM
   - optional sheshi-redis container
   |
   v
-Hetzner Object Storage
+Cloudflare R2
   - uploaded images
   - encrypted Postgres backups
   - restore drill artifacts
@@ -107,7 +107,7 @@ The expected production domains should be explicit:
 
 - `sheshi.live` or chosen root domain: public web app.
 - `api.sheshi.live`: API and SignalR hub.
-- `uploads.sheshi.live`: uploaded images, proxied by Caddy to the public Hetzner Object Storage bucket.
+- `uploads.sheshi.live`: uploaded images, served by the Cloudflare R2 bucket custom domain.
 - Optional `status.sheshi.live`: uptime/status page later.
 
 The web app must use `VITE_API_BASE_URL=https://api.sheshi.live`.
@@ -154,8 +154,9 @@ Host layout:
     smtp_password
     object_storage_access_key
     object_storage_secret_key
+    backup_storage_access_key
+    backup_storage_secret_key
     backup_encryption_key
-    ghcr_read_token
     google_client_secret
     microsoft_client_secret
     apple_private_key
@@ -256,7 +257,7 @@ Production defaults:
 Responsibilities:
 
 - Create scheduled encrypted backups.
-- Upload backups to Hetzner Object Storage.
+- Upload backups to Cloudflare R2.
 - Verify backup freshness.
 - Support manual restore drills.
 
@@ -277,7 +278,7 @@ For a single app instance, process-local SignalR presence and rate limiting are 
 
 ## Object Storage
 
-Hetzner Object Storage should hold:
+Cloudflare R2 should hold:
 
 - Uploaded images and videos.
 - Encrypted database backups.
@@ -297,7 +298,7 @@ Browser/mobile
   -> API validates content type and size
   -> API verifies image format or video signature
   -> API strips metadata and re-encodes images
-  -> API uploads validated bytes to Hetzner Object Storage
+  -> API uploads validated bytes to Cloudflare R2
   -> API stores public object URL in Postgres
 ```
 
@@ -310,11 +311,13 @@ Storage__Provider=s3
 Storage__PublicBaseUrl=https://uploads.sheshi.live
 Storage__MaxBytes=20971520
 Storage__S3__Bucket=sheshi-live-uploads
-Storage__S3__Endpoint=https://<hetzner-object-storage-endpoint>
-Storage__S3__Region=<region>
+Storage__S3__Endpoint=https://<cloudflare-account-id>.r2.cloudflarestorage.com
+Storage__S3__Region=auto
 Storage__S3__AccessKeyFile=/run/secrets/object_storage_access_key
 Storage__S3__SecretKeyFile=/run/secrets/object_storage_secret_key
 ```
+
+Use separate bucket-scoped R2 API tokens for uploads and backups. The API receives only the uploads token; restic receives only the backup token.
 
 ## Secrets Model
 
@@ -407,7 +410,7 @@ The recovery source should contain:
 - Object storage access keys.
 - SMTP password.
 - OAuth client secrets.
-- GHCR read token if needed.
+- No long-lived GHCR read token. GitHub Actions passes its short-lived `GITHUB_TOKEN` over SSH stdin during deploy and the server removes the temporary Docker config afterward.
 - Emergency SSH instructions.
 
 The server applies sealed secrets by decrypting the SOPS file into Docker Compose secret files:
@@ -526,7 +529,7 @@ Deploy algorithm:
 ```text
 1. Acquire /opt/sheshi/state/deploy.lock with flock.
 2. Record current running image tags as previous.
-3. docker login to GHCR if needed.
+3. If a registry token was provided on stdin, docker login to GHCR with a temporary Docker config.
 4. docker compose pull api web.
 5. Run database migration job/bundle.
 6. Start updated api and web containers.
@@ -602,7 +605,7 @@ Cloudflare records:
 ```text
 sheshi.live      -> Hetzner VM IP, proxied
 api.sheshi.live  -> Hetzner VM IP, proxied
-uploads.sheshi.live -> Hetzner VM IP, Caddy proxies to sheshi-live-uploads.<region>.your-objectstorage.com
+uploads.sheshi.live -> Cloudflare R2 custom domain for the sheshi-live-uploads bucket
 ```
 
 ## Caddy
@@ -621,6 +624,7 @@ Candidate headers:
 
 ```text
 Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(), microphone=(), camera=()
@@ -707,7 +711,7 @@ For v1, a pragmatic path is:
 ```text
 pg_dump custom format
   -> compress
-  -> restic backup to Hetzner Object Storage
+  -> restic backup to Cloudflare R2
   -> check backup exit code
   -> record backup timestamp
 ```
@@ -904,7 +908,7 @@ Rejected for v1 because Vault/Infisical/1Password Connect would add another crit
 
 - Final production domain name.
 - Final Hetzner VM size.
-- Whether GHCR images should be public or private.
+- Whether GHCR images should also be made public for anonymous pulls; deploy does not depend on that.
 - Whether Caddy runs as a host service or container.
 - Whether backups use `restic` first or `pgBackRest` from the beginning.
 - Which external SMTP provider to use.
@@ -921,7 +925,7 @@ Rejected for v1 because Vault/Infisical/1Password Connect would add another crit
 - OWASP Secrets Management Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
 - SOPS docs: https://getsops.io/docs/
 - Hetzner Cloud: https://www.hetzner.com/cloud
-- Hetzner Object Storage: https://www.hetzner.com/storage/object-storage/
+- Cloudflare R2: https://developers.cloudflare.com/r2/
 - Hetzner DDoS protection: https://www.hetzner.com/unternehmen/ddos-schutz
 - Microsoft SignalR scale guidance: https://learn.microsoft.com/en-us/aspnet/core/signalr/scale
 - .NET support policy: https://dotnet.microsoft.com/en-us/platform/support/policy

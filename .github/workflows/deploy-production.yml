@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: production
@@ -32,11 +33,22 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy commit image
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/id_ed25519 \
+          if [[ ! "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid deploy SHA: $DEPLOY_SHA" >&2
+            exit 1
+          fi
+          {
+            printf '%s\n' "$GHCR_USERNAME"
+            printf '%s\n' "$GHCR_TOKEN"
+          } | ssh -i ~/.ssh/id_ed25519 \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             -p "${{ secrets.PROD_SSH_PORT || '22' }}" \
             "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
-            "/opt/sheshi/scripts/deploy.sh '${{ github.event.workflow_run.head_sha }}'"
+            "/opt/sheshi/scripts/deploy.sh '$DEPLOY_SHA'"

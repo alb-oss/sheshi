@@ -34,12 +34,45 @@ public class ProductionOpsTests
     {
         var deploy = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/scripts/deploy.sh"));
         var preflightIndex = deploy.IndexOf("\"$ROOT/scripts/preflight.sh\" \"$TAG\"", StringComparison.Ordinal);
+        var registryLoginIndex = deploy.IndexOf("\n  registry_login_from_stdin\n", StringComparison.Ordinal);
         var setTagIndex = deploy.IndexOf("set_image_tag \"$TAG\"", StringComparison.Ordinal);
 
         preflightIndex.Should().BeGreaterThan(-1);
+        registryLoginIndex.Should().BeGreaterThan(-1);
         setTagIndex.Should().BeGreaterThan(-1);
+        preflightIndex.Should().BeLessThan(registryLoginIndex);
         preflightIndex.Should().BeLessThan(setTagIndex);
         deploy.Should().Contain("SHESHI_IMAGE_TAG=\"$TAG\" docker compose --env-file \"$ENV_FILE\" -f \"$COMPOSE\" pull web api");
+    }
+
+    [Fact]
+    public void Deploy_workflow_uses_short_lived_registry_token_without_persisting_a_pull_secret()
+    {
+        var workflow = File.ReadAllText(Path.Combine(RepoRoot, ".github/workflows/deploy-production.yml"));
+        var deploy = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/scripts/deploy.sh"));
+
+        workflow.Should().Contain("packages: read");
+        workflow.Should().Contain("GHCR_TOKEN: ${{ github.token }}");
+        workflow.Should().Contain("printf '%s\\n' \"$GHCR_TOKEN\"");
+        workflow.Should().Contain("/opt/sheshi/scripts/deploy.sh '$DEPLOY_SHA'");
+
+        deploy.Should().Contain("mktemp -d");
+        deploy.Should().Contain("docker login ghcr.io");
+        deploy.Should().Contain("docker logout ghcr.io");
+        deploy.Should().Contain("rm -rf \"$DOCKER_CONFIG\"");
+    }
+
+    [Fact]
+    public void Published_images_include_repository_source_labels()
+    {
+        var publish = File.ReadAllText(Path.Combine(RepoRoot, ".github/workflows/publish-images.yml"));
+        var webDockerfile = File.ReadAllText(Path.Combine(RepoRoot, "Dockerfile.web"));
+        var apiDockerfile = File.ReadAllText(Path.Combine(RepoRoot, "server/Sheshi.Api/Dockerfile"));
+
+        publish.Should().Contain("org.opencontainers.image.source=https://github.com/alb-oss/sheshi");
+        publish.Should().Contain("org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}");
+        webDockerfile.Should().Contain("org.opencontainers.image.source=\"https://github.com/alb-oss/sheshi\"");
+        apiDockerfile.Should().Contain("org.opencontainers.image.source=\"https://github.com/alb-oss/sheshi\"");
     }
 
     [Fact]
@@ -81,6 +114,18 @@ public class ProductionOpsTests
     }
 
     [Fact]
+    public void Caddyfile_sets_baseline_security_headers()
+    {
+        var caddy = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/Caddyfile"));
+
+        caddy.Should().Contain("Strict-Transport-Security \"max-age=31536000; includeSubDomains\"");
+        caddy.Should().Contain("X-Frame-Options \"DENY\"");
+        caddy.Should().Contain("X-Content-Type-Options \"nosniff\"");
+        caddy.Should().Contain("Referrer-Policy \"strict-origin-when-cross-origin\"");
+        caddy.Should().Contain("Permissions-Policy \"geolocation=(), microphone=(), camera=()\"");
+    }
+
+    [Fact]
     public void Secrets_apply_rejects_missing_or_placeholder_values()
     {
         var apply = File.ReadAllText(Path.Combine(RepoRoot, "deploy/hetzner/scripts/secrets-apply.sh"));
@@ -101,6 +146,8 @@ public class ProductionOpsTests
         "smtp_password",
         "object_storage_access_key",
         "object_storage_secret_key",
+        "backup_storage_access_key",
+        "backup_storage_secret_key",
         "backup_encryption_key"
     ];
 }

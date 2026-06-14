@@ -34,7 +34,7 @@ The production deployment design is documented in:
 - `docs/ops/backup-restore.md`
 
 Production targets one Hetzner VM with Docker Compose and Caddy. Uploaded media
-and encrypted backups use Hetzner Object Storage.
+and encrypted backups use Cloudflare R2.
 
 ## Generated Paths
 

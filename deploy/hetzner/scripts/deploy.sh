@@ -12,6 +12,29 @@ WEB_HEALTH_URL="${SHESHI_WEB_HEALTH_URL:-https://sheshi.live}"
 
 mkdir -p "$STATE"
 
+registry_login_from_stdin() {
+  if [ -t 0 ]; then
+    return
+  fi
+
+  local username token docker_config
+  if ! IFS= read -r -t 2 username; then
+    return
+  fi
+  if ! IFS= read -r -t 2 token; then
+    return
+  fi
+  if [ -z "$username" ] || [ -z "$token" ]; then
+    return
+  fi
+
+  docker_config="$(mktemp -d)"
+  chmod 700 "$docker_config"
+  export DOCKER_CONFIG="$docker_config"
+  trap 'docker logout ghcr.io >/dev/null 2>&1 || true; rm -rf "$DOCKER_CONFIG"' EXIT
+  printf '%s\n' "$token" | docker login ghcr.io -u "$username" --password-stdin >/dev/null
+}
+
 set_image_tag() {
   local tag="$1"
 
@@ -29,6 +52,7 @@ set_image_tag() {
   printf '%s\n' "$PREVIOUS_TAG" > "$STATE/previous-image-tag"
 
   "$ROOT/scripts/preflight.sh" "$TAG"
+  registry_login_from_stdin
 
   SHESHI_IMAGE_TAG="$TAG" docker compose --env-file "$ENV_FILE" -f "$COMPOSE" pull web api
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE" up -d db

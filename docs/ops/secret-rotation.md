@@ -21,6 +21,8 @@ Required files:
 - `smtp_password`
 - `object_storage_access_key`
 - `object_storage_secret_key`
+- `backup_storage_access_key`
+- `backup_storage_secret_key`
 - `backup_encryption_key`
 
 ## GitHub Environment Secrets
@@ -35,6 +37,10 @@ The `production` environment stores deploy-only SSH secrets:
 
 Do not store application runtime secrets in GitHub Actions unless they are only
 needed by CI. Runtime secrets should stay on the VM and in the recovery copy.
+
+GitHub Actions does not need a long-lived GHCR pull secret. Production deploys
+use the workflow `GITHUB_TOKEN` with `packages: read`, pass it over SSH stdin,
+and remove the temporary Docker config after the image pull.
 
 ## SOPS Recovery Copy
 

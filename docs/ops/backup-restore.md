@@ -8,7 +8,7 @@ Run this daily from the production VM:
 /opt/sheshi/scripts/backup-now.sh
 ```
 
-The script dumps Postgres, sends the encrypted backup to Hetzner Object Storage
+The script dumps Postgres, sends the encrypted backup to Cloudflare R2
 with restic, prunes old snapshots, and writes `/opt/sheshi/state/last-backup-at`.
 
 ## Retention
@@ -32,7 +32,7 @@ checks that the `Rooms` table is queryable.
 
 1. Stop web and API containers.
 2. Keep Postgres stopped until the restore target is selected.
-3. Restore the selected encrypted backup from Hetzner Object Storage.
+3. Restore the selected encrypted backup from Cloudflare R2.
 4. Restore into Postgres with `pg_restore`.
 5. Start API.
 6. Check `/health/ready`.
@@ -43,8 +43,8 @@ checks that the `Rooms` table is queryable.
 
 ```bash
 RESTIC_PASSWORD_FILE=/opt/sheshi/secrets/backup_encryption_key \
-AWS_ACCESS_KEY_ID="$(cat /opt/sheshi/secrets/object_storage_access_key)" \
-AWS_SECRET_ACCESS_KEY="$(cat /opt/sheshi/secrets/object_storage_secret_key)" \
+AWS_ACCESS_KEY_ID="$(cat /opt/sheshi/secrets/backup_storage_access_key)" \
+AWS_SECRET_ACCESS_KEY="$(cat /opt/sheshi/secrets/backup_storage_secret_key)" \
 restic -r "$(sed -n 's/^RESTIC_REPOSITORY=//p' /opt/sheshi/env/production.env | tail -n 1)" snapshots
 ```
 

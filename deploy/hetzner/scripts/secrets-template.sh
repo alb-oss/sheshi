@@ -36,8 +36,10 @@ secrets:
   db_connection_string: "Host=db;Port=5432;Database=sheshi;Username=sheshi;Password=$db_password"
   jwt_signing_key: "$jwt_signing_key"
   smtp_password: "CHANGE_ME_SMTP_PASSWORD"
-  object_storage_access_key: "CHANGE_ME_HETZNER_OBJECT_STORAGE_ACCESS_KEY"
-  object_storage_secret_key: "CHANGE_ME_HETZNER_OBJECT_STORAGE_SECRET_KEY"
+  object_storage_access_key: "CHANGE_ME_R2_UPLOADS_ACCESS_KEY"
+  object_storage_secret_key: "CHANGE_ME_R2_UPLOADS_SECRET_KEY"
+  backup_storage_access_key: "CHANGE_ME_R2_BACKUPS_ACCESS_KEY"
+  backup_storage_secret_key: "CHANGE_ME_R2_BACKUPS_SECRET_KEY"
   backup_encryption_key: "$backup_encryption_key"
 YAML
 

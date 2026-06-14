@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make Sheshi production-ready for a single Hetzner VM with Docker Compose, Caddy, Cloudflare, Hetzner Object Storage, encrypted backups, and fully automatic `main` deployments from GitHub Actions.
+**Goal:** Make Sheshi production-ready for a single Hetzner VM with Docker Compose, Caddy, Cloudflare, Cloudflare R2, encrypted backups, and fully automatic `main` deployments from GitHub Actions.
 
-**Architecture:** Keep compute on one Hetzner VM, but move uploaded media and encrypted backups to Hetzner Object Storage. Build immutable web/API images in GitHub Actions, publish them to GHCR, and deploy by SSH to a narrow server-side deploy script with health checks and rollback.
+**Architecture:** Keep compute on one Hetzner VM, but move uploaded media and encrypted backups to Cloudflare R2. Build immutable web/API images in GitHub Actions, publish them to GHCR, and deploy by SSH to a narrow server-side deploy script with health checks and rollback.
 
-**Tech Stack:** TanStack Start, React, Node 22, ASP.NET Core .NET 10, EF Core, PostgreSQL 17, SignalR, Docker Compose, Caddy, GHCR, GitHub Actions, Hetzner Cloud, Hetzner Object Storage, restic, S3-compatible storage.
+**Tech Stack:** TanStack Start, React, Node 22, ASP.NET Core .NET 10, EF Core, PostgreSQL 17, SignalR, Docker Compose, Caddy, GHCR, GitHub Actions, Hetzner Cloud, Cloudflare R2, restic, S3-compatible storage.
 
 ---
 
@@ -1271,15 +1271,15 @@ Storage__Provider=s3
 Storage__PublicBaseUrl=https://uploads.sheshi.live
 Storage__MaxBytes=20971520
 Storage__S3__Bucket=sheshi-live-uploads
-Storage__S3__Endpoint=https://fsn1.your-objectstorage.com
-Storage__S3__Region=fsn1
+Storage__S3__Endpoint=https://CHANGE_ME_R2_ACCOUNT_ID.r2.cloudflarestorage.com
+Storage__S3__Region=auto
 Storage__S3__ForcePathStyle=true
 Smtp__Host=smtp.postmarkapp.com
 Smtp__Port=587
 Smtp__FromEmail=no-reply@sheshi.live
 Smtp__Username=postmark-server-token
 Smtp__EnableSsl=true
-RESTIC_REPOSITORY=s3:https://fsn1.your-objectstorage.com/sheshi-live-backups
+RESTIC_REPOSITORY=s3:https://CHANGE_ME_R2_ACCOUNT_ID.r2.cloudflarestorage.com/sheshi-live-backups
 Authentication__Google__ClientId=
 Authentication__Microsoft__ClientId=
 Authentication__Apple__ClientId=
@@ -1667,6 +1667,9 @@ jobs:
           context: .
           file: Dockerfile.web
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/alb-oss/sheshi
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}
           tags: |
             ghcr.io/alb-oss/sheshi-web:${{ github.event.workflow_run.head_sha }}
             ghcr.io/alb-oss/sheshi-web:main
@@ -1676,6 +1679,9 @@ jobs:
           context: .
           file: server/Sheshi.Api/Dockerfile
           push: true
+          labels: |
+            org.opencontainers.image.source=https://github.com/alb-oss/sheshi
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}
           tags: |
             ghcr.io/alb-oss/sheshi-api:${{ github.event.workflow_run.head_sha }}
             ghcr.io/alb-oss/sheshi-api:main
@@ -1696,6 +1702,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: production
@@ -1720,14 +1727,25 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy commit image
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/id_ed25519 \
+          if [[ ! "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid deploy SHA: $DEPLOY_SHA" >&2
+            exit 1
+          fi
+          {
+            printf '%s\n' "$GHCR_USERNAME"
+            printf '%s\n' "$GHCR_TOKEN"
+          } | ssh -i ~/.ssh/id_ed25519 \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             -p "${{ secrets.PROD_SSH_PORT || '22' }}" \
             "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
-            "/opt/sheshi/scripts/deploy.sh '${{ github.event.workflow_run.head_sha }}'"
+            "/opt/sheshi/scripts/deploy.sh '$DEPLOY_SHA'"
 ```
 
 - [ ] **Step 4: Validate workflow syntax**
@@ -1859,7 +1877,7 @@ Run `/opt/sheshi/scripts/restore-drill.sh` monthly.
 
 1. Stop web and API containers.
 2. Keep Postgres stopped until the restore target is selected.
-3. Restore the selected encrypted backup from Hetzner Object Storage.
+3. Restore the selected encrypted backup from Cloudflare R2.
 4. Restore into Postgres.
 5. Start API.
 6. Check `/health/ready`.

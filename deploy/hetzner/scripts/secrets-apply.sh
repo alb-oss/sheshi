@@ -48,6 +48,8 @@ required = [
     "smtp_password",
     "object_storage_access_key",
     "object_storage_secret_key",
+    "backup_storage_access_key",
+    "backup_storage_secret_key",
     "backup_encryption_key",
 ]
 placeholder = re.compile(r"(CHANGE_ME|REPLACE_ME|PLACEHOLDER|TEST-SECRET)", re.IGNORECASE)
