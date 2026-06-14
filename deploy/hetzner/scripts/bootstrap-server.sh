@@ -111,14 +111,17 @@ EOF
 }
 
 install_app_files() {
-  install -d -o root -g "$GROUP" -m 0750 "$ROOT" "$ROOT/compose" "$ROOT/env" "$ROOT/scripts" "$ROOT/secrets" "$ROOT/sealed" "$ROOT/state"
+  install -d -o root -g "$GROUP" -m 0750 "$ROOT" "$ROOT/compose" "$ROOT/scripts" "$ROOT/secrets" "$ROOT/sealed"
+  install -d -o root -g "$GROUP" -m 0770 "$ROOT/env" "$ROOT/state"
   install -o root -g "$GROUP" -m 0640 "$REPO_ROOT/deploy/hetzner/docker-compose.prod.yml" "$ROOT/compose/docker-compose.prod.yml"
   install -o root -g "$GROUP" -m 0640 "$REPO_ROOT/deploy/hetzner/Caddyfile" "$ROOT/compose/Caddyfile"
   install -o root -g "$GROUP" -m 0750 "$REPO_ROOT"/deploy/hetzner/scripts/*.sh "$ROOT/scripts/"
 
   if [ ! -f "$ROOT/env/production.env" ]; then
-    install -o root -g "$GROUP" -m 0640 "$REPO_ROOT/deploy/hetzner/production.env.example" "$ROOT/env/production.env"
+    install -o root -g "$GROUP" -m 0660 "$REPO_ROOT/deploy/hetzner/production.env.example" "$ROOT/env/production.env"
   fi
+  chown root:"$GROUP" "$ROOT/env/production.env"
+  chmod 0660 "$ROOT/env/production.env"
 }
 
 configure_docker() {
