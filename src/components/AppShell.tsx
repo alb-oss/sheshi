@@ -4,7 +4,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { getStoredTheme, setTheme, type Theme } from "@/lib/theme";
 import { sq } from "@/i18n/sq";
 import { signOutLocal, useAuth } from "@/hooks/use-auth";
-import { listRooms, type Room } from "@/lib/sheshi";
+import { type Room } from "@/lib/sheshi";
+import { useRooms, roomsKey } from "@/hooks/use-rooms";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { apiJson, apiNoContent } from "@/lib/api-client";
 import { getStoredTokens } from "@/lib/token-store";
@@ -12,7 +14,8 @@ import { ensureRealtimeStarted } from "@/lib/realtime";
 import { canModerate } from "@/lib/roles";
 
 export function AppShell({ children, right }: { children: ReactNode; right?: ReactNode }) {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const { data: rooms = [] } = useRooms();
+  const queryClient = useQueryClient();
   const [presence, setPresence] = useState<Record<string, number>>({});
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -32,12 +35,6 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
   }
 
   useEffect(() => {
-    listRooms()
-      .then(setRooms)
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
     apiJson<Record<string, number>>("/api/rooms/presence")
       .then(setPresence)
       .catch(() => {});
@@ -47,7 +44,9 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
     };
     // A new public room appears in every sidebar live (deduped against optimistic inserts).
     const onRoomCreated = (room: Room) => {
-      setRooms((current) => (current.some((r) => r.id === room.id) ? current : [...current, room]));
+      queryClient.setQueryData<Room[]>(roomsKey, (current = []) =>
+        current.some((r) => r.id === room.id) ? current : [...current, room],
+      );
     };
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise

@@ -9,12 +9,11 @@ import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
 import {
   getThread,
-  listRooms,
   type MessageRow,
   type ReplyNode,
-  type Room,
   type ThreadData,
 } from "@/lib/sheshi";
+import { useRooms } from "@/hooks/use-rooms";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
 
 export const Route = createFileRoute("/tema/$messageId")({
@@ -60,7 +59,7 @@ function ThreadPage() {
   const { messageId } = Route.useParams();
   const [thread, setThread] = useState<ThreadData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const { data: rooms = [] } = useRooms();
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -126,10 +125,6 @@ function ThreadPage() {
         if (isCurrentRequest()) setLoading(false);
       });
   };
-
-  useEffect(() => {
-    listRooms().then(setRooms).catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (!root || typeof window === "undefined") return;

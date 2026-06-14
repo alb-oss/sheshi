@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AppShell } from "@/components/AppShell";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { useAuth } from "@/hooks/use-auth";
-import { listRooms, type Room } from "@/lib/sheshi";
+import { useRooms } from "@/hooks/use-rooms";
 
 export const Route = createFileRoute("/fokus")({
   head: () => ({
@@ -21,11 +21,7 @@ export const Route = createFileRoute("/fokus")({
 function FokusPage() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const [rooms, setRooms] = useState<Room[]>([]);
-
-  useEffect(() => {
-    listRooms().then(setRooms);
-  }, []);
+  const { data: rooms = [] } = useRooms();
 
   const roomLookup = useMemo(() => new Map(rooms.map((r) => [r.id, r.slug])), [rooms]);
 
