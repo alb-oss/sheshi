@@ -1,0 +1,89 @@
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+      - api
+
+  web:
+    image: ghcr.io/alb-oss/sheshi-web:${SHESHI_IMAGE_TAG}
+    restart: unless-stopped
+    env_file:
+      - ${SHESHI_ROOT:-/opt/sheshi}/env/production.env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+
+  api:
+    image: ghcr.io/alb-oss/sheshi-api:${SHESHI_IMAGE_TAG}
+    restart: unless-stopped
+    env_file:
+      - ${SHESHI_ROOT:-/opt/sheshi}/env/production.env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      Proxy__TrustForwardedHeaders: "true"
+      ConnectionStrings__DefaultFile: /run/secrets/db_connection_string
+      Jwt__SigningKeyFile: /run/secrets/jwt_signing_key
+      Smtp__PasswordFile: /run/secrets/smtp_password
+      Storage__S3__AccessKeyFile: /run/secrets/object_storage_access_key
+      Storage__S3__SecretKeyFile: /run/secrets/object_storage_secret_key
+    secrets:
+      - db_connection_string
+      - jwt_signing_key
+      - smtp_password
+      - object_storage_access_key
+      - object_storage_secret_key
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sheshi
+      POSTGRES_USER: sheshi
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sheshi -d sheshi"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+secrets:
+  db_password:
+    file: ${SHESHI_ROOT:-/opt/sheshi}/secrets/db_password
+  db_connection_string:
+    file: ${SHESHI_ROOT:-/opt/sheshi}/secrets/db_connection_string
+  jwt_signing_key:
+    file: ${SHESHI_ROOT:-/opt/sheshi}/secrets/jwt_signing_key
+  smtp_password:
+    file: ${SHESHI_ROOT:-/opt/sheshi}/secrets/smtp_password
+  object_storage_access_key:
+    file: ${SHESHI_ROOT:-/opt/sheshi}/secrets/object_storage_access_key
+  object_storage_secret_key:
+    file: ${SHESHI_ROOT:-/opt/sheshi}/secrets/object_storage_secret_key
+
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:
