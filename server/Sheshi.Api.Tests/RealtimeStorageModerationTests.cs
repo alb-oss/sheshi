@@ -254,6 +254,46 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         futureModReportsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    // Regression: banning a reported author must surface on their open reports so the moderation
+    // UI can reflect the block (previously the report DTO carried no banned flag, so the card
+    // looked unchanged after a ban).
+    [Fact]
+    public async Task Open_report_reflects_author_banned_status_after_ban()
+    {
+        var client = factory.CreateClient();
+        var author = await RegisterAsync(client, "banauthor");
+        var reporter = await RegisterAsync(client, "banreporter");
+        var moderator = await RegisterAsync(client, "banmod");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        await WithServicesAsync(async sp =>
+        {
+            var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
+            await userManager.AddToRoleAsync((await userManager.FindByEmailAsync(moderator.Email))!, Roles.Moderator);
+        });
+        moderator = await LoginAsync(client, moderator.Email);
+
+        UseBearer(client, author.AccessToken);
+        var postResponse = await client.PostAsJsonAsync("/api/messages", new { room_id = room.Id, body = "Needs moderation" });
+        var message = await postResponse.Content.ReadFromJsonAsync<MessageDto>();
+        message.Should().NotBeNull();
+
+        UseBearer(client, reporter.AccessToken);
+        await ReportAsync(client, message!.Id, "spam");
+
+        UseBearer(client, moderator.AccessToken);
+        var before = await client.GetFromJsonAsync<ModReportDto[]>("/api/mod/reports?status=open");
+        before.Should().NotBeNull();
+        before!.Single(r => r.MessageId == message.Id).MessageAuthorBanned.Should().BeFalse();
+
+        var banResponse = await client.PostAsync($"/api/mod/users/{author.User.Id}/ban", content: null);
+        banResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var after = await client.GetFromJsonAsync<ModReportDto[]>("/api/mod/reports?status=open");
+        after.Should().NotBeNull();
+        after!.Single(r => r.MessageId == message.Id).MessageAuthorBanned.Should().BeTrue();
+    }
+
     [Fact]
     public async Task Moderation_reports_can_be_filtered_by_reason()
     {
@@ -574,7 +614,8 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         [property: JsonPropertyName("age_hours")] double AgeHours,
         [property: JsonPropertyName("author_report_count")] int AuthorReportCount,
         [property: JsonPropertyName("author_open_report_count")] int AuthorOpenReportCount,
-        [property: JsonPropertyName("author_open_flag_count")] int AuthorOpenFlagCount);
+        [property: JsonPropertyName("author_open_flag_count")] int AuthorOpenFlagCount,
+        [property: JsonPropertyName("message_author_banned")] bool MessageAuthorBanned);
 
     private sealed record ModActionDto(
         [property: JsonPropertyName("id")] Guid Id,

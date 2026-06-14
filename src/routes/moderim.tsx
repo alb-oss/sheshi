@@ -37,6 +37,7 @@ type ModReport = {
   author_open_flag_count: number;
   author: ModActor | null;
   reporter: ModActor | null;
+  message_author_banned: boolean;
 };
 
 type ModActor = { id: string; username: string | null; display_name: string | null };
@@ -78,6 +79,7 @@ type ModFlag = {
   message_deleted: boolean;
   room_slug: string;
   author: ModActor | null;
+  author_banned: boolean;
 };
 
 type ModerationMetrics = {
@@ -283,12 +285,14 @@ function EnforcementActions({
   messageId,
   authorId,
   deleted,
+  authorBanned,
   onDelete,
   onBan,
 }: {
   messageId: string;
   authorId: string;
   deleted?: boolean;
+  authorBanned?: boolean;
   onDelete: (id: string) => void;
   onBan: (id: string) => void;
 }) {
@@ -312,13 +316,19 @@ function EnforcementActions({
           <Trash2 className="h-3.5 w-3.5" /> Fshij mesazhin
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => onBan(authorId)}
-        className={cn(btn, "border border-border text-foreground/70 hover:border-primary/50 hover:bg-primary/10 hover:text-primary")}
-      >
-        <UserX className="h-3.5 w-3.5" /> Blloko autorin
-      </button>
+      {authorBanned ? (
+        <span className={cn(btn, "border border-primary/40 bg-primary/10 text-primary")}>
+          <UserX className="h-3.5 w-3.5" /> Autori i bllokuar
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onBan(authorId)}
+          className={cn(btn, "border border-border text-foreground/70 hover:border-primary/50 hover:bg-primary/10 hover:text-primary")}
+        >
+          <UserX className="h-3.5 w-3.5" /> Blloko autorin
+        </button>
+      )}
     </div>
   );
 }
@@ -443,6 +453,14 @@ function Chip({ children }: { children: ReactNode }) {
   return (
     <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-foreground/55">
       {children}
+    </span>
+  );
+}
+
+function BannedBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+      <UserX className="h-3 w-3" /> Autor i bllokuar
     </span>
   );
 }
@@ -576,6 +594,7 @@ function FlagsPanel() {
               <span className="text-xs font-bold uppercase tracking-widest text-primary">{flag.rule_key}</span>
               <SeverityChip severity={flag.severity} />
               <Chip>#{flag.room_slug}</Chip>
+              {flag.author_banned ? <BannedBadge /> : null}
               <span className="text-xs text-foreground/45">{flag.evidence}</span>
             </div>
             <p className={cn("mt-2 whitespace-pre-wrap break-words text-sm", flag.message_deleted ? "italic text-foreground/40" : "text-foreground/90")}>
@@ -587,6 +606,7 @@ function FlagsPanel() {
                 messageId={flag.message_id}
                 authorId={flag.author_id}
                 deleted={flag.message_deleted}
+                authorBanned={flag.author_banned}
                 onDelete={deleteMessage}
                 onBan={banAuthor}
               />
@@ -671,6 +691,7 @@ function ReportsPanel() {
               <span className="text-xs font-bold uppercase tracking-widest text-primary">{report.reason}</span>
               <SeverityChip severity={report.severity} />
               <Chip>#{report.room_slug}</Chip>
+              {report.message_author_banned ? <BannedBadge /> : null}
               <span className="text-xs text-foreground/45">{formatAge(report.age_hours)}</span>
             </div>
             <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground/90">{report.message_body}</p>
@@ -687,6 +708,7 @@ function ReportsPanel() {
               <EnforcementActions
                 messageId={report.message_id}
                 authorId={report.message_author_id}
+                authorBanned={report.message_author_banned}
                 onDelete={deleteMessage}
                 onBan={banAuthor}
               />
