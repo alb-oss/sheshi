@@ -80,7 +80,14 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
             alt="Sheshi"
             width={28}
             height={28}
-            className="w-7 h-7 rounded-lg group-hover:scale-110 transition-transform"
+            className="block dark:hidden w-7 h-7 rounded-lg group-hover:scale-110 transition-transform"
+          />
+          <img
+            src="/sheshi-icon-dark.png"
+            alt="Sheshi"
+            width={28}
+            height={28}
+            className="hidden dark:block w-7 h-7 rounded-lg group-hover:scale-110 transition-transform"
           />
           <div className="flex flex-col leading-none">
             <span className="font-display font-bold tracking-tighter text-lg">SHESHI</span>
