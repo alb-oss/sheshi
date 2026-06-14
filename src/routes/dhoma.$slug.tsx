@@ -8,6 +8,7 @@ import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
 import { getRoomBySlug, listMessages, type MessageRow, type Room } from "@/lib/sheshi";
 import { useRooms } from "@/hooks/use-rooms";
+import { MessageListSkeleton } from "@/components/Skeletons";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
 
 export const Route = createFileRoute("/dhoma/$slug")({
@@ -266,9 +267,7 @@ function RoomPage({ slug }: { slug: string }) {
         <div className="relative flex-1 min-h-0">
           <div ref={scrollRef} onScroll={onScroll} className="absolute inset-0 overflow-y-auto no-scrollbar">
             {loading ? (
-              <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
-                {sq.chat.loading}
-              </div>
+              <MessageListSkeleton compact />
             ) : messages.length === 0 ? (
               <div className="p-10 text-center">
                 <div className="text-xs uppercase tracking-widest font-bold text-foreground/40 mb-2">

@@ -14,6 +14,7 @@ import {
   type ThreadData,
 } from "@/lib/sheshi";
 import { useRooms } from "@/hooks/use-rooms";
+import { ThreadSkeleton } from "@/components/Skeletons";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
 
 export const Route = createFileRoute("/tema/$messageId")({
@@ -224,9 +225,7 @@ function ThreadPage() {
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
           {loading ? (
-            <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
-              {sq.chat.loading}
-            </div>
+            <ThreadSkeleton />
           ) : !root ? (
             <div className="p-10 text-center">
               <div className="text-xs uppercase tracking-widest font-bold text-foreground/40 mb-2">

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Bookmark } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
+import { MessageListSkeleton } from "@/components/Skeletons";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
 import { getMessage, type MessageRow } from "@/lib/sheshi";
@@ -55,7 +56,9 @@ function SavedPage() {
         <h1 className="font-display text-2xl font-bold tracking-tight">{sq.nav.saved}</h1>
 
         {loading ? (
-          <p className="mt-6 text-sm text-muted-foreground">{sq.chat.loading}</p>
+          <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card/30">
+            <MessageListSkeleton count={5} />
+          </div>
         ) : posts.length === 0 ? (
           <div className="mt-6 flex flex-col items-center gap-3 rounded-2xl border border-border bg-card/40 p-10 text-center">
             <Bookmark className="h-8 w-8 text-foreground/30" aria-hidden />

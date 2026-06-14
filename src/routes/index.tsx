@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
 import { canAdmin } from "@/lib/roles";
+import { RoomListSkeleton } from "@/components/Skeletons";
 import { apiJson, ApiError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { ensureRealtimeStarted } from "@/lib/realtime";
@@ -159,9 +160,7 @@ function HomePage() {
 
         <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 sm:px-6">
           {loading ? (
-            <div className="text-xs uppercase tracking-widest font-bold text-foreground/40">
-              {sq.chat.loading}
-            </div>
+            <RoomListSkeleton />
           ) : sortedRooms.length === 0 ? (
             <div className="py-16 text-center">
               <div className="text-xs uppercase tracking-widest font-bold text-foreground/40">
