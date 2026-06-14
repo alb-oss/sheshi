@@ -38,6 +38,7 @@ export const sq = {
     unsave: "Hiq nga të ruajturat",
     hideReplies: "Mbyll përgjigjet",
     showReplies: "Shfaq përgjigjet",
+    continueThread: "Vazhdo bisedën",
     replies: (n: number) => (n === 1 ? "1 përgjigje" : `${n} përgjigje`),
     upvote: "Mbështet",
     report: "Raporto",
