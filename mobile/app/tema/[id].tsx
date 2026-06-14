@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -15,6 +14,7 @@ import { PostCard } from "@/components/PostCard";
 import { Composer } from "@/components/Composer";
 import { AuthButton } from "@/components/AuthButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FeedSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/useAuth";
 import { type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
@@ -61,9 +61,9 @@ export default function Thread() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={styles.flex}>
         <Stack.Screen options={{ title: "Tema", headerRight: () => headerActions }} />
-        <ActivityIndicator color={theme.primary} />
+        <FeedSkeleton />
       </View>
     );
   }

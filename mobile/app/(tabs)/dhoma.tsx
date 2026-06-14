@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listRooms } from "@/api";
 import { PressableScale } from "@/components/PressableScale";
+import { RoomsSkeleton } from "@/components/Skeleton";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { Room } from "@/types";
@@ -28,8 +30,8 @@ export default function Dhoma() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={theme.primary} />
+      <View style={styles.flex}>
+        <RoomsSkeleton />
       </View>
     );
   }
@@ -54,7 +56,7 @@ export default function Dhoma() {
               </Text>
             ) : null}
           </View>
-          <Text style={styles.chevron}>›</Text>
+          <Ionicons name="chevron-forward" size={20} color={theme.textFaint} />
         </PressableScale>
       )}
     />
@@ -64,7 +66,6 @@ export default function Dhoma() {
 function makeStyles(t: Palette) {
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: t.bg },
-    center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: t.bg },
     card: {
       flexDirection: "row",
       alignItems: "center",
@@ -87,6 +88,5 @@ function makeStyles(t: Palette) {
     body: { flex: 1 },
     name: { color: t.text, fontWeight: "800", fontSize: 16 },
     desc: { color: t.textMuted, fontSize: 13, marginTop: 2 },
-    chevron: { color: t.textFaint, fontSize: 22, fontWeight: "700" },
   });
 }

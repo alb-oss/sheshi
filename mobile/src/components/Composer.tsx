@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { postMessage } from "@/api";
+import { PressableScale } from "@/components/PressableScale";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
@@ -32,6 +35,7 @@ export function Composer({
     setBusy(true);
     try {
       const m = await postMessage({ room_id: roomId, body: body.trim(), parent_id: parentId ?? null });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       setBody("");
       onPosted?.(m);
     } catch {
@@ -64,9 +68,13 @@ export function Composer({
           style={[styles.input, focused && styles.inputFocused]}
           multiline
         />
-        <Pressable onPress={send} disabled={!canSend} style={[styles.send, !canSend && styles.sendOff]}>
-          {busy ? <ActivityIndicator color={theme.onPrimary} /> : <Text style={styles.sendText}>↑</Text>}
-        </Pressable>
+        <PressableScale onPress={send} disabled={!canSend} style={[styles.send, !canSend && styles.sendOff]}>
+          {busy ? (
+            <ActivityIndicator color={theme.onPrimary} />
+          ) : (
+            <Ionicons name="arrow-up" size={22} color={canSend ? theme.onPrimary : theme.textFaint} />
+          )}
+        </PressableScale>
       </View>
     </View>
   );
@@ -119,6 +127,5 @@ function makeStyles(t: Palette) {
       justifyContent: "center",
     },
     sendOff: { backgroundColor: t.card2 },
-    sendText: { color: t.onPrimary, fontSize: 22, fontWeight: "900", marginTop: -2 },
   });
 }

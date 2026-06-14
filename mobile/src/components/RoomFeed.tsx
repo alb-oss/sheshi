@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { getRoomBySlug, listMessages } from "@/api";
 import { PostCard } from "@/components/PostCard";
 import { Composer } from "@/components/Composer";
+import { FeedSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/useAuth";
 import { useKeyboardVisible } from "@/useKeyboardVisible";
 import { type Palette } from "@/theme";
@@ -92,9 +93,7 @@ export function RoomFeed({ slug, dockOffset = 0 }: { slug: string; dockOffset?: 
       keyboardVerticalOffset={Platform.OS === "ios" ? 96 : 0}
     >
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={theme.primary} />
-        </View>
+        <FeedSkeleton />
       ) : (
         <FlatList
           data={messages}
@@ -133,7 +132,6 @@ export function RoomFeed({ slug, dockOffset = 0 }: { slug: string; dockOffset?: 
 function makeStyles(t: Palette) {
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: t.bg },
-    center: { flex: 1, alignItems: "center", justifyContent: "center" },
     sep: { height: StyleSheet.hairlineWidth, backgroundColor: t.border, marginLeft: 62 },
     signInBar: {
       borderTopWidth: StyleSheet.hairlineWidth,

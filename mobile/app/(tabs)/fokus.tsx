@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listHighlights } from "@/api";
+import { PressableScale } from "@/components/PressableScale";
+import { FeedSkeleton } from "@/components/Skeleton";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
@@ -37,19 +40,17 @@ export default function Fokus() {
     <View style={styles.flex}>
       <View style={styles.segment}>
         {MODES.map((m) => (
-          <Pressable
+          <PressableScale
             key={m.key}
             onPress={() => setMode(m.key)}
             style={[styles.segBtn, mode === m.key && styles.segActive]}
           >
             <Text style={[styles.segText, mode === m.key && styles.segTextActive]}>{m.label}</Text>
-          </Pressable>
+          </PressableScale>
         ))}
       </View>
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={theme.primary} />
-        </View>
+        <FeedSkeleton />
       ) : (
         <FlatList
           data={items}
@@ -70,8 +71,14 @@ export default function Fokus() {
                   {item.body}
                 </Text>
                 <View style={styles.meta}>
-                  <Text style={styles.metaStrong}>▲ {item.score ?? 0}</Text>
-                  <Text style={styles.metaMuted}>💬 {item.reply_count ?? 0}</Text>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="caret-up" size={14} color={theme.primary} />
+                    <Text style={styles.metaStrong}>{item.score ?? 0}</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="chatbubble-outline" size={13} color={theme.textMuted} />
+                    <Text style={styles.metaMuted}>{item.reply_count ?? 0}</Text>
+                  </View>
                 </View>
               </View>
             </Pressable>
@@ -86,7 +93,6 @@ export default function Fokus() {
 function makeStyles(t: Palette) {
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: t.bg },
-    center: { flex: 1, alignItems: "center", justifyContent: "center" },
     empty: { color: t.textMuted, textAlign: "center", marginTop: 40 },
     segment: { flexDirection: "row", gap: 6, padding: 12 },
     segBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: t.card },
@@ -99,6 +105,7 @@ function makeStyles(t: Palette) {
     rowBody: { flex: 1, gap: 8 },
     body: { color: t.text, fontSize: 15, lineHeight: 21 },
     meta: { flexDirection: "row", gap: 14 },
+    metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
     metaStrong: { color: t.primary, fontWeight: "800", fontSize: 13 },
     metaMuted: { color: t.textMuted, fontWeight: "700", fontSize: 13 },
     sep: { height: StyleSheet.hairlineWidth, backgroundColor: t.border, marginLeft: 54 },
