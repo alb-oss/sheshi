@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
 import { SheshiError, submitReport, type ReportReason } from "@/lib/sheshi";
+import { ApiError } from "@/lib/api-client";
 import { markReported } from "@/lib/reported";
 import { toast } from "sonner";
 
@@ -40,6 +41,14 @@ export function ReportDialog({ open, onOpenChange, messageId }: Props) {
       setNote("");
       setReason("spam");
     } catch (error) {
+      // Server says you've already reported this one (e.g. localStorage was cleared) — treat it as
+      // done, not an error.
+      if (error instanceof ApiError && error.status === 409) {
+        markReported(messageId);
+        toast.success(sq.report.submitted);
+        onOpenChange(false);
+        return;
+      }
       toast.error(
         error instanceof SheshiError && error.code === "UNAUTH"
           ? sq.errors.auth

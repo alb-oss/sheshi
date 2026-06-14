@@ -20,6 +20,15 @@ import { isReported, onReportedChanged } from "@/lib/reported";
 import { VoteControl } from "./VoteControl";
 import { ReportDialog } from "./ReportDialog";
 import { ShareDialog, type ShareTarget } from "./ShareDialog";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import { toast } from "sonner";
 
 interface Props {
@@ -56,6 +65,7 @@ export function MessageCard({
   const [saved, setSaved] = useState(false);
   const [reported, setReported] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const isDeleted = !!message.deleted_at;
   const isOwn = currentUserId && currentUserId === message.author_id;
 
@@ -126,8 +136,8 @@ export function MessageCard({
     setShareOpen(true);
   }
 
-  async function onDelete() {
-    if (!confirm("Fshij këtë mesazh?")) return;
+  async function confirmDelete() {
+    setConfirmDeleteOpen(false);
     try {
       await softDeleteMessage(message.id);
       onChanged?.();
@@ -324,7 +334,7 @@ export function MessageCard({
             {isOwn && (
               <button
                 type="button"
-                onClick={onDelete}
+                onClick={() => setConfirmDeleteOpen(true)}
                 aria-label={sq.chat.delete}
                 title={sq.chat.delete}
                 className={cn(actionBtn, "px-2 hover:text-primary")}
@@ -337,6 +347,26 @@ export function MessageCard({
       </div>
 
       <ReportDialog open={reportOpen} onOpenChange={setReportOpen} messageId={message.id} />
+
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent
+          className="sm:max-w-sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <DialogHeader>
+            <DialogTitle>Fshij mesazhin?</DialogTitle>
+            <DialogDescription>Ky veprim nuk mund të kthehet.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)}>
+              {sq.chat.cancel}
+            </Button>
+            <Button variant="destructive" onClick={() => void confirmDelete()}>
+              {sq.chat.delete}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {shareOpen && (
         <ShareDialog open={shareOpen} onOpenChange={setShareOpen} target={buildShareTarget()} />
       )}
