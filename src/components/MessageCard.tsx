@@ -140,7 +140,11 @@ export function MessageCard({
   const replyInner = (
     <>
       <MessageSquare className="h-4 w-4" aria-hidden />
-      <span>{isTopLevel && message.reply_count ? message.reply_count : sq.chat.reply}</span>
+      {isTopLevel && message.reply_count ? (
+        <span>{message.reply_count}</span>
+      ) : (
+        <span className="hidden sm:inline">{sq.chat.reply}</span>
+      )}
     </>
   );
 
