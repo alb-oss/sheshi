@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -40,7 +41,7 @@ export default function Auth() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.wrap}>
-        <View style={styles.logo} />
+        <Image source={require("../assets/mark.png")} style={styles.logo} resizeMode="contain" />
         <Text style={styles.title}>Mirësevini në Sheshi</Text>
         <Text style={styles.subtitle}>Hyni për të marrë pjesë në diskutim.</Text>
 
@@ -83,7 +84,7 @@ function makeStyles(t: Palette) {
   return StyleSheet.create({
     flex: { flex: 1, backgroundColor: t.bg },
     wrap: { flex: 1, justifyContent: "center", paddingHorizontal: 24, gap: 12 },
-    logo: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: t.primary, marginBottom: 4 },
+    logo: { width: 60, height: 60, borderRadius: radius.lg, marginBottom: 8 },
     title: { color: t.text, fontSize: 24, fontWeight: "900" },
     subtitle: { color: t.textMuted, fontSize: 15, marginBottom: 8 },
     field: { gap: 6 },
