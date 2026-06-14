@@ -102,7 +102,7 @@ function makeStyles(t: Palette) {
     },
     replyText: { color: t.primary, fontWeight: "700", fontSize: 12, flex: 1, marginRight: 8 },
     cancel: { color: t.textMuted, fontSize: 14, fontWeight: "700" },
-    bar: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+    bar: { flexDirection: "row", alignItems: "center", gap: 8 },
     input: {
       flex: 1,
       minHeight: 44,
