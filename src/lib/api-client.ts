@@ -33,7 +33,15 @@ export async function api(
     headers,
   });
 
-  if (response.status === 401 && retryOnUnauthorized && tokens?.refreshToken) {
+  // 401 = expired/invalid token. 403 = authenticated but forbidden — which also happens when a
+  // role (e.g. moderator) was just granted and the current access token predates it. In both
+  // cases refresh once (the new access token is minted with the user's CURRENT db roles) and
+  // retry; a genuine 403 stays 403 on the retry (no loop).
+  if (
+    (response.status === 401 || response.status === 403) &&
+    retryOnUnauthorized &&
+    tokens?.refreshToken
+  ) {
     const refreshed = await refreshTokens(tokens.refreshToken);
     if (refreshed) {
       const retryHeaders = new Headers(options.headers);
