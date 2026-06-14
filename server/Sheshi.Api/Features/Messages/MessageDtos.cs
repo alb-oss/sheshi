@@ -14,11 +14,13 @@ public record MessageDto(
     DateTimeOffset? DeletedAt,
     DateTimeOffset CreatedAt,
     AuthorDto? Author,
-    int Upvotes,
+    int Score,
     int ReplyCount,
-    bool Voted);
+    int MyVote);
 
 public record PostMessageRequest(Guid RoomId, Guid? ParentId, string Body);
+
+public record VoteRequest(int Value);
 
 public record ReportMessageRequest(ReportReason Reason, string? Note);
 

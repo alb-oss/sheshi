@@ -77,25 +77,25 @@ public class MessageService(AppDbContext db)
             .Where(u => authorIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => new AuthorDto(u.Id, u.UserName, u.DisplayName, u.AvatarUrl), ct);
 
-        var upvotes = await db.Votes
+        var scores = await db.Votes
             .AsNoTracking()
             .Where(v => ids.Contains(v.MessageId))
             .GroupBy(v => v.MessageId)
-            .Select(g => new { MessageId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.MessageId, x => x.Count, ct);
+            .Select(g => new { MessageId = g.Key, Score = g.Sum(v => (int)v.Value) })
+            .ToDictionaryAsync(x => x.MessageId, x => x.Score, ct);
 
         // Reply count = the FULL subtree size (sub-replies included), not just direct children,
         // so a thread's count matches what the thread view shows and the live feed's per-reply
         // increment. Computed for every enriched message (a reply also reports its own subtree).
         var replyCounts = await LoadDescendantCountsAsync(ids, ct);
 
-        var voted = callerId is null
-            ? new HashSet<Guid>()
+        var myVotes = callerId is null
+            ? new Dictionary<Guid, int>()
             : await db.Votes
                 .AsNoTracking()
                 .Where(v => v.UserId == callerId && ids.Contains(v.MessageId))
-                .Select(v => v.MessageId)
-                .ToHashSetAsync(ct);
+                .Select(v => new { v.MessageId, Value = (int)v.Value })
+                .ToDictionaryAsync(x => x.MessageId, x => x.Value, ct);
 
         return messages.Select(m => new MessageDto(
             m.Id,
@@ -107,9 +107,9 @@ public class MessageService(AppDbContext db)
             m.DeletedAt,
             m.CreatedAt,
             authors.GetValueOrDefault(m.AuthorId),
-            upvotes.GetValueOrDefault(m.Id),
+            scores.GetValueOrDefault(m.Id),
             replyCounts.GetValueOrDefault(m.Id),
-            voted.Contains(m.Id))).ToList();
+            myVotes.GetValueOrDefault(m.Id))).ToList();
     }
 
     private sealed record DescendantCount(Guid RootId, int Count);

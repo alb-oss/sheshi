@@ -31,20 +31,25 @@ public class HighlightsController(AppDbContext db, MessageService messageService
             .ToListAsync(ct);
 
         var enriched = await messageService.EnrichAsync(candidates, User.GetUserId(), ct);
-        var now = DateTimeOffset.UtcNow;
         var ranked = mode switch
         {
-            "hot" => enriched.OrderByDescending(m => HotScore(m, now)),
-            "top" => enriched.OrderByDescending(m => m.Upvotes).ThenByDescending(m => m.CreatedAt),
+            "hot" => enriched.OrderByDescending(HotScore),
+            "top" => enriched.OrderByDescending(m => m.Score).ThenByDescending(m => m.CreatedAt),
             _ => enriched.OrderByDescending(m => m.ReplyCount).ThenByDescending(m => m.CreatedAt)
         };
 
         return Ok(ranked.Take(10).ToList());
     }
 
-    private static double HotScore(MessageDto message, DateTimeOffset now)
+    // Reddit's "hot" algorithm over the net score (up − down): sign- and time-weighted, so
+    // rank decays with age and a downvoted post sinks below a zero-score one of the same age.
+    private const long RedditEpoch = 1134028003L;
+    private static double HotScore(MessageDto message)
     {
-        var ageHours = Math.Max((now - message.CreatedAt).TotalHours, 0.5);
-        return (message.Upvotes + message.ReplyCount * 2) / Math.Pow(ageHours, 1.3);
+        var s = message.Score;
+        var order = Math.Log10(Math.Max(Math.Abs(s), 1));
+        var sign = Math.Sign(s);
+        var seconds = message.CreatedAt.ToUnixTimeSeconds() - RedditEpoch;
+        return sign * order + seconds / 45000.0;
     }
 }

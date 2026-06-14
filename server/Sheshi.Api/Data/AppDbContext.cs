@@ -36,6 +36,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         b.Entity<Vote>(e =>
         {
             e.HasKey(v => new { v.MessageId, v.UserId });
+            // Existing rows predate downvotes — they were all upvotes, so default to +1.
+            e.Property(v => v.Value).HasDefaultValue((short)1);
+            e.ToTable(t => t.HasCheckConstraint("CK_Votes_Value", "\"Value\" IN (-1, 1)"));
             e.HasOne(v => v.Message).WithMany().HasForeignKey(v => v.MessageId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
         });

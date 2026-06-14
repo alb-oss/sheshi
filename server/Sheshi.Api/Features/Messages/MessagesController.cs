@@ -145,11 +145,15 @@ public class MessagesController(
         return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, dto.Single());
     }
 
+    // Reddit-style directional vote. Body { "value": 1 | -1 | 0 }: upserts the caller's vote
+    // to that direction; 0 clears it. Net message score = SUM(Value), broadcast over realtime.
     [Authorize]
     [EnableRateLimiting("writes")]
     [HttpPut("messages/{id:guid}/vote")]
-    public async Task<IActionResult> Upvote(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Vote(Guid id, [FromBody] VoteRequest request, CancellationToken ct)
     {
+        if (request.Value is not (-1 or 0 or 1)) return BadRequest(new { error = "INVALID_VOTE" });
+
         var user = await GetCurrentUserAsync();
         if (user is null) return Unauthorized();
         if (user.IsBanned) return Forbid();
@@ -157,39 +161,24 @@ public class MessagesController(
         var message = await db.Messages.AsNoTracking().SingleOrDefaultAsync(m => m.Id == id, ct);
         if (message is null) return NotFound();
 
-        var exists = await db.Votes.AnyAsync(v => v.MessageId == id && v.UserId == user.Id, ct);
-        if (!exists)
+        var existing = await db.Votes.SingleOrDefaultAsync(v => v.MessageId == id && v.UserId == user.Id, ct);
+        if (request.Value == 0)
         {
-            db.Votes.Add(new Vote { MessageId = id, UserId = user.Id });
-            await db.SaveChangesAsync(ct);
+            if (existing is not null) db.Votes.Remove(existing);
         }
+        else if (existing is null)
+        {
+            db.Votes.Add(new Vote { MessageId = id, UserId = user.Id, Value = (short)request.Value });
+        }
+        else
+        {
+            existing.Value = (short)request.Value;
+        }
+        await db.SaveChangesAsync(ct);
 
-        var upvotes = await db.Votes.CountAsync(v => v.MessageId == id, ct);
-        await realtime.VoteChangedAsync(id, message.RoomId, upvotes,
+        var score = await db.Votes.Where(v => v.MessageId == id).SumAsync(v => (int)v.Value, ct);
+        await realtime.VoteChangedAsync(id, message.RoomId, score,
             message.ParentId is null ? null : await GetThreadRootIdAsync(message, ct), ct);
-        return NoContent();
-    }
-
-    [Authorize]
-    [EnableRateLimiting("writes")]
-    [HttpDelete("messages/{id:guid}/vote")]
-    public async Task<IActionResult> RemoveUpvote(Guid id, CancellationToken ct)
-    {
-        var user = await GetCurrentUserAsync();
-        if (user is null) return Unauthorized();
-
-        var vote = await db.Votes.Include(v => v.Message).SingleOrDefaultAsync(v => v.MessageId == id && v.UserId == user.Id, ct);
-        if (vote is not null)
-        {
-            var roomId = vote.Message.RoomId;
-            var threadId = await GetThreadRootIdAsync(vote.Message, ct);
-            var isReply = vote.Message.ParentId is not null;
-            db.Votes.Remove(vote);
-            await db.SaveChangesAsync(ct);
-            var upvotes = await db.Votes.CountAsync(v => v.MessageId == id, ct);
-            await realtime.VoteChangedAsync(id, roomId, upvotes, isReply ? threadId : null, ct);
-        }
-
         return NoContent();
     }
 
