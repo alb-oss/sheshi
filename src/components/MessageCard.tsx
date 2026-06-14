@@ -181,6 +181,9 @@ export function MessageCard({
           ? () => {
               // Don't hijack a click that was actually a text selection.
               if (typeof window !== "undefined" && window.getSelection()?.toString()) return;
+              // Remember which post we opened from, so the room feed can scroll back to it on return.
+              if (typeof window !== "undefined")
+                window.sessionStorage.setItem(`sheshi:feed-anchor:${roomSlug}`, message.id);
               navigate({ to: "/tema/$messageId", params: { messageId: message.id } });
             }
           : undefined

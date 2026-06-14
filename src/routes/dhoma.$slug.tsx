@@ -50,7 +50,11 @@ function RoomPage({ slug }: { slug: string }) {
   // thread from the middle of the feed) instead of force-scrolling to the bottom. Persisted per
   // room in sessionStorage and consumed once, on the initial load.
   const restoreScrollRef = useRef<number | null>(null);
+  // The exact post the reader opened a thread from — scroll it back into view on return (more
+  // reliable than a raw scroll offset once images/videos reflow). Falls back to the saved offset.
+  const anchorRef = useRef<string | null>(null);
   const scrollKey = `sheshi:feed-scroll:${slug}`;
+  const anchorKey = `sheshi:feed-anchor:${slug}`;
 
   useEffect(() => {
     listRooms()
@@ -89,10 +93,14 @@ function RoomPage({ slug }: { slug: string }) {
         firstIdRef.current = firstId;
         // Chat mode: land on the latest message (bottom) on first load or when the newest changed
         // (e.g. right after you post). Applied in the layout effect once the list has rendered.
-        // Exception: on the very first load, if we have a saved scroll position for this room
-        // (set when the reader scrolled before leaving), restore that instead of jumping to bottom.
+        // Exception: on the very first load, prefer scrolling back to the exact post the reader
+        // opened a thread from; else fall back to the saved scroll offset; else jump to bottom.
+        const anchor = loading && typeof window !== "undefined" ? window.sessionStorage.getItem(anchorKey) : null;
         const saved = loading && typeof window !== "undefined" ? window.sessionStorage.getItem(scrollKey) : null;
-        if (saved !== null) {
+        if (anchor && rows.some((m) => m.id === anchor)) {
+          anchorRef.current = anchor;
+          window.sessionStorage.removeItem(anchorKey); // consume once
+        } else if (saved !== null) {
           restoreScrollRef.current = Number(saved);
         } else {
           scrollToBottomRef.current = Boolean(loading || isNew);
@@ -154,6 +162,14 @@ function RoomPage({ slug }: { slug: string }) {
       el.scrollTop += el.scrollHeight - olderAdjustRef.current; // keep older-load from jumping the view
       olderAdjustRef.current = null;
       return;
+    }
+    if (anchorRef.current != null) {
+      const target = el.querySelector<HTMLElement>(`[data-mid="${anchorRef.current}"]`);
+      anchorRef.current = null;
+      if (target) {
+        target.scrollIntoView({ block: "center" });
+        return;
+      }
     }
     if (restoreScrollRef.current != null) {
       // Clamp in case the feed is now shorter than when we left.
@@ -280,14 +296,15 @@ function RoomPage({ slug }: { slug: string }) {
                   .slice()
                   .reverse()
                   .map((m) => (
-                    <MessageCard
-                      key={m.id}
-                      message={m}
-                      roomSlug={slug}
-                      currentUserId={userId}
-                      onChanged={reload}
-                      compact
-                    />
+                    <div key={m.id} data-mid={m.id}>
+                      <MessageCard
+                        message={m}
+                        roomSlug={slug}
+                        currentUserId={userId}
+                        onChanged={reload}
+                        compact
+                      />
+                    </div>
                   ))}
               </div>
             )}
