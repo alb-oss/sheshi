@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Award, Bookmark, LogOut, Shuffle, ShieldCheck, Star } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -118,7 +119,18 @@ function ProfilePage() {
         <h1 className="font-display text-2xl font-bold tracking-tight">{sq.nav.profile}</h1>
 
         {loading ? (
-          <p className="mt-6 text-sm text-muted-foreground">{sq.chat.loading}</p>
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/50 p-5">
+              <Skeleton className="h-16 w-16 shrink-0 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            </div>
+            <Skeleton className="h-44 rounded-2xl" />
+            <Skeleton className="h-12 rounded-2xl" />
+          </div>
         ) : !user ? (
           <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6">
             <p className="text-sm text-muted-foreground">{sq.chat.signInToPost}</p>
