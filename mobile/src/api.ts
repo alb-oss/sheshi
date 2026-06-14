@@ -136,28 +136,39 @@ export async function setVote(messageId: string, value: -1 | 0 | 1) {
 }
 
 export type PickedImage = { uri: string; mimeType?: string | null; fileName?: string | null };
+export type PickedVideo = { uri: string; mimeType?: string | null; fileName?: string | null };
 
-// Resolve a stored image_url (often a root-relative /uploads/... path) to an absolute URL the
-// native <Image> can load.
+// Resolve a stored upload URL (often a root-relative /uploads/... path) to an absolute URL the
+// native <Image>/<VideoView> can load. Already-absolute URLs (the API returns these in dev) pass
+// through unchanged.
 export const resolveImageUrl = (u: string) =>
   /^https?:\/\//.test(u) ? u : `${API_BASE}${u.startsWith("/") ? "" : "/"}${u}`;
+export const resolveVideoUrl = resolveImageUrl;
 
 export async function postMessage(input: {
   room_id: string;
   body: string;
   parent_id?: string | null;
   image?: PickedImage | null;
+  video?: PickedVideo | null;
 }) {
-  if (input.image) {
-    // Multipart so the API's ReadPostMessageAsync picks up room_id/parent_id/body + the "image" file.
+  if (input.image || input.video) {
+    // Multipart so the API's ReadPostMessageAsync picks up room_id/parent_id/body + the file part.
+    // fetch sets the multipart boundary automatically (no Content-Type header).
     const form = new FormData();
     form.append("room_id", input.room_id);
     if (input.parent_id) form.append("parent_id", input.parent_id);
     form.append("body", input.body);
-    const type = input.image.mimeType || "image/jpeg";
-    const name = input.image.fileName || `photo.${type.split("/")[1] || "jpg"}`;
-    // RN FormData file shape; fetch sets the multipart boundary automatically (no Content-Type header).
-    form.append("image", { uri: input.image.uri, name, type } as unknown as Blob);
+    if (input.image) {
+      const type = input.image.mimeType || "image/jpeg";
+      const name = input.image.fileName || `photo.${type.split("/")[1] || "jpg"}`;
+      form.append("image", { uri: input.image.uri, name, type } as unknown as Blob);
+    }
+    if (input.video) {
+      const type = input.video.mimeType || "video/mp4";
+      const name = input.video.fileName || `clip.${type.split("/")[1] || "mp4"}`;
+      form.append("video", { uri: input.video.uri, name, type } as unknown as Blob);
+    }
     const res = await request("/api/messages", { method: "POST", body: form });
     return (await res.json()) as MessageRow;
   }

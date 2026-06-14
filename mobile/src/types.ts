@@ -12,6 +12,7 @@ export type MessageRow = {
   parent_id: string | null;
   body: string;
   image_url: string | null;
+  video_url: string | null;
   deleted_at: string | null;
   created_at: string;
   author?: Profile | null;

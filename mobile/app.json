@@ -29,7 +29,13 @@
     },
     "plugins": [
       "expo-router",
-      ["expo-image-picker", { "photosPermission": "Sheshi përdor fototë tuaja për t'i bashkangjitur në mesazhe." }]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sheshi përdor fototë tuaja për t'i bashkangjitur në mesazhe."
+        }
+      ],
+      "expo-video"
     ],
     "extra": {
       "apiBase": "http://localhost:5080"
