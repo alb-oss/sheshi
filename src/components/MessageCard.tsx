@@ -210,6 +210,11 @@ export function MessageCard({
             alt=""
             className="mt-2.5 max-h-96 max-w-full rounded-xl border border-border object-contain"
             loading="lazy"
+            // Gracefully hide images whose file is missing (e.g. orphaned older uploads)
+            // instead of showing a broken-image icon.
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
           />
         ) : null}
 
