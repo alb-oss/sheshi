@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import { getThread } from "@/api";
 import { PostCard } from "@/components/PostCard";
-import { Composer } from "@/components/Composer";
-import { AuthButton } from "@/components/AuthButton";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { DockedComposer } from "@/components/DockedComposer";
 import { FeedSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/useAuth";
+import { useDockOffset } from "@/useDockOffset";
 import { type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { MessageRow, ReplyNode, ThreadData } from "@/types";
@@ -35,6 +26,7 @@ export default function Thread() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
+  const offset = useDockOffset();
   const [thread, setThread] = useState<ThreadData | null>(null);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState<{ id: string; label: string } | null>(null);
@@ -52,25 +44,10 @@ export default function Thread() {
     load();
   }, [load]);
 
-  const headerActions = (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <ThemeToggle />
-      <AuthButton />
-    </View>
-  );
-
-  if (loading) {
-    return (
-      <View style={styles.flex}>
-        <Stack.Screen options={{ title: "Tema", headerRight: () => headerActions }} />
-        <FeedSkeleton />
-      </View>
-    );
-  }
+  if (loading) return <View style={styles.flex}><FeedSkeleton /></View>;
   if (!thread) {
     return (
       <View style={styles.center}>
-        <Stack.Screen options={{ title: "Tema", headerRight: () => headerActions }} />
         <Text style={styles.muted}>Tema nuk u gjet.</Text>
       </View>
     );
@@ -85,7 +62,6 @@ export default function Thread() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 96 : 0}
     >
-      <Stack.Screen options={{ title: "Tema", headerRight: () => headerActions }} />
       <FlatList
         data={flat}
         keyExtractor={(f) => f.message.id}
@@ -119,7 +95,7 @@ export default function Thread() {
         ItemSeparatorComponent={() => <View style={styles.sep} />}
       />
       {user ? (
-        <Composer
+        <DockedComposer
           roomId={thread.root.room_id}
           parentId={reply?.id ?? thread.root.id}
           replyLabel={reply?.label ?? null}
@@ -130,7 +106,7 @@ export default function Thread() {
           }}
         />
       ) : (
-        <Pressable onPress={() => router.push("/auth")} style={styles.signInBar}>
+        <Pressable onPress={() => router.push("/auth")} style={[styles.signInBar, { paddingBottom: 16 + offset }]}>
           <Text style={styles.signInText}>Hyr për t'u përgjigjur</Text>
         </Pressable>
       )}
@@ -157,8 +133,10 @@ function makeStyles(t: Palette) {
     signInBar: {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: t.border,
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingTop: 16,
       alignItems: "center",
+      backgroundColor: t.bg,
     },
     signInText: { color: t.primary, fontWeight: "700" },
   });

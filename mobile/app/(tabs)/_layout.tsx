@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthButton } from "@/components/AuthButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { HeaderBack } from "@/components/HeaderBack";
 import { useTheme } from "@/useTheme";
 
 export default function TabsLayout() {
@@ -89,6 +90,16 @@ export default function TabsLayout() {
           tabBarLabel: "Profili",
           tabBarIcon: ({ color, size }) => <Ionicons name="person-circle" size={size} color={color} />,
         }}
+      />
+      {/* Detail screens live inside the tabs navigator so the dock stays visible, but are hidden from
+          the bar (href: null) and get a back button instead of the theme toggle on the left. */}
+      <Tabs.Screen
+        name="tema/[id]"
+        options={{ href: null, title: "Tema", headerLeft: () => <HeaderBack /> }}
+      />
+      <Tabs.Screen
+        name="dhoma/[slug]"
+        options={{ href: null, title: "Dhomë", headerLeft: () => <HeaderBack /> }}
       />
     </Tabs>
   );
