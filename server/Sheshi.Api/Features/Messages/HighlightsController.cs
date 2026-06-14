@@ -15,21 +15,38 @@ public class HighlightsController(AppDbContext db, MessageService messageService
         mode = mode.ToLowerInvariant();
         if (mode is not ("hot" or "top" or "replied")) return BadRequest(new { error = "INVALID_MODE" });
 
-        var query = db.Messages
+        var topLevel = db.Messages
             .AsNoTracking()
             .Where(m => m.ParentId == null && m.DeletedAt == null);
 
-        if (mode is not "hot")
+        // Pick candidates ranked by the RANKING metric (in the DB), not by recency — otherwise a
+        // high-scoring/high-reply post outside the newest-N window is silently dropped.
+        List<Guid> candidateIds;
+        if (mode == "hot")
+        {
+            // Hot weights recency heavily, so the newest 200 (all-time) is a sound candidate pool.
+            candidateIds = await topLevel
+                .OrderByDescending(m => m.CreatedAt)
+                .Take(200)
+                .Select(m => m.Id)
+                .ToListAsync(ct);
+        }
+        else
         {
             var since = DateTimeOffset.UtcNow.AddHours(-24);
-            query = query.Where(m => m.CreatedAt >= since);
+            var windowed = topLevel.Where(m => m.CreatedAt >= since);
+            candidateIds = mode == "top"
+                ? await windowed
+                    .OrderByDescending(m => db.Votes.Where(v => v.MessageId == m.Id).Sum(v => (int)v.Value))
+                    .ThenByDescending(m => m.CreatedAt)
+                    .Take(50).Select(m => m.Id).ToListAsync(ct)
+                : await windowed
+                    .OrderByDescending(m => db.Messages.Count(c => c.ParentId == m.Id && c.DeletedAt == null))
+                    .ThenByDescending(m => m.CreatedAt)
+                    .Take(50).Select(m => m.Id).ToListAsync(ct);
         }
 
-        var candidates = await query
-            .OrderByDescending(m => m.CreatedAt)
-            .Take(200)
-            .ToListAsync(ct);
-
+        var candidates = await db.Messages.AsNoTracking().Where(m => candidateIds.Contains(m.Id)).ToListAsync(ct);
         var enriched = await messageService.EnrichAsync(candidates, User.GetUserId(), ct);
         var ranked = mode switch
         {
