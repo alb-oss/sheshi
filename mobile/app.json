@@ -38,7 +38,8 @@
       "expo-video"
     ],
     "extra": {
-      "apiBase": "http://localhost:5080"
+      "apiBase": "http://localhost:5080",
+      "webBase": "http://localhost:3001"
     }
   }
 }

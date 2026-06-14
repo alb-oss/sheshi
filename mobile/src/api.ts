@@ -8,6 +8,13 @@ import type { ApiUser, CursorPage, MessageRow, Room, ThreadData } from "./types"
 export const API_BASE: string =
   (Constants.expoConfig?.extra as { apiBase?: string } | undefined)?.apiBase ?? "http://localhost:5080";
 
+// Public web app base, used to build shareable thread links (the native API host isn't a page).
+// Override in app.json -> expo.extra.webBase for prod.
+export const WEB_BASE: string =
+  (Constants.expoConfig?.extra as { webBase?: string } | undefined)?.webBase ?? "http://localhost:3001";
+
+export const threadUrl = (messageId: string) => `${WEB_BASE.replace(/\/$/, "")}/tema/${messageId}`;
+
 type Tokens = { accessToken: string; refreshToken: string };
 const TOKEN_KEY = "sheshi:tokens";
 
@@ -132,6 +139,15 @@ export async function setVote(messageId: string, value: -1 | 0 | 1) {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ value }),
+  });
+}
+
+export type ReportReason = "spam" | "hate" | "doxxing" | "violence" | "other";
+export async function submitReport(messageId: string, reason: ReportReason, note?: string | null) {
+  await request(`/api/messages/${messageId}/report`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason, note: note ?? null }),
   });
 }
 
