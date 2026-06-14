@@ -13,9 +13,9 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub)
         => await BroadcastAsync(message.RoomId, threadRootId, "message_created",
             new MessageCreatedEvent(message, threadRootId), ct);
 
-    public async Task VoteChangedAsync(Guid messageId, Guid roomId, int upvotes, Guid? threadRootId, CancellationToken ct = default)
+    public async Task VoteChangedAsync(Guid messageId, Guid roomId, int score, Guid? threadRootId, CancellationToken ct = default)
         => await BroadcastAsync(roomId, threadRootId, "vote_changed",
-            new VoteChangedEvent(messageId, upvotes, roomId, threadRootId), ct);
+            new VoteChangedEvent(messageId, score, roomId, threadRootId), ct);
 
     public async Task MessageDeletedAsync(Guid messageId, Guid roomId, Guid? threadRootId, CancellationToken ct = default)
         => await BroadcastAsync(roomId, threadRootId, "message_deleted",
@@ -44,5 +44,5 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub)
 // Snake_case on the wire (SignalR is configured with the same JSON policy as REST), so the
 // `message` field is byte-identical to the REST MessageDto the client already consumes.
 public record MessageCreatedEvent(MessageDto Message, Guid? RootId);
-public record VoteChangedEvent(Guid MessageId, int Upvotes, Guid RoomId, Guid? RootId);
+public record VoteChangedEvent(Guid MessageId, int Score, Guid RoomId, Guid? RootId);
 public record MessageDeletedEvent(Guid Id, Guid RoomId, Guid? RootId);

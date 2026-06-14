@@ -554,9 +554,9 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         [property: JsonPropertyName("deleted_at")] DateTimeOffset? DeletedAt,
         [property: JsonPropertyName("created_at")] DateTimeOffset CreatedAt,
         [property: JsonPropertyName("author")] AuthorDto? Author,
-        [property: JsonPropertyName("upvotes")] int Upvotes,
+        [property: JsonPropertyName("score")] int Score,
         [property: JsonPropertyName("reply_count")] int ReplyCount,
-        [property: JsonPropertyName("voted")] bool Voted);
+        [property: JsonPropertyName("my_vote")] int MyVote);
 
     private sealed record ModReportDto(
         [property: JsonPropertyName("id")] Guid Id,

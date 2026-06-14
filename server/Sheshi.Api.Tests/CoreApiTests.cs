@@ -126,15 +126,15 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         nestedReply!.ParentId.Should().Be(reply.Id);
 
         UseBearer(client, bob.AccessToken);
-        var voteResponse = await client.PutAsync($"/api/messages/{main.Id}/vote", content: null);
+        var voteResponse = await client.PutAsJsonAsync($"/api/messages/{main.Id}/vote", new { value = 1 });
         voteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var secondVoteResponse = await client.PutAsync($"/api/messages/{main.Id}/vote", content: null);
+        var secondVoteResponse = await client.PutAsJsonAsync($"/api/messages/{main.Id}/vote", new { value = 1 });
         secondVoteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var replyVoteResponse = await client.PutAsync($"/api/messages/{reply.Id}/vote", content: null);
+        var replyVoteResponse = await client.PutAsJsonAsync($"/api/messages/{reply.Id}/vote", new { value = 1 });
         replyVoteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var nestedReplyVoteResponse = await client.PutAsync($"/api/messages/{nestedReply.Id}/vote", content: null);
+        var nestedReplyVoteResponse = await client.PutAsJsonAsync($"/api/messages/{nestedReply.Id}/vote", new { value = 1 });
         nestedReplyVoteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var messagesResponse = await client.GetAsync($"/api/rooms/{room.Id}/messages");
@@ -146,16 +146,16 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         // so it counts 2 (not 1) — sub-replies are included.
         messages.Items.Should().ContainSingle(m =>
             m.Id == main.Id &&
-            m.Upvotes == 1 &&
+            m.Score == 1 &&
             m.ReplyCount == 2 &&
-            m.Voted);
+            m.MyVote == 1);
 
         var repliesResponse = await client.GetAsync($"/api/messages/{main.Id}/replies");
         repliesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var replies = await repliesResponse.Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
         replies.Should().NotBeNull();
         replies!.NextCursor.Should().BeNull();
-        replies.Items.Should().ContainSingle(r => r.Id == reply.Id && r.Upvotes == 1 && r.ReplyCount == 1 && r.Voted);
+        replies.Items.Should().ContainSingle(r => r.Id == reply.Id && r.Score == 1 && r.ReplyCount == 1 && r.MyVote == 1);
 
         var threadResponse = await client.GetAsync($"/api/threads/{main.Id}");
         threadResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -167,8 +167,8 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         thread.Replies.Single().Message.Id.Should().Be(reply.Id);
         thread.Replies.Single().Replies.Should().ContainSingle();
         thread.Replies.Single().Replies.Single().Message.Id.Should().Be(nestedReply.Id);
-        thread.Replies.Single().Replies.Single().Message.Upvotes.Should().Be(1);
-        thread.Replies.Single().Replies.Single().Message.Voted.Should().BeTrue();
+        thread.Replies.Single().Replies.Single().Message.Score.Should().Be(1);
+        thread.Replies.Single().Replies.Single().Message.MyVote.Should().Be(1);
 
         var reportResponse = await client.PostAsJsonAsync($"/api/messages/{main.Id}/report", new
         {
@@ -188,7 +188,24 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         highlightsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var highlights = await highlightsResponse.Content.ReadFromJsonAsync<MessageDto[]>();
         highlights.Should().NotBeNull();
-        highlights.Should().ContainSingle(h => h.Id == main.Id && h.Upvotes == 1);
+        highlights.Should().ContainSingle(h => h.Id == main.Id && h.Score == 1);
+
+        // Reddit-style up/down: switching to a downvote nets the score, 0 clears it, and only
+        // {-1,0,1} are accepted.
+        (await client.PutAsJsonAsync($"/api/messages/{reply.Id}/vote", new { value = -1 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var afterDown = await (await client.GetAsync($"/api/messages/{main.Id}/replies"))
+            .Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
+        afterDown!.Items.Should().ContainSingle(r => r.Id == reply.Id && r.Score == -1 && r.MyVote == -1);
+
+        (await client.PutAsJsonAsync($"/api/messages/{reply.Id}/vote", new { value = 0 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var afterClear = await (await client.GetAsync($"/api/messages/{main.Id}/replies"))
+            .Content.ReadFromJsonAsync<CursorPageDto<MessageDto>>();
+        afterClear!.Items.Should().ContainSingle(r => r.Id == reply.Id && r.Score == 0 && r.MyVote == 0);
+
+        (await client.PutAsJsonAsync($"/api/messages/{reply.Id}/vote", new { value = 2 }))
+            .StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -229,7 +246,7 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
             body = "I should be blocked"
         });
         bannedPostResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        var bannedVoteResponse = await client.PutAsync($"/api/messages/{main!.Id}/vote", content: null);
+        var bannedVoteResponse = await client.PutAsJsonAsync($"/api/messages/{main!.Id}/vote", new { value = 1 });
         bannedVoteResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
         UseBearer(client, other.AccessToken);
@@ -328,9 +345,9 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         [property: JsonPropertyName("deleted_at")] DateTimeOffset? DeletedAt,
         [property: JsonPropertyName("created_at")] DateTimeOffset CreatedAt,
         [property: JsonPropertyName("author")] AuthorDto? Author,
-        [property: JsonPropertyName("upvotes")] int Upvotes,
+        [property: JsonPropertyName("score")] int Score,
         [property: JsonPropertyName("reply_count")] int ReplyCount,
-        [property: JsonPropertyName("voted")] bool Voted);
+        [property: JsonPropertyName("my_vote")] int MyVote);
 
     private sealed record CursorPageDto<T>(
         [property: JsonPropertyName("items")] T[] Items,
