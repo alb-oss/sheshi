@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TeRuajturaRouteImport } from './routes/te-ruajtura'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfiliRouteImport } from './routes/profili'
@@ -20,6 +21,11 @@ import { Route as TemaMessageIdRouteImport } from './routes/tema.$messageId'
 import { Route as DhomaSlugRouteImport } from './routes/dhoma.$slug'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 
+const TeRuajturaRoute = TeRuajturaRouteImport.update({
+  id: '/te-ruajtura',
+  path: '/te-ruajtura',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/te-ruajtura': typeof TeRuajturaRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dhoma/$slug': typeof DhomaSlugRoute
   '/tema/$messageId': typeof TemaMessageIdRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/te-ruajtura': typeof TeRuajturaRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dhoma/$slug': typeof DhomaSlugRoute
   '/tema/$messageId': typeof TemaMessageIdRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/te-ruajtura': typeof TeRuajturaRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/dhoma/$slug': typeof DhomaSlugRoute
   '/tema/$messageId': typeof TemaMessageIdRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/profili'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/te-ruajtura'
     | '/auth/callback'
     | '/dhoma/$slug'
     | '/tema/$messageId'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/profili'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/te-ruajtura'
     | '/auth/callback'
     | '/dhoma/$slug'
     | '/tema/$messageId'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/profili'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/te-ruajtura'
     | '/auth/callback'
     | '/dhoma/$slug'
     | '/tema/$messageId'
@@ -155,12 +167,20 @@ export interface RootRouteChildren {
   ProfiliRoute: typeof ProfiliRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TeRuajturaRoute: typeof TeRuajturaRoute
   DhomaSlugRoute: typeof DhomaSlugRoute
   TemaMessageIdRoute: typeof TemaMessageIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/te-ruajtura': {
+      id: '/te-ruajtura'
+      path: '/te-ruajtura'
+      fullPath: '/te-ruajtura'
+      preLoaderRoute: typeof TeRuajturaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -252,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfiliRoute: ProfiliRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TeRuajturaRoute: TeRuajturaRoute,
   DhomaSlugRoute: DhomaSlugRoute,
   TemaMessageIdRoute: TemaMessageIdRoute,
 }
