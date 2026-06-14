@@ -10,6 +10,7 @@ public class Message
     public Message? Parent { get; set; }
     public string Body { get; set; } = "";
     public string? ImageUrl { get; set; }
+    public string? VideoUrl { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

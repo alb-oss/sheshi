@@ -48,6 +48,7 @@ builder.Services.AddScoped<ModerationMetricsService>();
 builder.Services.AddScoped<ModerationRuleEngine>();
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
+builder.Services.AddScoped<IVideoStorage, LocalFileVideoStorage>();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<HighlightsTicker>();
 builder.Services.AddScoped<RealtimeNotifier>();
