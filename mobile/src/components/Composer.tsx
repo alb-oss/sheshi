@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { postMessage, type PickedImage } from "@/api";
 import { PressableScale } from "@/components/PressableScale";
 import { radius, type Palette } from "@/theme";
@@ -33,13 +34,21 @@ export function Composer({
   const canSend = (body.trim().length > 0 || image !== null) && !busy;
 
   async function pickImage() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.85,
-    });
-    if (!result.canceled && result.assets[0]) {
-      const a = result.assets[0];
-      setImage({ uri: a.uri, mimeType: a.mimeType, fileName: a.fileName });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
+    if (result.canceled || !result.assets[0]) return;
+    const a = result.assets[0];
+    try {
+      // The API only accepts jpeg/png/webp and verifies the bytes match the declared type. iOS
+      // photos are HEIC, so normalize to JPEG (and cap large images) before upload — otherwise the
+      // server rejects the upload and the post silently fails.
+      const ops = a.width && a.width > 1600 ? [{ resize: { width: 1600 } }] : [];
+      const jpeg = await ImageManipulator.manipulateAsync(a.uri, ops, {
+        compress: 0.85,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
+      setImage({ uri: jpeg.uri, mimeType: "image/jpeg", fileName: "photo.jpg" });
+    } catch {
+      Alert.alert("Imazhi", "Nuk u përpunua dot ky imazh. Provo një tjetër.");
     }
   }
 
@@ -53,7 +62,8 @@ export function Composer({
       setImage(null);
       onPosted?.(m);
     } catch {
-      // keep the text + image so the user can retry
+      // keep the text + image so the user can retry, but surface the failure (was silent)
+      Alert.alert("Gabim", "Mesazhi nuk u dërgua. Provo sërish.");
     } finally {
       setBusy(false);
     }
