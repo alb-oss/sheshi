@@ -152,11 +152,7 @@ function HomePage() {
                 <Plus className="h-4 w-4" aria-hidden />
                 Dhomë e re
               </Button>
-            ) : (
-              <Button asChild className="rounded-sm font-bold uppercase tracking-widest">
-                <Link to="/auth">Hyr për të krijuar</Link>
-              </Button>
-            )}
+            ) : null}
           </div>
         </div>
 
