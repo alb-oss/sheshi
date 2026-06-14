@@ -249,15 +249,15 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             }
           }}
         />
-        <div className={cn("items-center px-2.5 pb-2 pt-1", expanded ? "flex" : "hidden sm:flex")}>
-          <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-3">
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={(event) => selectImage(event.target.files?.[0] ?? null)}
-            />
+        <div className={cn("items-center justify-between gap-2 px-2.5 pb-2 pt-1", expanded ? "flex" : "hidden sm:flex")}>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(event) => selectImage(event.target.files?.[0] ?? null)}
+          />
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => imageInputRef.current?.click()}
@@ -274,6 +274,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             >
               {body.length}/2000
             </span>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
             {onCancel ? (
               <button
                 type="button"
