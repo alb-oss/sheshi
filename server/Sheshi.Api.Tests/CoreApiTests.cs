@@ -427,6 +427,16 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         (await anon.Content.ReadFromJsonAsync<AuthResponse>())!.User.Username.Should().MatchRegex("^[a-z]+_[a-z]+_[0-9a-f]{4}$");
     }
 
+    [Fact]
+    public async Task Register_accepts_a_password_without_uppercase_or_symbols()
+    {
+        var client = factory.CreateClient();
+        // length 10+, a digit, lowercase — but no uppercase and no special character.
+        var resp = await client.PostAsJsonAsync("/api/auth/register",
+            new { email = $"simplepw-{Guid.NewGuid():N}@example.com", password = "lowercase12" });
+        resp.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
         var email = $"{label}-{Guid.NewGuid():N}@example.com";
