@@ -1,7 +1,8 @@
 import { useMemo } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { resolveImageUrl } from "@/api";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { resolveImageUrl, resolveVideoUrl } from "@/api";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
@@ -55,6 +56,9 @@ export function PostCard({
         {!isDeleted && message.image_url ? (
           <Image source={{ uri: resolveImageUrl(message.image_url) }} style={styles.image} resizeMode="cover" />
         ) : null}
+        {!isDeleted && message.video_url ? (
+          <VideoAttachment uri={resolveVideoUrl(message.video_url)} style={styles.image} />
+        ) : null}
         {!isDeleted && (
           <View style={styles.actions}>
             <VoteControl message={message} compact={compact} />
@@ -74,6 +78,16 @@ export function PostCard({
       </View>
     </Pressable>
   );
+}
+
+// Its own component so useVideoPlayer only runs for posts that actually carry a video — feed cards
+// without one never instantiate a player. Native controls handle play/scrub/fullscreen; starts
+// paused on the first frame and muted (no autoplay in a scrolling feed).
+function VideoAttachment({ uri, style }: { uri: string; style: StyleProp<ViewStyle> }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.muted = true;
+  });
+  return <VideoView player={player} style={style} contentFit="contain" nativeControls allowsFullscreen />;
 }
 
 function relativeTime(iso: string) {
