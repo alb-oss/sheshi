@@ -111,22 +111,36 @@ public class ModerationController(
         }
 
         var limit = Math.Clamp(query.Limit, 1, 100);
-        var flags = await flagsQuery
+        var rawFlags = await flagsQuery
             .OrderBy(f => f.CreatedAt)
             .Take(limit)
-            .Select(f => new ModFlagDto(
-                f.Id,
-                f.MessageId,
-                f.RoomId,
-                f.AuthorId,
-                f.RuleKey,
+            .ToListAsync(ct);
+
+        // Enrich with the flagged message (body, deleted, room) and its author so a moderator
+        // sees WHAT was flagged and can act on it — not just an opaque id.
+        var messageIds = rawFlags.Select(f => f.MessageId).Distinct().ToArray();
+        var authorIds = rawFlags.Select(f => f.AuthorId).Distinct().ToArray();
+        var messages = await db.Messages
+            .AsNoTracking()
+            .Where(m => messageIds.Contains(m.Id))
+            .Select(m => new { m.Id, m.Body, m.DeletedAt, RoomSlug = m.Room.Slug })
+            .ToDictionaryAsync(m => m.Id, ct);
+        var authors = await db.Users
+            .AsNoTracking()
+            .Where(u => authorIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => new ModActorDto(u.Id, u.UserName, u.DisplayName), ct);
+
+        var flags = rawFlags.Select(f =>
+        {
+            var msg = messages.GetValueOrDefault(f.MessageId);
+            return new ModFlagDto(
+                f.Id, f.MessageId, f.RoomId, f.AuthorId, f.RuleKey,
                 f.Category.ToString().ToLowerInvariant(),
                 f.Severity.ToString().ToLowerInvariant(),
-                f.Score,
-                f.Evidence,
-                f.Status.ToString().ToLowerInvariant(),
-                f.CreatedAt))
-            .ToListAsync(ct);
+                f.Score, f.Evidence, f.Status.ToString().ToLowerInvariant(), f.CreatedAt,
+                msg?.Body ?? "", msg?.DeletedAt is not null, msg?.RoomSlug ?? "sheshi",
+                authors.GetValueOrDefault(f.AuthorId));
+        }).ToList();
 
         return Ok(flags);
     }

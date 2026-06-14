@@ -163,8 +163,10 @@ public class MessageService(AppDbContext db)
 
     private static DateTimeOffset? DecodeCursor(string? cursor)
     {
-        return long.TryParse(cursor, out var ticks)
-            ? new DateTimeOffset(ticks, TimeSpan.Zero)
-            : null;
+        // Fail closed: an out-of-range tick value would throw from the DateTimeOffset ctor
+        // (HTTP 500 + stack leak). Range-check before constructing; treat bad cursors as none.
+        if (!long.TryParse(cursor, out var ticks)) return null;
+        if (ticks < DateTimeOffset.MinValue.UtcTicks || ticks > DateTimeOffset.MaxValue.UtcTicks) return null;
+        return new DateTimeOffset(ticks, TimeSpan.Zero);
     }
 }
