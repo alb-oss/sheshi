@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Award, LogOut, Shuffle, ShieldCheck, Star } from "lucide-react";
+import { Award, Bookmark, LogOut, Shuffle, ShieldCheck, Star } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
 import { Button } from "@/components/ui/button";
@@ -221,6 +221,16 @@ function ProfilePage() {
             </div>
 
             <ProfileMessages userId={user.id} currentUserId={user.id} />
+
+            <Link
+              to="/te-ruajtura"
+              className="flex items-center justify-between rounded-2xl border border-border bg-card/30 p-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary"
+            >
+              <span className="flex items-center gap-2">
+                <Bookmark className="h-4 w-4" /> {sq.nav.saved}
+              </span>
+              <span aria-hidden>→</span>
+            </Link>
 
             {(canModerate(user)) && (
               <Link

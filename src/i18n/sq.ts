@@ -8,6 +8,7 @@ export const sq = {
     fokus: "Në Fokus",
     profile: "Profili",
     admin: "Moderim",
+    saved: "Të ruajtura",
   },
   auth: {
     signIn: "Hyr",

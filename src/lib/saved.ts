@@ -28,6 +28,11 @@ export function isSaved(id: string): boolean {
   return read().has(id);
 }
 
+// All saved message ids, most-recently-saved first (a Set preserves insertion order).
+export function savedIds(): string[] {
+  return [...read()].reverse();
+}
+
 // Toggle and return the new saved-state for the given id.
 export function toggleSaved(id: string): boolean {
   const ids = read();
