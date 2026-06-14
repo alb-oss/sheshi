@@ -40,6 +40,8 @@ jobs:
           context: .
           file: Dockerfile.web
           push: true
+          build-args: |
+            VITE_API_BASE_URL=https://api.sheshi.live
           labels: |
             org.opencontainers.image.source=https://github.com/alb-oss/sheshi
             org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}
