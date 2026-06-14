@@ -31,8 +31,9 @@ Sign in with a seeded account (e.g. `admin@sheshi.al` / `Admin1234!`).
 - `src/useTheme.tsx` — `ThemeProvider` + `useTheme()`: active palette resolves to
   (persisted override ?? system scheme). Components read it via `makeStyles(theme)`.
 - `src/components/` — `RoomFeed` (the reusable per-room feed), `VoteControl`
-  (▲ score ▼, optimistic + haptics + spring pop), `PostCard`, `Composer`,
-  `AuthButton`, `ThemeToggle` (sun/moon), `PressableScale` (springy press feel).
+  (caret score caret, optimistic + haptics + spring pop), `PostCard`, `Composer`,
+  `AuthButton`, `ThemeToggle` (sun/moon), `PressableScale` (springy press feel),
+  `Skeleton` (shimmer loading placeholders). Icons are Ionicons throughout.
 
 ## Features
 
