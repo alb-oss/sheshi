@@ -181,12 +181,12 @@ function ThreadPage() {
         return { ...prev, replies: r.nodes };
       });
     };
-    const onVote = (p: { message_id: string; upvotes: number }) =>
+    const onVote = (p: { message_id: string; score: number }) =>
       setThread((prev) =>
         !prev ? prev
           : prev.root.id === p.message_id
-            ? { ...prev, root: { ...prev.root, upvotes: p.upvotes } }
-            : { ...prev, replies: updateNode(prev.replies, p.message_id, (m) => ({ ...m, upvotes: p.upvotes })) });
+            ? { ...prev, root: { ...prev.root, score: p.score } }
+            : { ...prev, replies: updateNode(prev.replies, p.message_id, (m) => ({ ...m, score: p.score })) });
     const onDeleted = (p: { id: string }) =>
       setThread((prev) =>
         !prev ? prev

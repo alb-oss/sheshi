@@ -53,7 +53,7 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
       <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
         <Link to="/" className="group flex min-h-10 items-center gap-3">
           <div
-            className="w-6 h-6 bg-primary rounded-sm group-hover:scale-110 transition-transform"
+            className="w-7 h-7 bg-primary rounded-lg group-hover:scale-110 transition-transform"
             aria-hidden
           />
           <div className="flex flex-col leading-none">
@@ -68,7 +68,7 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
           {user ? (
             <Link
               to="/profili"
-              className="inline-flex h-9 items-center rounded-sm px-2 text-xs font-bold uppercase tracking-widest text-foreground/70 transition-colors hover:bg-card hover:text-foreground"
+              className="hidden sm:inline-flex h-9 items-center rounded-full px-3 text-xs font-bold uppercase tracking-widest text-foreground/70 transition-colors hover:bg-card hover:text-foreground"
             >
               {sq.nav.profile}
             </Link>
@@ -76,14 +76,14 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
           {isMod ? (
             <Link
               to="/moderim"
-              className="inline-flex h-9 items-center rounded-sm px-2 text-xs font-bold uppercase tracking-widest text-foreground/70 transition-colors hover:bg-card hover:text-foreground"
+              className="hidden sm:inline-flex h-9 items-center rounded-full px-3 text-xs font-bold uppercase tracking-widest text-foreground/70 transition-colors hover:bg-card hover:text-foreground"
             >
               {sq.nav.admin}
             </Link>
           ) : null}
           <Link
             to={user ? "/profili" : "/auth"}
-            className="inline-flex h-9 items-center rounded-sm bg-primary px-4 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/85"
+            className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/85"
           >
             {user ? sq.auth.signOut : sq.auth.signIn}
           </Link>
@@ -107,9 +107,9 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
                     to="/dhoma/$slug"
                     params={{ slug: r.slug }}
                     className={cn(
-                      "flex items-center justify-between group px-2 py-1.5 rounded-sm transition-colors",
+                      "flex items-center justify-between group px-3 py-2 rounded-lg transition-colors",
                       active
-                        ? "bg-card text-primary border-l-2 border-primary font-medium"
+                        ? "bg-card text-primary font-semibold"
                         : "text-foreground/70 hover:bg-card/50 hover:text-foreground",
                     )}
                   >
@@ -133,7 +133,7 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
         </aside>
 
         {/* Center */}
-        <main className="flex-1 min-w-0 flex flex-col bg-background pb-16 md:pb-0">{children}</main>
+        <main className="flex-1 min-w-0 flex flex-col bg-background">{children}</main>
 
         {/* Right column */}
         {right && (
@@ -143,8 +143,8 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
         )}
       </div>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-border bg-background">
+      {/* Mobile bottom nav — a real flex child (not fixed) so the docked composer sits above it. */}
+      <nav className="shrink-0 md:hidden border-t border-border bg-background">
         <div className={cn("grid h-16", isMod ? "grid-cols-5" : "grid-cols-4")}>
           <BottomLink
             to="/"
