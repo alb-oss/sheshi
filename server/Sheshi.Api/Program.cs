@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Amazon.Runtime;
+using Amazon.S3;
 using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -47,8 +49,26 @@ builder.Services.AddScoped<ModerationActionLogger>();
 builder.Services.AddScoped<ModerationMetricsService>();
 builder.Services.AddScoped<ModerationRuleEngine>();
 builder.Services.AddScoped<RoomService>();
-builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
-builder.Services.AddScoped<IVideoStorage, LocalFileVideoStorage>();
+builder.Services.AddScoped<IImageStorage, ImageStorage>();
+builder.Services.AddScoped<IVideoStorage, VideoStorage>();
+// Sink selection: "s3" uploads validated bytes to S3-compatible object storage (MinIO/S3/R2);
+// anything else writes to local disk. Keyed off Storage:Provider so prod flips to S3 by changing
+// only config — the validating ImageStorage/VideoStorage are unaffected.
+if (string.Equals(builder.Configuration["Storage:Provider"], "s3", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddSingleton<IAmazonS3>(sp =>
+    {
+        var s3 = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<StorageOptions>>().Value.S3;
+        var config = new AmazonS3Config { ForcePathStyle = s3.ForcePathStyle, AuthenticationRegion = s3.Region };
+        if (!string.IsNullOrWhiteSpace(s3.Endpoint)) config.ServiceURL = s3.Endpoint;
+        return new AmazonS3Client(new BasicAWSCredentials(s3.AccessKey, s3.SecretKey), config);
+    });
+    builder.Services.AddScoped<IBlobStore, S3BlobStore>();
+}
+else
+{
+    builder.Services.AddScoped<IBlobStore, LocalBlobStore>();
+}
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<HighlightsTicker>();
 builder.Services.AddScoped<RealtimeNotifier>();

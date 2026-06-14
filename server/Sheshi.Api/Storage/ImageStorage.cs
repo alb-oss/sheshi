@@ -7,9 +7,14 @@ using SixLabors.ImageSharp.Formats.Webp;
 
 namespace Sheshi.Api.Storage;
 
-public class LocalFileImageStorage(
+// Validates + sanitizes an uploaded image (content-type allowlist, size cap, and an ImageSharp
+// re-encode that strips metadata and drops any trailing payload — the security-critical step), then
+// hands the clean bytes to the configured IBlobStore. Backend-agnostic: the exact same validation
+// runs whether the sink writes to local disk or to S3-compatible object storage.
+public class ImageStorage(
     IOptions<StorageOptions> options,
-    IOptions<ImageSafetyOptions> imageSafetyOptions) : IImageStorage
+    IOptions<ImageSafetyOptions> imageSafetyOptions,
+    IBlobStore blobStore) : IImageStorage
 {
     private static readonly IReadOnlyDictionary<string, string> Extensions = new Dictionary<string, string>
     {
@@ -34,12 +39,8 @@ public class LocalFileImageStorage(
 
         var sanitized = await SanitizeAsync(buffer.ToArray(), contentType, ct);
 
-        Directory.CreateDirectory(_options.UploadPath);
         var fileName = $"{Guid.NewGuid():N}{extension}";
-        var path = Path.Combine(_options.UploadPath, fileName);
-        await File.WriteAllBytesAsync(path, sanitized, ct);
-
-        return $"{_options.PublicBaseUrl.TrimEnd('/')}/{fileName}";
+        return await blobStore.PutAsync(sanitized, fileName, contentType, ct);
     }
 
     private async Task<byte[]> SanitizeAsync(byte[] bytes, string contentType, CancellationToken ct)
