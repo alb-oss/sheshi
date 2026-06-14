@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,8 +13,11 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { getThread } from "@/api";
 import { PostCard } from "@/components/PostCard";
 import { Composer } from "@/components/Composer";
+import { AuthButton } from "@/components/AuthButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/useAuth";
-import { theme } from "@/theme";
+import { type Palette } from "@/theme";
+import { useTheme } from "@/useTheme";
 import type { MessageRow, ReplyNode, ThreadData } from "@/types";
 
 type Flat = { message: MessageRow; depth: number };
@@ -30,6 +33,8 @@ function flatten(nodes: ReplyNode[], out: Flat[] = []): Flat[] {
 export default function Thread() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [thread, setThread] = useState<ThreadData | null>(null);
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState<{ id: string; label: string } | null>(null);
@@ -47,9 +52,17 @@ export default function Thread() {
     load();
   }, [load]);
 
+  const headerActions = (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <ThemeToggle />
+      <AuthButton />
+    </View>
+  );
+
   if (loading) {
     return (
       <View style={styles.center}>
+        <Stack.Screen options={{ title: "Tema", headerRight: () => headerActions }} />
         <ActivityIndicator color={theme.primary} />
       </View>
     );
@@ -57,6 +70,7 @@ export default function Thread() {
   if (!thread) {
     return (
       <View style={styles.center}>
+        <Stack.Screen options={{ title: "Tema", headerRight: () => headerActions }} />
         <Text style={styles.muted}>Tema nuk u gjet.</Text>
       </View>
     );
@@ -71,7 +85,7 @@ export default function Thread() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 96 : 0}
     >
-      <Stack.Screen options={{ title: "Tema" }} />
+      <Stack.Screen options={{ title: "Tema", headerRight: () => headerActions }} />
       <FlatList
         data={flat}
         keyExtractor={(f) => f.message.id}
@@ -124,26 +138,28 @@ export default function Thread() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: theme.bg },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: theme.bg },
-  muted: { color: theme.textMuted },
-  divider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.border,
-    backgroundColor: theme.card,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  dividerText: { color: theme.textMuted, fontSize: 11, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
-  threadLine: { width: StyleSheet.hairlineWidth, backgroundColor: theme.threadLine, marginLeft: 8 },
-  sep: { height: StyleSheet.hairlineWidth, backgroundColor: theme.border },
-  signInBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.border,
-    padding: 16,
-    alignItems: "center",
-  },
-  signInText: { color: theme.primary, fontWeight: "700" },
-});
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: t.bg },
+    center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: t.bg },
+    muted: { color: t.textMuted },
+    divider: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: t.border,
+      backgroundColor: t.card,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    dividerText: { color: t.textMuted, fontSize: 11, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
+    threadLine: { width: StyleSheet.hairlineWidth, backgroundColor: t.threadLine, marginLeft: 8 },
+    sep: { height: StyleSheet.hairlineWidth, backgroundColor: t.border },
+    signInBar: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.border,
+      padding: 16,
+      alignItems: "center",
+    },
+    signInText: { color: t.primary, fontWeight: "700" },
+  });
+}

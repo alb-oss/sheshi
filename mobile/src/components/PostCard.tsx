@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { theme, radius } from "@/theme";
+import { radius, type Palette } from "@/theme";
+import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
 import { VoteControl } from "./VoteControl";
 
@@ -14,6 +16,8 @@ export function PostCard({
   onReply?: () => void;
   compact?: boolean;
 }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const name = message.author?.display_name || message.author?.username || "anonim";
   const handle = "@" + (message.author?.username || "anonim");
   const initials = name
@@ -75,28 +79,30 @@ function relativeTime(iso: string) {
   return `${Math.round(h / 24)}d`;
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
-  pressed: { backgroundColor: theme.card },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    backgroundColor: theme.card2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarSm: { width: 30, height: 30 },
-  avatarText: { color: theme.textMuted, fontWeight: "800", fontSize: 12 },
-  content: { flex: 1, gap: 4 },
-  header: { flexDirection: "row", alignItems: "center", gap: 5 },
-  name: { color: theme.text, fontWeight: "800", fontSize: 14, flexShrink: 1 },
-  muted: { color: theme.textMuted, fontSize: 13 },
-  dot: { color: theme.textFaint, fontSize: 13 },
-  body: { color: theme.text, fontSize: 15, lineHeight: 21 },
-  deleted: { fontStyle: "italic", color: theme.textFaint },
-  actions: { flexDirection: "row", alignItems: "center", gap: 14, marginTop: 4 },
-  action: { flexDirection: "row", alignItems: "center", gap: 5 },
-  actionIcon: { fontSize: 13 },
-  actionText: { color: theme.textMuted, fontWeight: "700", fontSize: 13 },
-});
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
+    row: { flexDirection: "row", gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
+    pressed: { backgroundColor: t.card },
+    avatar: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.pill,
+      backgroundColor: t.card2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    avatarSm: { width: 30, height: 30 },
+    avatarText: { color: t.textMuted, fontWeight: "800", fontSize: 12 },
+    content: { flex: 1, gap: 4 },
+    header: { flexDirection: "row", alignItems: "center", gap: 5 },
+    name: { color: t.text, fontWeight: "800", fontSize: 14, flexShrink: 1 },
+    muted: { color: t.textMuted, fontSize: 13 },
+    dot: { color: t.textFaint, fontSize: 13 },
+    body: { color: t.text, fontSize: 15, lineHeight: 21 },
+    deleted: { fontStyle: "italic", color: t.textFaint },
+    actions: { flexDirection: "row", alignItems: "center", gap: 14, marginTop: 4 },
+    action: { flexDirection: "row", alignItems: "center", gap: 5 },
+    actionIcon: { fontSize: 13 },
+    actionText: { color: t.textMuted, fontWeight: "700", fontSize: 13 },
+  });
+}

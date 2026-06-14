@@ -1,15 +1,26 @@
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { setVote } from "@/api";
-import { theme, radius } from "@/theme";
+import { radius, type Palette } from "@/theme";
+import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
 
-// Reddit-style up/score/down pill. Optimistic, with light haptics — iPhone-like.
+// Reddit-style up/score/down pill. Optimistic, with light haptics and a spring "pop" on the
+// tapped arrow — iPhone-like.
 export function VoteControl({ message, compact }: { message: MessageRow; compact?: boolean }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [score, setScore] = useState(message.score ?? 0);
   const [myVote, setMyVote] = useState(message.my_vote ?? 0);
   const [busy, setBusy] = useState(false);
+  const upPop = useRef(new Animated.Value(1)).current;
+  const downPop = useRef(new Animated.Value(1)).current;
+
+  function pop(v: Animated.Value) {
+    v.setValue(0.7);
+    Animated.spring(v, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 14 }).start();
+  }
 
   async function vote(dir: 1 | -1) {
     if (busy) return;
@@ -18,6 +29,7 @@ export function VoteControl({ message, compact }: { message: MessageRow; compact
     const next = (myVote === dir ? 0 : dir) as -1 | 0 | 1;
     setMyVote(next);
     setScore(prevScore - prevVote + next);
+    if (next !== 0) pop(dir === 1 ? upPop : downPop);
     setBusy(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     try {
@@ -32,28 +44,26 @@ export function VoteControl({ message, compact }: { message: MessageRow; compact
 
   const size = compact ? 18 : 20;
   const scoreColor = myVote === 1 ? theme.primary : myVote === -1 ? theme.downvote : theme.text;
-  const tint =
-    myVote === 1 ? "rgba(245,51,63,0.12)" : myVote === -1 ? "rgba(110,139,255,0.12)" : theme.card2;
+  const tint = myVote === 1 ? theme.upTint : myVote === -1 ? theme.downTint : theme.card2;
 
   return (
     <View style={[styles.pill, { backgroundColor: tint }]}>
       <Pressable hitSlop={8} onPress={() => vote(1)} style={styles.btn}>
-        <Arrow dir="up" color={myVote === 1 ? theme.primary : theme.textMuted} size={size} filled={myVote === 1} />
+        <Animated.Text
+          style={[styles.arrow, { color: myVote === 1 ? theme.primary : theme.textMuted, fontSize: size, transform: [{ scale: upPop }] }]}
+        >
+          ▲
+        </Animated.Text>
       </Pressable>
       <Text style={[styles.score, { color: scoreColor }]}>{formatScore(score)}</Text>
       <Pressable hitSlop={8} onPress={() => vote(-1)} style={styles.btn}>
-        <Arrow dir="down" color={myVote === -1 ? theme.downvote : theme.textMuted} size={size} filled={myVote === -1} />
+        <Animated.Text
+          style={[styles.arrow, { color: myVote === -1 ? theme.downvote : theme.textMuted, fontSize: size, transform: [{ scale: downPop }] }]}
+        >
+          ▼
+        </Animated.Text>
       </Pressable>
     </View>
-  );
-}
-
-// Lightweight chevron-style arrow drawn with two rotated bars (no icon dependency).
-function Arrow({ dir, color, size, filled }: { dir: "up" | "down"; color: string; size: number; filled: boolean }) {
-  return (
-    <Text style={{ color, fontSize: size, fontWeight: filled ? "900" : "700", lineHeight: size + 2 }}>
-      {dir === "up" ? "▲" : "▼"}
-    </Text>
   );
 }
 
@@ -62,15 +72,18 @@ function formatScore(n: number) {
   return String(n);
 }
 
-const styles = StyleSheet.create({
-  pill: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: radius.pill,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    gap: 2,
-  },
-  btn: { paddingHorizontal: 6, paddingVertical: 4 },
-  score: { fontSize: 13, fontWeight: "800", minWidth: 22, textAlign: "center" },
-});
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
+    pill: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderRadius: radius.pill,
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+      gap: 2,
+    },
+    btn: { paddingHorizontal: 6, paddingVertical: 4 },
+    arrow: { fontWeight: "800", lineHeight: 22 },
+    score: { fontSize: 13, fontWeight: "800", minWidth: 22, textAlign: "center" },
+  });
+}

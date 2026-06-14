@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,9 +11,12 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { login } from "@/api";
-import { theme, radius } from "@/theme";
+import { radius, type Palette } from "@/theme";
+import { useTheme } from "@/useTheme";
 
 export default function Auth() {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -76,31 +79,33 @@ export default function Auth() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: theme.bg },
-  wrap: { flex: 1, justifyContent: "center", paddingHorizontal: 24, gap: 12 },
-  logo: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: theme.primary, marginBottom: 4 },
-  title: { color: theme.text, fontSize: 24, fontWeight: "900" },
-  subtitle: { color: theme.textMuted, fontSize: 15, marginBottom: 8 },
-  field: { gap: 6 },
-  label: { color: theme.textMuted, fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 },
-  input: {
-    backgroundColor: theme.card,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.border,
-    color: theme.text,
-    fontSize: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  error: { color: theme.primary, fontSize: 13 },
-  btn: {
-    marginTop: 8,
-    backgroundColor: theme.primary,
-    borderRadius: radius.pill,
-    paddingVertical: 15,
-    alignItems: "center",
-  },
-  btnText: { color: theme.onPrimary, fontSize: 16, fontWeight: "800" },
-});
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: t.bg },
+    wrap: { flex: 1, justifyContent: "center", paddingHorizontal: 24, gap: 12 },
+    logo: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: t.primary, marginBottom: 4 },
+    title: { color: t.text, fontSize: 24, fontWeight: "900" },
+    subtitle: { color: t.textMuted, fontSize: 15, marginBottom: 8 },
+    field: { gap: 6 },
+    label: { color: t.textMuted, fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1 },
+    input: {
+      backgroundColor: t.card,
+      borderRadius: radius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.border,
+      color: t.text,
+      fontSize: 16,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+    },
+    error: { color: t.primary, fontSize: 13 },
+    btn: {
+      marginTop: 8,
+      backgroundColor: t.primary,
+      borderRadius: radius.pill,
+      paddingVertical: 15,
+      alignItems: "center",
+    },
+    btnText: { color: t.onPrimary, fontSize: 16, fontWeight: "800" },
+  });
+}
