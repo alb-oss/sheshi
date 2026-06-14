@@ -1,6 +1,6 @@
 import { api, ApiError, apiForm, apiJson, apiNoContent } from "@/lib/api-client";
 
-export type SheshiErrorCode = "EMPTY" | "TOO_LONG" | "UNAUTH" | "RATE_LIMITED" | "INVALID_IMAGE";
+export type SheshiErrorCode = "EMPTY" | "TOO_LONG" | "UNAUTH" | "RATE_LIMITED" | "INVALID_IMAGE" | "INVALID_VIDEO";
 
 export class SheshiError extends Error {
   code: SheshiErrorCode;
@@ -23,6 +23,8 @@ function toMessageMutationError(error: unknown): SheshiError | null {
   if (code === "EMPTY") return new SheshiError("EMPTY", { cause: error, status: error.status });
   if (code === "INVALID_IMAGE" || code === "UNSUPPORTED_IMAGE_TYPE" || code === "IMAGE_DIMENSIONS_TOO_LARGE" || code === "IMAGE_TOO_LARGE")
     return new SheshiError("INVALID_IMAGE", { cause: error, status: error.status });
+  if (code === "INVALID_VIDEO" || code === "UNSUPPORTED_VIDEO_TYPE" || code === "VIDEO_TOO_LARGE")
+    return new SheshiError("INVALID_VIDEO", { cause: error, status: error.status });
   return null;
 }
 
@@ -54,6 +56,7 @@ export interface MessageRow {
   parent_id: string | null;
   body: string;
   image_url: string | null;
+  video_url: string | null;
   deleted_at: string | null;
   created_at: string;
   author?: Profile | null;
@@ -144,18 +147,20 @@ export async function postMessage(input: {
   body: string;
   parent_id?: string | null;
   image?: File | null;
+  video?: File | null;
 }): Promise<MessageRow> {
   const body = input.body.trim();
-  if (!body && !input.image) throw new SheshiError("EMPTY");
+  if (!body && !input.image && !input.video) throw new SheshiError("EMPTY");
   if (body.length > 2000) throw new SheshiError("TOO_LONG");
 
   try {
-    if (input.image) {
+    if (input.image || input.video) {
       const form = new FormData();
       form.set("room_id", input.room_id);
       if (input.parent_id) form.set("parent_id", input.parent_id);
       form.set("body", body);
-      form.set("image", input.image);
+      if (input.image) form.set("image", input.image);
+      if (input.video) form.set("video", input.video);
       return await apiForm<MessageRow>("/api/messages", form);
     }
 
