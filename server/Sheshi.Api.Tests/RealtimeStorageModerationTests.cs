@@ -124,6 +124,53 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task Multipart_message_post_saves_video_and_returns_video_url()
+    {
+        var client = factory.CreateClient();
+        var user = await RegisterAsync(client, "video");
+        var room = await GetRoomAsync(client, "sheshi");
+        UseBearer(client, user.AccessToken);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(room.Id.ToString()), "room_id");
+        form.Add(new StringContent("Message with video"), "body");
+        var video = new ByteArrayContent(CreateMinimalMp4());
+        video.Headers.ContentType = MediaTypeHeaderValue.Parse("video/mp4");
+        form.Add(video, "video", "clip.mp4");
+
+        var response = await client.PostAsync("/api/messages", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var message = await response.Content.ReadFromJsonAsync<MessageDto>();
+        message.Should().NotBeNull();
+        message!.VideoUrl.Should().StartWith("http://localhost:5080/uploads/");
+        message.VideoUrl.Should().EndWith(".mp4");
+    }
+
+    [Fact]
+    public async Task Multipart_upload_rejects_disguised_video_bytes()
+    {
+        var client = factory.CreateClient();
+        var user = await RegisterAsync(client, "fake-video");
+        var room = await GetRoomAsync(client, "sheshi");
+        UseBearer(client, user.AccessToken);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(room.Id.ToString()), "room_id");
+        form.Add(new StringContent("fake video"), "body");
+        var video = new ByteArrayContent("this is not an mp4 container"u8.ToArray());
+        video.Headers.ContentType = MediaTypeHeaderValue.Parse("video/mp4");
+        form.Add(video, "video", "fake.mp4");
+
+        var response = await client.PostAsync("/api/messages", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorDto>();
+        payload.Should().NotBeNull();
+        payload!.Error.Should().Be("INVALID_VIDEO");
+    }
+
+    [Fact]
     public async Task Multipart_upload_rewrites_image_and_drops_trailing_payload()
     {
         var uploadPath = Path.Combine(Path.GetTempPath(), $"sheshi-safe-images-{Guid.NewGuid():N}");
@@ -505,6 +552,19 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         return output.ToArray();
     }
 
+    // Smallest payload the video storage layer accepts: an ISO Base Media File Format 'ftyp' box.
+    // size(4) + 'ftyp'(4) + major brand + minor version + compatible brand = 24 bytes. The
+    // storage layer only checks for the 'ftyp' marker at byte offset 4 (shared by mp4/mov).
+    private static byte[] CreateMinimalMp4() =>
+    [
+        0x00, 0x00, 0x00, 0x18,
+        (byte)'f', (byte)'t', (byte)'y', (byte)'p',
+        (byte)'i', (byte)'s', (byte)'o', (byte)'m',
+        0x00, 0x00, 0x02, 0x00,
+        (byte)'i', (byte)'s', (byte)'o', (byte)'m',
+        (byte)'m', (byte)'p', (byte)'4', (byte)'2',
+    ];
+
     private static int FindPngChunkOffset(byte[] png, string chunkType)
     {
         var offset = 8;
@@ -592,6 +652,7 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         [property: JsonPropertyName("parent_id")] Guid? ParentId,
         [property: JsonPropertyName("body")] string Body,
         [property: JsonPropertyName("image_url")] string? ImageUrl,
+        [property: JsonPropertyName("video_url")] string? VideoUrl,
         [property: JsonPropertyName("deleted_at")] DateTimeOffset? DeletedAt,
         [property: JsonPropertyName("created_at")] DateTimeOffset CreatedAt,
         [property: JsonPropertyName("author")] AuthorDto? Author,
