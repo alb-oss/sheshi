@@ -1,18 +1,38 @@
-import { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { logout } from "@/api";
+import { listUserMessages, logout } from "@/api";
+import { PostCard } from "@/components/PostCard";
 import { useAuth } from "@/useAuth";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
+import type { MessageRow } from "@/types";
 
 export default function Profili() {
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { user, ready } = useAuth();
+
+  const [tab, setTab] = useState<"posts" | "comments">("posts");
+  const [items, setItems] = useState<MessageRow[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const userId = user?.id;
+
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    setListLoading(true);
+    listUserMessages(userId, tab)
+      .then((p) => alive && setItems(p.items))
+      .catch(() => alive && setItems([]))
+      .finally(() => alive && setListLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [userId, tab]);
 
   if (ready && !user) {
     return (
@@ -45,6 +65,10 @@ export default function Profili() {
         </View>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.handle}>{handle}</Text>
+        <View style={styles.karmaRow}>
+          <Ionicons name="ribbon" size={16} color={theme.primary} />
+          <Text style={styles.karmaText}>{user?.karma ?? 0} karma</Text>
+        </View>
         {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
         {roles.length ? (
           <View style={styles.roles}>
@@ -55,6 +79,35 @@ export default function Profili() {
             ))}
           </View>
         ) : null}
+      </View>
+
+      {/* Posts / comments */}
+      <View style={styles.tabs}>
+        {(["posts", "comments"] as const).map((t) => (
+          <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
+            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+              {t === "posts" ? "Postimet" : "Përgjigjet"}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={styles.list}>
+        {listLoading ? (
+          <ActivityIndicator color={theme.textMuted} style={{ marginVertical: 20 }} />
+        ) : items.length === 0 ? (
+          <Text style={styles.listEmpty}>{tab === "posts" ? "Asnjë postim ende." : "Asnjë përgjigje ende."}</Text>
+        ) : (
+          items.map((m) => (
+            <View key={m.id} style={styles.listItem}>
+              <PostCard
+                message={m}
+                compact
+                currentUserId={userId ?? null}
+                onPress={() => router.push(`/tema/${m.id}`)}
+              />
+            </View>
+          ))
+        )}
       </View>
 
       <Pressable onPress={() => logout()} style={styles.signOut}>
@@ -100,10 +153,27 @@ function makeStyles(t: Palette) {
     avatarText: { color: t.primary, fontWeight: "900", fontSize: 28 },
     name: { color: t.text, fontSize: 20, fontWeight: "800" },
     handle: { color: t.textMuted, fontSize: 14 },
-    email: { color: t.textFaint, fontSize: 13, marginTop: 2 },
+    karmaRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 },
+    karmaText: { color: t.primary, fontSize: 15, fontWeight: "800" },
+    email: { color: t.textFaint, fontSize: 13, marginTop: 4 },
     roles: { flexDirection: "row", gap: 6, marginTop: 10 },
     roleChip: { backgroundColor: t.primary, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 4 },
     roleText: { color: t.onPrimary, fontSize: 11, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1 },
+    tabs: { flexDirection: "row", gap: 6, marginTop: 16 },
+    tab: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: radius.md, backgroundColor: t.card },
+    tabActive: { backgroundColor: t.primary },
+    tabText: { color: t.textMuted, fontWeight: "800", fontSize: 14 },
+    tabTextActive: { color: t.onPrimary },
+    list: {
+      marginTop: 10,
+      backgroundColor: t.card,
+      borderRadius: radius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.border,
+      overflow: "hidden",
+    },
+    listItem: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.border },
+    listEmpty: { color: t.textMuted, fontSize: 14, padding: 16 },
     signOut: {
       flexDirection: "row",
       alignItems: "center",

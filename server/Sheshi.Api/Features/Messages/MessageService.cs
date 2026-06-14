@@ -62,6 +62,36 @@ public class MessageService(AppDbContext db)
         return await ToCursorPageAsync(replies, take, callerId, ct);
     }
 
+    // A user's own posts (ParentId == null) or comments (ParentId != null), newest-first, excluding
+    // deleted — for the profile page. Same cursor scheme as the room feed.
+    public async Task<CursorPageDto<MessageDto>> ListUserMessagesAsync(
+        Guid authorId,
+        bool comments,
+        Guid? callerId,
+        int limit,
+        string? cursor,
+        CancellationToken ct = default)
+    {
+        var take = NormalizeLimit(limit, DefaultRoomLimit);
+        var cursorCreatedAt = DecodeCursor(cursor);
+
+        var query = db.Messages
+            .AsNoTracking()
+            .Where(m => m.AuthorId == authorId && m.DeletedAt == null &&
+                        (comments ? m.ParentId != null : m.ParentId == null));
+
+        if (cursorCreatedAt is not null)
+            query = query.Where(m => m.CreatedAt < cursorCreatedAt);
+
+        var messages = await query
+            .OrderByDescending(m => m.CreatedAt)
+            .ThenByDescending(m => m.Id)
+            .Take(take + 1)
+            .ToListAsync(ct);
+
+        return await ToCursorPageAsync(messages, take, callerId, ct);
+    }
+
     public async Task<IReadOnlyList<MessageDto>> EnrichAsync(
         IReadOnlyList<Message> messages,
         Guid? callerId,

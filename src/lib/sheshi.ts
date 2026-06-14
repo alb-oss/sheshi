@@ -133,6 +133,18 @@ export function listReplies(
   return apiJson<CursorPage<MessageRow>>(`/api/messages/${parentId}/replies?${params.toString()}`);
 }
 
+// A user's own posts or comments, for the profile page. Newest-first, deleted excluded.
+export function listUserMessages(
+  userId: string,
+  type: "posts" | "comments",
+  cursor?: string | null,
+  limit = 30,
+): Promise<CursorPage<MessageRow>> {
+  const params = new URLSearchParams({ type, limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  return apiJson<CursorPage<MessageRow>>(`/api/users/${userId}/messages?${params.toString()}`);
+}
+
 export async function getThread(messageId: string): Promise<ThreadData | null> {
   try {
     return await apiJson<ThreadData>(`/api/threads/${messageId}`);

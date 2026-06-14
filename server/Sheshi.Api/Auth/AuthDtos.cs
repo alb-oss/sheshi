@@ -23,7 +23,10 @@ public record UserDto(
     string? DisplayName,
     string? AvatarUrl,
     string[] Roles,
-    bool IsBanned);
+    bool IsBanned,
+    // Reputation score. Defaults to 0 on login/refresh payloads (kept lean) and is filled in by
+    // GET /api/me, which clients read as the authoritative user. See UserStatsService.
+    int Karma = 0);
 
 public record AuthResponse(
     string AccessToken,

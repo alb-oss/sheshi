@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { LogOut, ShieldCheck, Star } from "lucide-react";
+import { Award, LogOut, ShieldCheck, Star } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { MessageCard } from "@/components/MessageCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { sq } from "@/i18n/sq";
 import { apiJson, apiNoContent } from "@/lib/api-client";
 import { getStoredTokens } from "@/lib/token-store";
 import { signOutLocal, useAuth, type ApiUser } from "@/hooks/use-auth";
+import { listUserMessages, type MessageRow } from "@/lib/sheshi";
 import { canAdmin, canModerate } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -95,6 +97,10 @@ function ProfilePage() {
               <div className="min-w-0">
                 <div className="truncate text-lg font-bold">{name}</div>
                 <div className="truncate text-sm text-muted-foreground">@{user.username || "anonim"}</div>
+                <div className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-bold text-primary">
+                  <Award className="h-4 w-4" aria-hidden />
+                  {user.karma ?? 0} karma
+                </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {canAdmin(user) ? (
                     <RoleBadge icon={<ShieldCheck className="h-3 w-3" />} label="Admin" />
@@ -133,6 +139,8 @@ function ProfilePage() {
               </Button>
             </div>
 
+            <ProfileMessages userId={user.id} currentUserId={user.id} />
+
             {(canModerate(user)) && (
               <Link
                 to="/moderim"
@@ -156,6 +164,57 @@ function ProfilePage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+function ProfileMessages({ userId, currentUserId }: { userId: string; currentUserId: string | null }) {
+  const [tab, setTab] = useState<"posts" | "comments">("posts");
+  const [items, setItems] = useState<MessageRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    listUserMessages(userId, tab)
+      .then((page) => alive && setItems(page.items))
+      .catch(() => alive && setItems([]))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [userId, tab]);
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card/30">
+      <div className="flex gap-1 border-b border-border p-1">
+        {(["posts", "comments"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={cn(
+              "flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-colors",
+              tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary",
+            )}
+          >
+            {t === "posts" ? "Postimet" : "Përgjigjet"}
+          </button>
+        ))}
+      </div>
+      {loading ? (
+        <p className="p-4 text-sm text-muted-foreground">{sq.chat.loading}</p>
+      ) : items.length === 0 ? (
+        <p className="p-4 text-sm text-muted-foreground">
+          {tab === "posts" ? "Asnjë postim ende." : "Asnjë përgjigje ende."}
+        </p>
+      ) : (
+        <div className="divide-y divide-border">
+          {items.map((m) => (
+            <MessageCard key={m.id} message={m} roomSlug="sheshi" currentUserId={currentUserId} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
