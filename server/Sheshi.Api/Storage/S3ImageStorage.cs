@@ -1,10 +1,13 @@
+using Amazon.S3;
+using Amazon.S3.Model;
 using Microsoft.Extensions.Options;
 
 namespace Sheshi.Api.Storage;
 
-public class LocalFileImageStorage(
+public class S3ImageStorage(
     IOptions<StorageOptions> options,
-    IOptions<ImageSafetyOptions> imageSafetyOptions) : IImageStorage
+    IOptions<ImageSafetyOptions> imageSafetyOptions,
+    IAmazonS3 s3) : IImageStorage
 {
     private static readonly IReadOnlyDictionary<string, string> Extensions = new Dictionary<string, string>
     {
@@ -29,11 +32,17 @@ public class LocalFileImageStorage(
 
         var sanitizer = new ImageSanitizer(_imageSafety, _options.MaxBytes);
         var sanitized = await sanitizer.SanitizeAsync(buffer.ToArray(), contentType, ct);
-
-        Directory.CreateDirectory(_options.UploadPath);
         var fileName = $"{Guid.NewGuid():N}{extension}";
-        var path = Path.Combine(_options.UploadPath, fileName);
-        await File.WriteAllBytesAsync(path, sanitized, ct);
+
+        await using var upload = new MemoryStream(sanitized);
+        await s3.PutObjectAsync(new PutObjectRequest
+        {
+            BucketName = _options.S3.Bucket,
+            Key = fileName,
+            InputStream = upload,
+            ContentType = contentType,
+            AutoCloseStream = false
+        }, ct);
 
         return $"{_options.PublicBaseUrl.TrimEnd('/')}/{fileName}";
     }

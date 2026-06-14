@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Amazon.Runtime;
+using Amazon.S3;
 using AspNet.Security.OAuth.Apple;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -52,7 +54,33 @@ builder.Services.AddScoped<ModerationActionLogger>();
 builder.Services.AddScoped<ModerationMetricsService>();
 builder.Services.AddScoped<ModerationRuleEngine>();
 builder.Services.AddScoped<RoomService>();
-builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
+var storageProvider = builder.Configuration["Storage:Provider"]?.Trim().ToLowerInvariant() ?? "local";
+if (storageProvider == "s3")
+{
+    builder.Services.AddSingleton<IAmazonS3>(_ =>
+    {
+        var storage = builder.Configuration.GetSection("Storage").Get<StorageOptions>() ?? new StorageOptions();
+        if (string.IsNullOrWhiteSpace(storage.S3.Bucket))
+            throw new InvalidOperationException("Storage:S3:Bucket is required when Storage:Provider=s3.");
+        if (string.IsNullOrWhiteSpace(storage.S3.Endpoint))
+            throw new InvalidOperationException("Storage:S3:Endpoint is required when Storage:Provider=s3.");
+
+        var accessKey = builder.Configuration.GetRequiredSecretValue("Storage:S3:AccessKey");
+        var secretKey = builder.Configuration.GetRequiredSecretValue("Storage:S3:SecretKey");
+        var config = new AmazonS3Config
+        {
+            ServiceURL = storage.S3.Endpoint,
+            ForcePathStyle = storage.S3.ForcePathStyle,
+            AuthenticationRegion = string.IsNullOrWhiteSpace(storage.S3.Region) ? "us-east-1" : storage.S3.Region
+        };
+        return new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), config);
+    });
+    builder.Services.AddScoped<IImageStorage, S3ImageStorage>();
+}
+else
+{
+    builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
+}
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddScoped<RealtimeNotifier>();
 builder.Services.AddSignalR().AddJsonProtocol(o =>
