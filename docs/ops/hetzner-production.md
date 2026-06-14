@@ -16,8 +16,9 @@ Uploaded images/videos and encrypted database backups live in Hetzner Object Sto
 ## First Server Bootstrap
 
 1. Create a Debian 13 or Ubuntu LTS VM in Hetzner.
-2. Point Cloudflare DNS records `sheshi.al` and `api.sheshi.al` at the VM.
-3. Point `uploads.sheshi.al` at the public Hetzner Object Storage bucket endpoint.
+2. Point Cloudflare DNS records `sheshi.live`, `api.sheshi.live`, and `uploads.sheshi.live` at the VM.
+3. Create a public Hetzner Object Storage bucket named `sheshi-live-uploads`; Caddy proxies
+   `uploads.sheshi.live` to `https://sheshi-live-uploads.fsn1.your-objectstorage.com`.
 4. Generate one admin SSH key and one GitHub deploy SSH key.
 5. Run `deploy/hetzner/scripts/bootstrap-server.sh` as root from a checked-out copy of the repo.
 6. Review `/opt/sheshi/env/production.env` and replace domain/provider placeholders.
@@ -91,7 +92,7 @@ Preflight verifies required files, non-placeholder secrets, non-placeholder prod
 
 ## Daily Operations
 
-- Check external uptime for `https://sheshi.al` and `https://api.sheshi.al/health/ready`.
+- Check external uptime for `https://sheshi.live` and `https://api.sheshi.live/health/ready`.
 - Check `/opt/sheshi/state/last-backup-at`.
 - Check disk usage with `df -h` and Docker usage with `docker system df`.
 - Review failed GitHub Actions deploys and `/opt/sheshi/state/last-deploy.json`.

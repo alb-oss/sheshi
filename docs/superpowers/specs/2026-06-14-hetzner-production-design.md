@@ -105,21 +105,21 @@ Hetzner Object Storage
 
 The expected production domains should be explicit:
 
-- `sheshi.al` or chosen root domain: public web app.
-- `api.sheshi.al`: API and SignalR hub.
-- `uploads.sheshi.al` or object-storage public/custom domain: uploaded images.
-- Optional `status.sheshi.al`: uptime/status page later.
+- `sheshi.live` or chosen root domain: public web app.
+- `api.sheshi.live`: API and SignalR hub.
+- `uploads.sheshi.live`: uploaded images, proxied by Caddy to the public Hetzner Object Storage bucket.
+- Optional `status.sheshi.live`: uptime/status page later.
 
-The web app must use `VITE_API_BASE_URL=https://api.sheshi.al`.
+The web app must use `VITE_API_BASE_URL=https://api.sheshi.live`.
 
 The mobile app must use the same production API base through Expo configuration.
 
 The API must set:
 
-- `Frontend:BaseUrl=https://sheshi.al`
-- `Cors:AllowedOrigins=https://sheshi.al`
+- `Frontend:BaseUrl=https://sheshi.live`
+- `Cors:AllowedOrigins=https://sheshi.live`
 - JWT issuer and audience matching production.
-- OAuth provider callback URLs matching `https://api.sheshi.al/api/auth/external/callback`.
+- OAuth provider callback URLs matching `https://api.sheshi.live/api/auth/external/callback`.
 
 ## Hetzner VM
 
@@ -190,9 +190,9 @@ Responsibilities:
 Recommended route shape:
 
 ```text
-https://sheshi.al -> sheshi-web:3000
-https://api.sheshi.al -> sheshi-api:8080
-https://api.sheshi.al/hub -> sheshi-api:8080/hub with WebSocket support
+https://sheshi.live -> sheshi-web:3000
+https://api.sheshi.live -> sheshi-api:8080
+https://api.sheshi.live/hub -> sheshi-api:8080/hub with WebSocket support
 ```
 
 Cloudflare may terminate TLS at the edge, but Caddy should still serve HTTPS from Cloudflare to origin where practical. Use Cloudflare Full (strict) once origin certificates are configured correctly.
@@ -307,9 +307,9 @@ Recommended config shape:
 
 ```text
 Storage__Provider=s3
-Storage__PublicBaseUrl=https://uploads.sheshi.al
+Storage__PublicBaseUrl=https://uploads.sheshi.live
 Storage__MaxBytes=20971520
-Storage__S3__Bucket=sheshi-uploads
+Storage__S3__Bucket=sheshi-live-uploads
 Storage__S3__Endpoint=https://<hetzner-object-storage-endpoint>
 Storage__S3__Region=<region>
 Storage__S3__AccessKeyFile=/run/secrets/object_storage_access_key
@@ -531,8 +531,8 @@ Deploy algorithm:
 5. Run database migration job/bundle.
 6. Start updated api and web containers.
 7. Wait for container healthchecks.
-8. Check https://api.sheshi.al/health/ready.
-9. Check https://sheshi.al.
+8. Check https://api.sheshi.live/health/ready.
+9. Check https://sheshi.live.
 10. Mark release as last good.
 11. Release lock.
 ```
@@ -600,9 +600,9 @@ Cloudflare should not hide broken origin observability. Origin logs and external
 Cloudflare records:
 
 ```text
-sheshi.al      -> Hetzner VM IP, proxied
-api.sheshi.al  -> Hetzner VM IP, proxied
-uploads...     -> Hetzner Object Storage/custom domain or proxied route if supported
+sheshi.live      -> Hetzner VM IP, proxied
+api.sheshi.live  -> Hetzner VM IP, proxied
+uploads.sheshi.live -> Hetzner VM IP, Caddy proxies to sheshi-live-uploads.<region>.your-objectstorage.com
 ```
 
 ## Caddy

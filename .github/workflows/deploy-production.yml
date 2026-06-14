@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: production
-      url: https://sheshi.al
+      url: https://sheshi.live
     steps:
       - name: Prepare SSH key
         run: |

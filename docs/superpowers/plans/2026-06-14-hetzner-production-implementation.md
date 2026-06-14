@@ -25,9 +25,9 @@ The approved design covers several production subsystems. Implement it in this o
 Assumptions used by this plan:
 
 - GitHub repo: `alb-oss/sheshi`.
-- Production web domain: `sheshi.al`.
-- Production API domain: `api.sheshi.al`.
-- Production uploads domain: `uploads.sheshi.al`.
+- Production web domain: `sheshi.live`.
+- Production API domain: `api.sheshi.live`.
+- Production uploads domain: `uploads.sheshi.live`.
 - GHCR images: `ghcr.io/alb-oss/sheshi-web` and `ghcr.io/alb-oss/sheshi-api`.
 - The implementation branch is created before code execution. Use branch prefix `codex/`.
 
@@ -560,12 +560,12 @@ public class ForwardedHeadersTests(ApiFactory factory) : IClassFixture<ApiFactor
 
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/external/google");
         request.Headers.Add("X-Forwarded-Proto", "https");
-        request.Headers.Add("X-Forwarded-Host", "api.sheshi.al");
+        request.Headers.Add("X-Forwarded-Host", "api.sheshi.live");
 
         var response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
-        response.Headers.Location!.ToString().Should().Contain("redirect_uri=https%3A%2F%2Fapi.sheshi.al%2Fapi%2Fauth%2Fexternal%2Fcallback");
+        response.Headers.Location!.ToString().Should().Contain("redirect_uri=https%3A%2F%2Fapi.sheshi.live%2Fapi%2Fauth%2Fexternal%2Fcallback");
     }
 }
 ```
@@ -712,11 +712,11 @@ public class S3ImageStorageTests
         var storage = new S3ImageStorage(
             Options.Create(new StorageOptions
             {
-                PublicBaseUrl = "https://uploads.sheshi.al",
+                PublicBaseUrl = "https://uploads.sheshi.live",
                 MaxBytes = 20 * 1024 * 1024,
                 S3 = new S3StorageOptions
                 {
-                    Bucket = "sheshi-uploads"
+                    Bucket = "sheshi-live-uploads"
                 }
             }),
             Options.Create(new ImageSafetyOptions()),
@@ -726,10 +726,10 @@ public class S3ImageStorageTests
 
         var url = await storage.SaveAsync(stream, "image/png");
 
-        url.Should().StartWith("https://uploads.sheshi.al/");
+        url.Should().StartWith("https://uploads.sheshi.live/");
         url.Should().EndWith(".png");
         client.LastRequest.Should().NotBeNull();
-        client.LastRequest!.BucketName.Should().Be("sheshi-uploads");
+        client.LastRequest!.BucketName.Should().Be("sheshi-live-uploads");
         client.LastRequest.ContentType.Should().Be("image/png");
         client.UploadedBytes.Should().NotBeEmpty();
     }
@@ -1227,10 +1227,10 @@ Create `deploy/hetzner/Caddyfile`:
 
 ```caddyfile
 {
-	email admin@sheshi.al
+	email admin@sheshi.live
 }
 
-sheshi.al {
+sheshi.live {
 	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -1241,7 +1241,7 @@ sheshi.al {
 	reverse_proxy web:3000
 }
 
-api.sheshi.al {
+api.sheshi.live {
 	encode zstd gzip
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -1259,27 +1259,27 @@ Create `deploy/hetzner/production.env.example`:
 
 ```dotenv
 SHESHI_IMAGE_TAG=0000000000000000000000000000000000000000
-VITE_API_BASE_URL=https://api.sheshi.al
-Jwt__Issuer=https://api.sheshi.al
+VITE_API_BASE_URL=https://api.sheshi.live
+Jwt__Issuer=https://api.sheshi.live
 Jwt__Audience=sheshi-web
 Jwt__AccessTokenMinutes=15
 Jwt__RefreshTokenDays=30
-Frontend__BaseUrl=https://sheshi.al
-Cors__AllowedOrigins=https://sheshi.al
-AllowedHosts=sheshi.al;api.sheshi.al
+Frontend__BaseUrl=https://sheshi.live
+Cors__AllowedOrigins=https://sheshi.live
+AllowedHosts=sheshi.live;api.sheshi.live
 Storage__Provider=s3
-Storage__PublicBaseUrl=https://uploads.sheshi.al
+Storage__PublicBaseUrl=https://uploads.sheshi.live
 Storage__MaxBytes=20971520
-Storage__S3__Bucket=sheshi-uploads
+Storage__S3__Bucket=sheshi-live-uploads
 Storage__S3__Endpoint=https://fsn1.your-objectstorage.com
 Storage__S3__Region=fsn1
 Storage__S3__ForcePathStyle=true
 Smtp__Host=smtp.postmarkapp.com
 Smtp__Port=587
-Smtp__FromEmail=no-reply@sheshi.al
+Smtp__FromEmail=no-reply@sheshi.live
 Smtp__Username=postmark-server-token
 Smtp__EnableSsl=true
-RESTIC_REPOSITORY=s3:https://fsn1.your-objectstorage.com/sheshi-backups
+RESTIC_REPOSITORY=s3:https://fsn1.your-objectstorage.com/sheshi-live-backups
 Authentication__Google__ClientId=
 Authentication__Microsoft__ClientId=
 Authentication__Apple__ClientId=
@@ -1359,7 +1359,7 @@ mkdir -p "$STATE"
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE" up -d web api caddy
 
   for i in $(seq 1 30); do
-    if curl -fsS https://api.sheshi.al/health/ready >/dev/null && curl -fsS https://sheshi.al >/dev/null; then
+    if curl -fsS https://api.sheshi.live/health/ready >/dev/null && curl -fsS https://sheshi.live >/dev/null; then
       printf '%s\n' "$TAG" > "$STATE/last-good-image-tag"
       printf '{"tag":"%s","deployed_at":"%s"}\n' "$TAG" "$(date -Is)" > "$STATE/last-deploy.json"
       exit 0
@@ -1395,7 +1395,7 @@ sed -i.bak "s/^SHESHI_IMAGE_TAG=.*/SHESHI_IMAGE_TAG=$PREVIOUS_TAG/" "$ENV_FILE"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE" up -d web api caddy
 
 for i in $(seq 1 20); do
-  if curl -fsS https://api.sheshi.al/health/ready >/dev/null && curl -fsS https://sheshi.al >/dev/null; then
+  if curl -fsS https://api.sheshi.live/health/ready >/dev/null && curl -fsS https://sheshi.live >/dev/null; then
     echo "Rollback to $PREVIOUS_TAG succeeded"
     exit 0
   fi
@@ -1707,7 +1707,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: production
-      url: https://sheshi.al
+      url: https://sheshi.live
     steps:
       - name: Prepare SSH key
         run: |
@@ -1785,7 +1785,7 @@ Production runs on one Hetzner VM using Docker Compose and Caddy.
 ## First Server Bootstrap
 
 1. Create Debian 13 or Ubuntu LTS VM in Hetzner.
-2. Point Cloudflare DNS records `sheshi.al` and `api.sheshi.al` at the VM.
+2. Point Cloudflare DNS records `sheshi.live` and `api.sheshi.live` at the VM.
 3. Install Docker Engine and Docker Compose plugin.
 4. Create `sheshi` Unix group and deploy user.
 5. Copy Compose, Caddyfile, and scripts to `/opt/sheshi`.
@@ -1864,7 +1864,7 @@ Run `/opt/sheshi/scripts/restore-drill.sh` monthly.
 5. Start API.
 6. Check `/health/ready`.
 7. Start web.
-8. Check `https://sheshi.al`.
+8. Check `https://sheshi.live`.
 ```
 
 - [ ] **Step 4: Update root README**

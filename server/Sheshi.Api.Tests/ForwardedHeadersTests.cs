@@ -22,12 +22,12 @@ public class ForwardedHeadersTests(ApiFactory factory) : IClassFixture<ApiFactor
 
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/external/google");
         request.Headers.Add("X-Forwarded-Proto", "https");
-        request.Headers.Add("X-Forwarded-Host", "api.sheshi.al");
+        request.Headers.Add("X-Forwarded-Host", "api.sheshi.live");
 
         var response = await client.SendAsync(request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Redirect);
         response.Headers.Location!.ToString().Should()
-            .Contain("redirect_uri=https%3A%2F%2Fapi.sheshi.al%2Fsignin-google");
+            .Contain("redirect_uri=https%3A%2F%2Fapi.sheshi.live%2Fsignin-google");
     }
 }

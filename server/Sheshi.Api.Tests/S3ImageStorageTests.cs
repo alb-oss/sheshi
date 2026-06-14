@@ -19,11 +19,11 @@ public class S3ImageStorageTests
         var client = new RecordingS3Client();
         var options = Options.Create(new StorageOptions
         {
-            PublicBaseUrl = "https://uploads.sheshi.al",
+            PublicBaseUrl = "https://uploads.sheshi.live",
             MaxBytes = 20 * 1024 * 1024,
             S3 = new S3StorageOptions
             {
-                Bucket = "sheshi-uploads"
+                Bucket = "sheshi-live-uploads"
             }
         });
         var storage = new ImageStorage(
@@ -35,10 +35,10 @@ public class S3ImageStorageTests
 
         var url = await storage.SaveAsync(stream, "image/png");
 
-        url.Should().StartWith("https://uploads.sheshi.al/");
+        url.Should().StartWith("https://uploads.sheshi.live/");
         url.Should().EndWith(".png");
         client.LastRequest.Should().NotBeNull();
-        client.LastRequest!.BucketName.Should().Be("sheshi-uploads");
+        client.LastRequest!.BucketName.Should().Be("sheshi-live-uploads");
         client.LastRequest.ContentType.Should().Be("image/png");
         client.UploadedBytes.Should().NotBeEmpty();
     }

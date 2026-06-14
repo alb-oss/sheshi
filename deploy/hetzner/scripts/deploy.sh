@@ -7,8 +7,8 @@ COMPOSE="$ROOT/compose/docker-compose.prod.yml"
 ENV_FILE="$ROOT/env/production.env"
 STATE="$ROOT/state"
 LOCK="$STATE/deploy.lock"
-API_HEALTH_URL="${SHESHI_API_HEALTH_URL:-https://api.sheshi.al/health/ready}"
-WEB_HEALTH_URL="${SHESHI_WEB_HEALTH_URL:-https://sheshi.al}"
+API_HEALTH_URL="${SHESHI_API_HEALTH_URL:-https://api.sheshi.live/health/ready}"
+WEB_HEALTH_URL="${SHESHI_WEB_HEALTH_URL:-https://sheshi.live}"
 
 mkdir -p "$STATE"
 

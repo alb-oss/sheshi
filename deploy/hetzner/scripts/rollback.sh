@@ -5,8 +5,8 @@ ROOT="${SHESHI_ROOT:-/opt/sheshi}"
 COMPOSE="$ROOT/compose/docker-compose.prod.yml"
 ENV_FILE="$ROOT/env/production.env"
 STATE="$ROOT/state"
-API_HEALTH_URL="${SHESHI_API_HEALTH_URL:-https://api.sheshi.al/health/ready}"
-WEB_HEALTH_URL="${SHESHI_WEB_HEALTH_URL:-https://sheshi.al}"
+API_HEALTH_URL="${SHESHI_API_HEALTH_URL:-https://api.sheshi.live/health/ready}"
+WEB_HEALTH_URL="${SHESHI_WEB_HEALTH_URL:-https://sheshi.live}"
 
 if [ ! -f "$STATE/previous-image-tag" ]; then
   echo "No previous image tag recorded; cannot rollback" >&2

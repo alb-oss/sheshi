@@ -37,7 +37,7 @@ checks that the `Rooms` table is queryable.
 5. Start API.
 6. Check `/health/ready`.
 7. Start web.
-8. Check `https://sheshi.al`.
+8. Check `https://sheshi.live`.
 
 ## Manual Snapshot Inspection
 
