@@ -18,7 +18,8 @@ function ThemedStack() {
           contentStyle: { backgroundColor: theme.bg },
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* title doubles as the back-button label on pushed screens (was the raw route group "(tabs)") */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Sheshi" }} />
         <Stack.Screen name="tema/[id]" options={{ title: "Tema" }} />
         <Stack.Screen name="dhoma/[slug]" options={{ title: "Dhomë" }} />
         <Stack.Screen name="auth" options={{ title: "Hyr", presentation: "modal" }} />
