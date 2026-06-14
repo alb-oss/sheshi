@@ -2,11 +2,11 @@ using Microsoft.Extensions.Options;
 
 namespace Sheshi.Api.Storage;
 
-// Videos can't be cheaply re-encoded like images (no ImageSharp equivalent), so we validate the
-// container by its content-type allowlist + byte signature (so a renamed non-video can't slip
-// through) and a size cap, then store the bytes as-is. Served as a static file with the right
-// extension; Kestrel handles HTTP range requests for seeking.
-public class LocalFileVideoStorage(IOptions<StorageOptions> options) : IVideoStorage
+// Validates an uploaded video by its content-type allowlist + byte signature (so a renamed non-video
+// can't slip through) and a size cap, then hands the bytes to the configured IBlobStore unchanged —
+// videos aren't re-encoded (no ImageSharp equivalent). Backend-agnostic: same validation for the
+// local-disk and S3 sinks. Served with the right extension so range requests (seeking) work.
+public class VideoStorage(IOptions<StorageOptions> options, IBlobStore blobStore) : IVideoStorage
 {
     private static readonly IReadOnlyDictionary<string, string> Extensions = new Dictionary<string, string>
     {
@@ -31,10 +31,8 @@ public class LocalFileVideoStorage(IOptions<StorageOptions> options) : IVideoSto
         if (bytes.Length > _options.MaxVideoBytes) throw new ImageStorageException("VIDEO_TOO_LARGE");
         if (!MatchesSignature(bytes, contentType)) throw new ImageStorageException("INVALID_VIDEO");
 
-        Directory.CreateDirectory(_options.UploadPath);
         var fileName = $"{Guid.NewGuid():N}{extension}";
-        await File.WriteAllBytesAsync(Path.Combine(_options.UploadPath, fileName), bytes, ct);
-        return $"{_options.PublicBaseUrl.TrimEnd('/')}/{fileName}";
+        return await blobStore.PutAsync(bytes, fileName, contentType, ct);
     }
 
     private static bool MatchesSignature(byte[] b, string contentType)
