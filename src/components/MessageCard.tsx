@@ -134,9 +134,12 @@ export function MessageCard({
   );
 
   const isTopLevel = message.parent_id === null;
-  // In the feed (a top-level card linking to its thread, not a thread node), the whole card
-  // opens the thread on click — the action row stops propagation so its buttons still work.
-  const opensThread = asThreadLink && !onReply && isTopLevel && !isDeleted;
+  // The whole card opens its own detail page (/tema/:id renders ANY message — post or reply —
+  // as a thread root). True for feed posts AND for replies inside a thread (so you can drill
+  // into a reply's own page); false only for the root you're already viewing. The action row
+  // stops propagation so its buttons still work.
+  const opensThread =
+    !isDeleted && (!isTopLevel || (asThreadLink && !onReply));
   const replyInner = (
     <>
       <MessageSquare className="h-4 w-4" aria-hidden />
@@ -156,7 +159,11 @@ export function MessageCard({
       )}
       onClick={
         opensThread
-          ? () => navigate({ to: "/tema/$messageId", params: { messageId: message.id } })
+          ? () => {
+              // Don't hijack a click that was actually a text selection.
+              if (typeof window !== "undefined" && window.getSelection()?.toString()) return;
+              navigate({ to: "/tema/$messageId", params: { messageId: message.id } });
+            }
           : undefined
       }
     >
@@ -167,7 +174,10 @@ export function MessageCard({
           {collapsible && (
             <button
               type="button"
-              onClick={onToggleCollapse}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCollapse?.();
+              }}
               aria-label={collapsed ? sq.chat.showReplies : sq.chat.hideReplies}
               aria-expanded={!collapsed}
               title={collapsed ? sq.chat.showReplies : sq.chat.hideReplies}
@@ -244,7 +254,7 @@ export function MessageCard({
               <span className="hidden sm:inline">{saved ? sq.chat.saved : sq.chat.save}</span>
             </button>
 
-            {currentUserId && !isOwn && (
+            {currentUserId && (
               <button
                 type="button"
                 onClick={() => setReportOpen(true)}
