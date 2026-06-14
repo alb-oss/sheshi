@@ -65,7 +65,10 @@ public class MessagesController(
         var requested = await db.Messages.AsNoTracking().SingleOrDefaultAsync(m => m.Id == id, ct);
         if (requested is null) return NotFound();
 
-        var root = await ResolveRootAsync(requested, ct);
+        // The detail page is rooted at the REQUESTED message itself (post OR reply), showing it
+        // and its descendants — so a reply's permalink opens that reply's own subtree, not the
+        // whole thread from the top. (Reddit-style comment permalinks.)
+        var root = requested;
         var roomReplies = await LoadThreadDescendantsAsync(root, ct);
 
         var repliesByParent = roomReplies
