@@ -327,6 +327,10 @@ function ReplyBranch({
   const INDENT_STEP = 16;
   const MAX_INDENT_DEPTH = 7;
   const indentStep = node.depth > 1 && node.depth <= MAX_INDENT_DEPTH ? INDENT_STEP : 0;
+  // Beyond this depth we stop rendering the subtree inline and link out to that comment's own
+  // page (where its replies render fresh from depth 1) — Reddit's "continue this thread".
+  const CONTINUE_DEPTH = 8;
+  const continueHere = hasChildren && node.depth >= CONTINUE_DEPTH;
 
   return (
     <div className="relative" style={{ marginLeft: indentStep }}>
@@ -360,17 +364,27 @@ function ReplyBranch({
       </div>
 
       {!isCollapsed &&
-        node.replies.map((child) => (
-          <ReplyBranch
-            key={child.message.id}
-            node={child}
-            slug={slug}
-            currentUserId={currentUserId}
-            collapsed={collapsed}
-            onToggleCollapse={onToggleCollapse}
-            onChanged={onChanged}
-            onReply={onReply}
-          />
+        (continueHere ? (
+          <Link
+            to="/tema/$messageId"
+            params={{ messageId: node.message.id }}
+            className="ml-3 mb-2 inline-flex items-center gap-1 pl-3 text-xs font-bold text-primary transition-colors hover:text-primary/80"
+          >
+            {sq.chat.continueThread} ({sq.chat.replies(hiddenCount)}) →
+          </Link>
+        ) : (
+          node.replies.map((child) => (
+            <ReplyBranch
+              key={child.message.id}
+              node={child}
+              slug={slug}
+              currentUserId={currentUserId}
+              collapsed={collapsed}
+              onToggleCollapse={onToggleCollapse}
+              onChanged={onChanged}
+              onReply={onReply}
+            />
+          ))
         ))}
     </div>
   );
