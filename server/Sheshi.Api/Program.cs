@@ -34,6 +34,10 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
+// Anchor uploads to a stable absolute path under the content root, so files saved in one run
+// aren't orphaned (404) when the app later starts from a different working directory.
+builder.Services.PostConfigure<StorageOptions>(o =>
+    o.UploadPath = Path.GetFullPath(o.UploadPath, builder.Environment.ContentRootPath));
 builder.Services.Configure<ImageSafetyOptions>(builder.Configuration.GetSection("ImageSafety"));
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
@@ -208,8 +212,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-var storage = app.Services.GetRequiredService<IConfiguration>().GetSection("Storage").Get<StorageOptions>() ?? new StorageOptions();
-var uploadPath = Path.GetFullPath(storage.UploadPath);
+// Use the same (PostConfigured, absolute) options the image storage writes to, so serving and
+// saving always point at the same directory.
+var uploadPath = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<StorageOptions>>().Value.UploadPath;
 Directory.CreateDirectory(uploadPath);
 app.UseStaticFiles(new StaticFileOptions
 {
