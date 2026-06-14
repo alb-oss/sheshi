@@ -1784,7 +1784,7 @@ Production runs on one Hetzner VM using Docker Compose and Caddy.
 
 ## First Server Bootstrap
 
-1. Create Ubuntu LTS VM in Hetzner.
+1. Create Debian 13 or Ubuntu LTS VM in Hetzner.
 2. Point Cloudflare DNS records `sheshi.al` and `api.sheshi.al` at the VM.
 3. Install Docker Engine and Docker Compose plugin.
 4. Create `sheshi` Unix group and deploy user.

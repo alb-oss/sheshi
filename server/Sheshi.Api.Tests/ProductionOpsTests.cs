@@ -73,6 +73,9 @@ public class ProductionOpsTests
         bootstrap.Should().Contain("unattended-upgrades");
         bootstrap.Should().Contain("fail2ban");
         bootstrap.Should().Contain("restrict,command=");
+        bootstrap.Should().Contain("debian|ubuntu");
+        bootstrap.Should().Contain("https://download.docker.com/linux/$docker_os");
+        bootstrap.Should().NotContain("https://download.docker.com/linux/ubuntu ${VERSION_CODENAME}");
     }
 
     [Fact]

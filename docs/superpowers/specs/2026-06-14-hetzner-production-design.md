@@ -11,7 +11,7 @@ Sheshi should run as a single-node production deployment on one Hetzner Cloud VM
 The target shape is:
 
 - Cloudflare in front for DNS, edge TLS, WAF controls, bot controls, and CDN behavior.
-- One Hetzner VM running Docker Compose.
+- One Hetzner Debian 13 or Ubuntu LTS VM running Docker Compose.
 - Caddy as the public reverse proxy and TLS terminator on the VM.
 - Separate containers for the TanStack web app, the .NET API, Postgres 17, backup jobs, and optional Redis.
 - Hetzner Object Storage for uploaded images and encrypted database backups.
@@ -85,7 +85,7 @@ Cloudflare
   |
   v
 Hetzner Cloud VM
-  - Ubuntu LTS
+  - Debian 13 or Ubuntu LTS
   - Docker Engine + Compose plugin
   - Caddy
   - sheshi-web container

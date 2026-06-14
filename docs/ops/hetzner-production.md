@@ -1,6 +1,6 @@
 # Hetzner Production Runbook
 
-Production runs on one Hetzner Ubuntu LTS VM using Docker Compose and Caddy.
+Production runs on one Hetzner Debian 13 or Ubuntu LTS VM using Docker Compose and Caddy.
 Uploaded images/videos and encrypted database backups live in Hetzner Object Storage.
 
 ## Required Host Paths
@@ -15,7 +15,7 @@ Uploaded images/videos and encrypted database backups live in Hetzner Object Sto
 
 ## First Server Bootstrap
 
-1. Create an Ubuntu LTS VM in Hetzner.
+1. Create a Debian 13 or Ubuntu LTS VM in Hetzner.
 2. Point Cloudflare DNS records `sheshi.al` and `api.sheshi.al` at the VM.
 3. Point `uploads.sheshi.al` at the public Hetzner Object Storage bucket endpoint.
 4. Generate one admin SSH key and one GitHub deploy SSH key.
@@ -38,7 +38,8 @@ sudo SHESHI_ADMIN_PUBLIC_KEY_FILE=/root/admin.pub \
 
 The bootstrap script:
 
-- installs Docker Engine, Compose, Caddy runtime dependencies, restic, SOPS, age, fail2ban, UFW, and unattended upgrades;
+- detects Debian vs Ubuntu and configures Docker's matching official apt repository;
+- installs Docker Engine, Compose, restic, SOPS, age, fail2ban, UFW, and unattended upgrades;
 - creates `sheshi-admin` for human emergency administration;
 - creates `sheshi-deploy` for GitHub Actions;
 - restricts the deploy key to `/opt/sheshi/scripts/deploy.sh <40-char-sha>` through a forced SSH command;

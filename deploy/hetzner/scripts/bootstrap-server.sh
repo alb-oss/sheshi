@@ -63,14 +63,24 @@ install_packages() {
     ufw \
     unattended-upgrades
 
+  . /etc/os-release
+  case "${ID:-}" in
+    debian|ubuntu) docker_os="$ID" ;;
+    *)
+      echo "Unsupported OS for Docker apt repository: ${PRETTY_NAME:-unknown}" >&2
+      exit 1
+      ;;
+  esac
+
   install -m 0755 -d /etc/apt/keyrings
   if [ ! -f /etc/apt/keyrings/docker.asc ]; then
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    curl -fsSL "https://download.docker.com/linux/$docker_os/gpg" -o /etc/apt/keyrings/docker.asc
     chmod a+r /etc/apt/keyrings/docker.asc
   fi
 
-  . /etc/os-release
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
+  apt-get remove -y docker.io docker-compose docker-doc podman-docker containerd runc 2>/dev/null || true
+
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/$docker_os ${VERSION_CODENAME} stable" \
     > /etc/apt/sources.list.d/docker.list
 
   apt-get update
