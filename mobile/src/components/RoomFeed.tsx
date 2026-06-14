@@ -97,9 +97,12 @@ export function RoomFeed({ slug, dockOffset = 0 }: { slug: string; dockOffset?: 
       ) : (
         <FlatList
           data={messages}
+          // Chat order (newest at the bottom): data stays newest-first; `inverted` renders index 0
+          // at the bottom and turns onEndReached into "load older" at the top. [feed mode = drop `inverted`]
+          inverted
           keyExtractor={(m) => m.id}
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{ paddingBottom: 8 }}
+          contentContainerStyle={{ paddingTop: 8 }}
           renderItem={({ item }) => (
             <PostCard message={item} compact onPress={() => router.push(`/tema/${item.id}`)} />
           )}
