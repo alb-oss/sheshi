@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Flame, User, Radio, Shield } from "lucide-react";
+import { Home, Flame, User, Radio, Shield, Sun, Moon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { getStoredTheme, setTheme, type Theme } from "@/lib/theme";
 import { sq } from "@/i18n/sq";
 import { signOutLocal, useAuth } from "@/hooks/use-auth";
 import { listRooms, type Room } from "@/lib/sheshi";
@@ -86,7 +87,8 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
           </div>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           {user ? (
             <Link
               to="/profili"
@@ -214,6 +216,27 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
         </div>
       </nav>
     </div>
+  );
+}
+
+function ThemeToggle() {
+  const [theme, setThemeState] = useState<Theme>("dark");
+  useEffect(() => setThemeState(getStoredTheme()), []);
+  const isDark = theme === "dark";
+  return (
+    <button
+      type="button"
+      aria-label={isDark ? "Kalo në temë të çelët" : "Kalo në temë të errët"}
+      title={isDark ? "Temë e çelët" : "Temë e errët"}
+      onClick={() => {
+        const next: Theme = isDark ? "light" : "dark";
+        setTheme(next);
+        setThemeState(next);
+      }}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-foreground/60 transition-colors hover:bg-card hover:text-foreground"
+    >
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
   );
 }
 
