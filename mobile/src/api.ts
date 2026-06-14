@@ -131,6 +131,13 @@ export function listMessages(roomId: string, cursor?: string | null) {
 
 export const getThread = (id: string) => getJson<ThreadData>(`/api/threads/${id}`);
 
+// A user's own posts or comments, for the profile. Newest-first, deleted excluded.
+export function listUserMessages(userId: string, type: "posts" | "comments", cursor?: string | null) {
+  const q = new URLSearchParams({ type, limit: "30" });
+  if (cursor) q.set("cursor", cursor);
+  return getJson<CursorPage<MessageRow>>(`/api/users/${userId}/messages?${q.toString()}`);
+}
+
 export const listHighlights = (mode: "hot" | "top" | "replied") =>
   getJson<MessageRow[]>(`/api/highlights?mode=${mode}`);
 

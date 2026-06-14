@@ -32,4 +32,5 @@ export type ApiUser = {
   display_name: string | null;
   avatar_url: string | null;
   roles: string[];
+  karma?: number;
 };
