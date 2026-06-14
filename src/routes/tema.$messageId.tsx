@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { Composer } from "@/components/Composer";
+import { Composer, type ComposerHandle } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { MessageCard } from "@/components/MessageCard";
 import { sq } from "@/i18n/sq";
@@ -68,6 +68,7 @@ function ThreadPage() {
   const lastReplyIdRef = useRef<string | null>(null);
   const activeMessageIdRef = useRef(messageId);
   const reloadRequestIdRef = useRef(0);
+  const composerRef = useRef<ComposerHandle | null>(null);
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
   activeMessageIdRef.current = messageId;
 
@@ -77,9 +78,9 @@ function ThreadPage() {
   const replyTotal = useMemo(() => (thread ? countNodes(thread.replies) : 0), [thread]);
   const joinedThreadId = root?.id ?? messageId;
 
-  // Reddit-style inline reply: clicking "Reply" on a comment toggles an inline composer that
-  // opens directly under THAT comment (no scroll-to-the-bottom-box). Only one is open at a
-  // time. The autoFocus on the inline Composer brings the comment into view for us.
+  // One composer for the whole thread, docked at the bottom. Clicking "Reply" on a comment
+  // just points that one box at the comment (shown as a "replying to @user" chip) — no inline
+  // boxes, which read poorly on mobile. Clicking the same reply again clears the target.
   const handleReply = (m: MessageRow) => {
     setReplyTarget((current) =>
       current?.messageId === m.id
@@ -89,27 +90,7 @@ function ThreadPage() {
             label: m.author?.username ? `@${m.author.username}` : "@anonim",
             excerpt: m.deleted_at ? sq.chat.deleted : m.body.slice(0, 120),
           });
-  };
-
-  // Renders the inline reply composer beneath the comment `m` when it is the active target.
-  // Posts a reply parented to `m`; both posting and Cancel close the box.
-  const renderReplyComposer = (m: MessageRow) => {
-    if (!root || !replyTarget || replyTarget.messageId !== m.id) return null;
-    return (
-      <Composer
-        roomId={root.room_id}
-        parentId={m.id}
-        currentUserId={userId}
-        onPosted={() => {
-          setReplyTarget(null);
-          reload();
-        }}
-        onCancel={() => setReplyTarget(null)}
-        placeholder={`${sq.chat.reply} ${replyTarget.label}…`}
-        autoFocus
-        compact
-      />
-    );
+    requestAnimationFrame(() => composerRef.current?.focus());
   };
 
   const reload = () => {
@@ -273,9 +254,6 @@ function ThreadPage() {
                 onChanged={reload}
                 onReply={handleReply}
               />
-              {replyTarget?.messageId === root.id && (
-                <div className="px-4 sm:px-6">{renderReplyComposer(root)}</div>
-              )}
 
               <div className="border-y border-border bg-card/40 px-6 py-2 text-[10px] uppercase tracking-widest font-bold text-foreground/40">
                 {sq.chat.replies(replyTotal)}
@@ -292,7 +270,6 @@ function ThreadPage() {
                     onToggleCollapse={toggleCollapse}
                     onChanged={reload}
                     onReply={handleReply}
-                    renderReplyComposer={renderReplyComposer}
                   />
                 ))}
               </div>
@@ -300,16 +277,22 @@ function ThreadPage() {
           )}
         </div>
 
-        {/* The docked thread composer hides while an inline reply is open, so the user only
-            ever sees one text box at a time (two was confusing). */}
-        {root && !replyTarget && (
+        {/* One docked composer for the whole thread. When a comment is targeted it posts a
+            reply to that comment (chip shows who); otherwise it replies to the thread root. */}
+        {root && (
           <Composer
             key={root.id}
+            ref={composerRef}
             roomId={root.room_id}
-            parentId={root.id}
+            parentId={replyTarget?.messageId ?? root.id}
             currentUserId={userId}
-            onPosted={reload}
-            placeholder={sq.chat.placeholder}
+            onPosted={() => {
+              setReplyTarget(null);
+              reload();
+            }}
+            placeholder={replyTarget ? `${sq.chat.reply} ${replyTarget.label}…` : sq.chat.placeholder}
+            replyContext={replyTarget}
+            onClearReplyContext={replyTarget ? () => setReplyTarget(null) : undefined}
           />
         )}
       </div>
@@ -325,7 +308,6 @@ function ReplyBranch({
   onToggleCollapse,
   onChanged,
   onReply,
-  renderReplyComposer,
 }: {
   node: ReplyNode;
   slug: string;
@@ -334,7 +316,6 @@ function ReplyBranch({
   onToggleCollapse: (id: string) => void;
   onChanged: () => void;
   onReply: (message: MessageRow) => void;
-  renderReplyComposer: (message: MessageRow) => ReactNode;
 }) {
   const isCollapsed = collapsed.has(node.message.id);
   const hiddenCount = countNodes(node.replies);
@@ -361,8 +342,6 @@ function ReplyBranch({
           onToggleCollapse={() => onToggleCollapse(node.message.id)}
         />
 
-        {renderReplyComposer(node.message)}
-
         {hasChildren && isCollapsed ? (
           <button
             type="button"
@@ -385,7 +364,6 @@ function ReplyBranch({
               onToggleCollapse={onToggleCollapse}
               onChanged={onChanged}
               onReply={onReply}
-              renderReplyComposer={renderReplyComposer}
             />
           ))}
       </div>

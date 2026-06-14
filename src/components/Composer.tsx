@@ -163,7 +163,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   // Reddit-style mobile "join conversation" bar: until the box is focused or has content it's a
   // slim one-line prompt — the toolbar (image · counter · send) only appears once you engage.
   // Always expanded on desktop and for the inline reply composer.
-  const expanded = compact || focused || !!body.trim() || !!image;
+  const expanded = compact || focused || !!body.trim() || !!image || !!replyContext;
 
   return (
     <form
