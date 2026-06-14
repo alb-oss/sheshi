@@ -39,6 +39,7 @@ export const sq = {
     hideReplies: "Mbyll përgjigjet",
     showReplies: "Shfaq përgjigjet",
     continueThread: "Vazhdo bisedën",
+    viewParent: "Shiko postimin prind",
     replies: (n: number) => (n === 1 ? "1 përgjigje" : `${n} përgjigje`),
     upvote: "Mbështet",
     report: "Raporto",
