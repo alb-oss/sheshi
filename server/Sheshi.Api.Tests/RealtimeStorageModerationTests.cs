@@ -18,7 +18,7 @@ namespace Sheshi.Api.Tests;
 public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
     [Fact]
-    public async Task SignalR_room_members_receive_changed_events_and_presence_counts_update()
+    public async Task SignalR_room_members_receive_realtime_events_and_presence_counts_update()
     {
         var client = factory.CreateClient();
         var user = await RegisterAsync(client, "realtime");
@@ -31,7 +31,8 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
                 options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
             })
             .Build();
-        connection.On("changed", () => changed.TrySetResult());
+        // Clients consume the typed delta directly (the legacy coarse "changed" signal was removed).
+        connection.On<object>("message_created", _ => changed.TrySetResult());
 
         await connection.StartAsync();
         await connection.InvokeAsync("JoinRoom", room.Id);

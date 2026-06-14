@@ -4,9 +4,9 @@ using Sheshi.Api.Features.Messages;
 namespace Sheshi.Api.Realtime;
 
 // Realtime delta push (fast-paced + super-realtime spec, 2026-06-13).
-// Each write broadcasts a TYPED event carrying the payload the client applies in place
-// (no refetch). The legacy "changed" signal is still emitted alongside every event so any
-// not-yet-upgraded consumer keeps working during the transition.
+// Each write broadcasts a single TYPED event carrying the payload the client applies in place
+// (no refetch). The old coarse "changed" signal was removed — no client consumed it, and emitting
+// it doubled the per-write fan-out to every room member.
 public class RealtimeNotifier(IHubContext<ChatHub> hub, HighlightsTicker highlightsTicker)
 {
     public async Task MessageCreatedAsync(MessageDto message, Guid? threadRootId, CancellationToken ct = default)
@@ -30,20 +30,11 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub, HighlightsTicker highlig
     public async Task RoomCreatedAsync(object room, CancellationToken ct = default)
         => await hub.Clients.All.SendAsync("room_created", room, ct);
 
-    // Legacy coarse signal — kept for backward compatibility (debounced-refetch clients).
-    public async Task MessageChangedAsync(Guid roomId, Guid? threadId = null, CancellationToken ct = default)
-    {
-        await hub.Clients.Group(GroupNames.Room(roomId)).SendAsync("changed", ct);
-        if (threadId is not null)
-            await hub.Clients.Group(GroupNames.Thread(threadId.Value)).SendAsync("changed", ct);
-    }
-
     private async Task BroadcastAsync(Guid roomId, Guid? threadRootId, string evt, object payload, CancellationToken ct)
     {
         await hub.Clients.Group(GroupNames.Room(roomId)).SendAsync(evt, payload, ct);
         if (threadRootId is not null)
             await hub.Clients.Group(GroupNames.Thread(threadRootId.Value)).SendAsync(evt, payload, ct);
-        await MessageChangedAsync(roomId, threadRootId, ct); // legacy fallback
         // Global tick so the cross-room "Hot" panel (joined to no group) can refresh. Coalesced
         // server-side (≤1 broadcast / few seconds) so a write burst doesn't fan out to every client.
         highlightsTicker.Request();
