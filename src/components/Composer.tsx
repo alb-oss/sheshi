@@ -321,20 +321,22 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
         <div className={cn("items-center justify-between gap-2 px-2.5 pb-2 pt-1", expanded ? "flex" : "hidden sm:flex")}>
           <input
             ref={attachInputRef}
+            id="composer-attach"
             type="file"
             accept={ATTACH_ACCEPT}
             className="hidden"
             onChange={(event) => selectAttachment(event.target.files?.[0] ?? null)}
           />
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => attachInputRef.current?.click()}
+            {/* A <label> (not a JS .click()) so the file picker reliably opens on iOS Safari, where
+                programmatically clicking a hidden file input is often blocked. */}
+            <label
+              htmlFor="composer-attach"
               aria-label="Shto imazh ose video"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-background hover:text-primary"
+              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-background hover:text-primary"
             >
               <ImagePlus className="h-4 w-4" />
-            </button>
+            </label>
             <span
               className={cn(
                 "text-[10px] tabular-nums font-bold",
