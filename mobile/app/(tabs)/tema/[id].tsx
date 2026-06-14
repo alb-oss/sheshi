@@ -68,7 +68,7 @@ export default function Thread() {
         contentInsetAdjustmentBehavior="automatic"
         ListHeaderComponent={
           <View>
-            <PostCard message={thread.root} onReply={user ? () => setReply(null) : undefined} />
+            <PostCard message={thread.root} currentUserId={user?.id ?? null} onReply={user ? () => setReply(null) : undefined} />
             <View style={styles.divider}>
               <Text style={styles.dividerText}>
                 {flat.length === 1 ? "1 përgjigje" : `${flat.length} përgjigje`}
@@ -85,6 +85,7 @@ export default function Thread() {
                 <PostCard
                   message={item.message}
                   compact
+                  currentUserId={user?.id ?? null}
                   onPress={() => router.push(`/tema/${item.message.id}`)}
                   onReply={user ? () => setReply({ id: item.message.id, label: replyLabel(item.message) }) : undefined}
                 />

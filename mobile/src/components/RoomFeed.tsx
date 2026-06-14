@@ -102,7 +102,7 @@ export function RoomFeed({ slug }: { slug: string }) {
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={{ paddingTop: 8 }}
           renderItem={({ item }) => (
-            <PostCard message={item} compact onPress={() => router.push(`/tema/${item.id}`)} />
+            <PostCard message={item} compact currentUserId={user?.id ?? null} onPress={() => router.push(`/tema/${item.id}`)} />
           )}
           ItemSeparatorComponent={() => <View style={styles.sep} />}
           refreshControl={
