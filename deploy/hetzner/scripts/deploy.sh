@@ -28,11 +28,12 @@ set_image_tag() {
   PREVIOUS_TAG="$(sed -n 's/^SHESHI_IMAGE_TAG=//p' "$ENV_FILE" | tail -n 1 || true)"
   printf '%s\n' "$PREVIOUS_TAG" > "$STATE/previous-image-tag"
 
-  set_image_tag "$TAG"
+  "$ROOT/scripts/preflight.sh" "$TAG"
 
-  docker compose --env-file "$ENV_FILE" -f "$COMPOSE" pull web api
+  SHESHI_IMAGE_TAG="$TAG" docker compose --env-file "$ENV_FILE" -f "$COMPOSE" pull web api
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE" up -d db
   "$ROOT/scripts/migrate.sh" "$TAG"
+  set_image_tag "$TAG"
   docker compose --env-file "$ENV_FILE" -f "$COMPOSE" up -d web api caddy
 
   for _ in $(seq 1 30); do

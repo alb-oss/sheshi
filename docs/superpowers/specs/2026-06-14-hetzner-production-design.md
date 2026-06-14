@@ -17,7 +17,7 @@ The target shape is:
 - Hetzner Object Storage for uploaded images and encrypted database backups.
 - GitHub Actions auto-deploying `main` to production after CI passes.
 - GHCR immutable images tagged by commit SHA.
-- Runtime secrets stored on the VM as file secrets, with a separate encrypted recovery copy.
+- Runtime secrets stored on the VM as file secrets, with SOPS + age sealed secrets as the encrypted recovery/declarative copy.
 
 The goal is not "toy self-hosting." The goal is a boring, reproducible, observable single-VM production system that can be rebuilt from source and backups.
 
@@ -30,7 +30,7 @@ The goal is not "toy self-hosting." The goal is a boring, reproducible, observab
 - Use Hetzner Object Storage for uploaded images and encrypted database backups.
 - Keep production email with an external transactional provider. Do not self-host SMTP.
 - Store GitHub deploy secrets separately from runtime app secrets.
-- Keep runtime production secrets on the VM, mounted into containers as Docker Compose secrets.
+- Keep runtime production secrets on the VM, mounted into containers as Docker Compose secrets, and manage the recovery copy with SOPS + age.
 
 ## Goals
 
@@ -51,7 +51,7 @@ The goal is not "toy self-hosting." The goal is a boring, reproducible, observab
 - A full secrets manager such as Vault, Infisical, or 1Password Connect.
 - Automatic Hetzner infrastructure provisioning in the first implementation if it slows down the production path.
 - Zero-downtime schema migrations. Deploys should be short and reliable; advanced migration choreography can come later.
-- Running production secrets through GitHub Actions on every deployment.
+- Running decrypted production secrets through GitHub Actions on every deployment.
 
 ## Current Repository Findings
 
@@ -394,10 +394,10 @@ If .NET configuration remains environment-only temporarily, use a narrow entrypo
 
 The backup encryption key must not live only on the VM. If the VM dies and the key dies with it, backups are not useful.
 
-Maintain one recovery source:
+Maintain one encrypted recovery/declarative source:
 
 - Preferred: a team password manager such as 1Password or Bitwarden.
-- Acceptable: a SOPS + age encrypted file in a private ops repository, not in the public OSS repo by default.
+- Accepted for this repo: a SOPS + age encrypted `deploy/hetzner/secrets/production.sops.yaml` file. The public age recipient is committed in `.sops.yaml`; the private age key is stored off-repo and installed on the VM only for decrypt/apply.
 
 The recovery source should contain:
 
@@ -409,6 +409,13 @@ The recovery source should contain:
 - OAuth client secrets.
 - GHCR read token if needed.
 - Emergency SSH instructions.
+
+The server applies sealed secrets by decrypting the SOPS file into Docker Compose secret files:
+
+```bash
+SOPS_AGE_KEY_FILE=/etc/sops/age/keys.txt \
+  /opt/sheshi/scripts/secrets-apply.sh /opt/sheshi/sealed/production.sops.yaml
+```
 
 ### Rotation
 

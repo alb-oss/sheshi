@@ -19,6 +19,7 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.local/
 
 # Wrangler / Cloudflare
 .wrangler/
@@ -26,8 +27,14 @@ dist-ssr
 
 # Production deploy local state
 deploy/hetzner/*.env
-deploy/hetzner/secrets/
+deploy/hetzner/secrets/*
+!deploy/hetzner/secrets/
+!deploy/hetzner/secrets/README.md
+!deploy/hetzner/secrets/*.sops.yaml
+!deploy/hetzner/secrets/*.sops.yaml.example
 *.agekey
+*age-key*.txt
+*age*.key
 
 # Editor directories and files
 .vscode/*

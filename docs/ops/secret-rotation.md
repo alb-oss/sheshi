@@ -36,21 +36,33 @@ The `production` environment stores deploy-only SSH secrets:
 Do not store application runtime secrets in GitHub Actions unless they are only
 needed by CI. Runtime secrets should stay on the VM and in the recovery copy.
 
-## Recovery Copy
+## SOPS Recovery Copy
 
-Keep a recovery copy in a team password manager or a private SOPS + age encrypted
-ops repository. The recovery copy must include when the value was last rotated
-and which service consumes it.
+Keep the recovery copy in `deploy/hetzner/secrets/production.sops.yaml` or a private ops repository using the same `.sops.yaml` age recipient. The encrypted file may be committed; the age private key must never be committed.
+
+The age private key should be stored in a team password manager and installed on the VM at:
+
+```text
+/etc/sops/age/keys.txt
+```
+
+After editing the encrypted file, apply it on the VM:
+
+```bash
+sudo SOPS_AGE_KEY_FILE=/etc/sops/age/keys.txt \
+  /opt/sheshi/scripts/secrets-apply.sh /opt/sheshi/sealed/production.sops.yaml
+```
 
 ## Rotation Order
 
 1. Create the replacement secret.
-2. Update the recovery copy.
-3. Update the matching file under `/opt/sheshi/secrets/` on the VM.
-4. Restart the affected service.
-5. Verify health checks.
-6. Revoke the old secret.
-7. Record the rotation date.
+2. Update `production.sops.yaml` with `sops edit` or `sops set`.
+3. Copy the encrypted file to `/opt/sheshi/sealed/production.sops.yaml`.
+4. Run `/opt/sheshi/scripts/secrets-apply.sh`.
+5. Restart the affected service.
+6. Verify health checks.
+7. Revoke the old secret.
+8. Record the rotation date.
 
 ## Service Restart Map
 
@@ -60,3 +72,4 @@ and which service consumes it.
 - Object storage keys: restart `api`; run a backup after rotating backup credentials.
 - Backup encryption key: do not overwrite the old key until old backups have been intentionally re-encrypted or retired.
 - GitHub SSH deploy key: update the GitHub `production` environment secret and VM `authorized_keys`.
+- SOPS age key: add the new age recipient to `.sops.yaml`, run `sops updatekeys deploy/hetzner/secrets/production.sops.yaml`, install the new private key on the VM, then remove the old recipient after a verified decrypt/apply.
