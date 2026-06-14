@@ -21,16 +21,22 @@ Sign in with a seeded account (e.g. `admin@sheshi.al` / `Admin1234!`).
 
 ## What's here
 
-- `app/` — Expo Router screens: `index` (the #sheshi feed), `tema/[id]` (a thread),
-  `auth` (login modal).
+- `app/(tabs)/` — the bottom-dock tabs: `index` (the #sheshi feed), `fokus`
+  (Në Fokus highlights), `dhoma` (room switcher). `(tabs)/_layout` defines the
+  iPhone-native dock (Ionicons, red active tint).
+- `app/dhoma/[slug]` — any room opened from the Dhoma tab (shares `RoomFeed`).
+- `app/tema/[id]` — a thread; `app/auth` — the login modal.
 - `src/api.ts` — fetch client with AsyncStorage token storage + refresh-on-401/403.
-- `src/components/` — `VoteControl` (▲ score ▼, optimistic + haptics), `PostCard`,
-  `Composer`.
+- `src/components/` — `RoomFeed` (the reusable per-room feed), `VoteControl`
+  (▲ score ▼, optimistic + haptics), `PostCard`, `Composer`, `AuthButton`.
 - `src/theme.ts` — the Reddit-style dark palette (Albanian red, indigo downvote).
 
 ## Features
 
+- Bottom-dock navigation: **Sheshi** (feed), **Fokus** (highlights), **Dhoma** (rooms).
 - Read the live feed (pull-to-refresh + infinite scroll), open any post into its thread.
+- Në Fokus highlights with hot / top-today / most-replied ranking.
+- Switch rooms from the Dhoma tab; each opens its own feed.
 - Up/down voting with optimistic UI and haptic feedback.
 - Threaded comments with indentation; reply to the thread or to a specific comment.
 - Email/password auth with automatic token refresh.
