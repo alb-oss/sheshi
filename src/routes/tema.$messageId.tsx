@@ -320,15 +320,20 @@ function ReplyBranch({
   const isCollapsed = collapsed.has(node.message.id);
   const hiddenCount = countNodes(node.replies);
   const hasChildren = hiddenCount > 0;
-  // Consistent ~16px indent per nesting level (depth 1 = top-level reply, no indent), clamped.
-  const levelIndent = node.depth > 1 ? Math.min(node.depth - 1, 8) * 16 : 0;
+  // Reddit-style nesting: a SMALL fixed indent added per level, applied incrementally (each
+  // branch nudges its own children right — not a cumulative margin), and CAPPED so deep
+  // threads stop indenting instead of crushing the column on mobile. Children render outside
+  // the comment's left padding so only this small step compounds, never the padding.
+  const INDENT_STEP = 12;
+  const MAX_INDENT_DEPTH = 7;
+  const indentStep = node.depth > 1 && node.depth <= MAX_INDENT_DEPTH ? INDENT_STEP : 0;
 
   return (
-    <div className="relative" style={{ marginLeft: levelIndent }}>
-      {/* Static thread guide line in the left gutter. Collapsing is driven by the comment's
-          own [–]/[+] head toggle (and the [+] pill below) — never by clicking this line. */}
-      <div className="absolute bottom-0 left-2 top-0 w-px bg-thread-line" aria-hidden />
-      <div className="pl-4 sm:pl-5">
+    <div className="relative" style={{ marginLeft: indentStep }}>
+      {/* Thread guide line in the left gutter, spanning this comment and its children.
+          Collapsing is via the comment's [–]/[+] head toggle, not the line. */}
+      <div className="absolute bottom-0 left-1 top-0 w-px bg-thread-line" aria-hidden />
+      <div className="pl-3">
         <MessageCard
           message={node.message}
           roomSlug={slug}
@@ -352,21 +357,21 @@ function ReplyBranch({
             {sq.chat.replies(hiddenCount)}
           </button>
         ) : null}
-
-        {!isCollapsed &&
-          node.replies.map((child) => (
-            <ReplyBranch
-              key={child.message.id}
-              node={child}
-              slug={slug}
-              currentUserId={currentUserId}
-              collapsed={collapsed}
-              onToggleCollapse={onToggleCollapse}
-              onChanged={onChanged}
-              onReply={onReply}
-            />
-          ))}
       </div>
+
+      {!isCollapsed &&
+        node.replies.map((child) => (
+          <ReplyBranch
+            key={child.message.id}
+            node={child}
+            slug={slug}
+            currentUserId={currentUserId}
+            collapsed={collapsed}
+            onToggleCollapse={onToggleCollapse}
+            onChanged={onChanged}
+            onReply={onReply}
+          />
+        ))}
     </div>
   );
 }
