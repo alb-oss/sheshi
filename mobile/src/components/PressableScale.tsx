@@ -2,16 +2,16 @@
 // feel. Uses the built-in Animated API (native driver) so it works on native and web without
 // react-native-reanimated.
 import { useRef, type ReactNode } from "react";
-import { Animated, Pressable, type PressableProps, type ViewStyle } from "react-native";
+import { Animated, Pressable, type PressableProps, type StyleProp, type ViewStyle } from "react-native";
 
 export function PressableScale({
   children,
   style,
-  scaleTo = 0.97,
+  scaleTo = 0.96,
   ...props
 }: Omit<PressableProps, "children" | "style"> & {
   children?: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   scaleTo?: number;
 }) {
   const scale = useRef(new Animated.Value(1)).current;

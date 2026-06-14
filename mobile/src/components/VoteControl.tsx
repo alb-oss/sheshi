@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { setVote } from "@/api";
 import { radius, type Palette } from "@/theme";
@@ -42,26 +43,22 @@ export function VoteControl({ message, compact }: { message: MessageRow; compact
     }
   }
 
-  const size = compact ? 18 : 20;
+  const size = compact ? 17 : 19;
   const scoreColor = myVote === 1 ? theme.primary : myVote === -1 ? theme.downvote : theme.text;
   const tint = myVote === 1 ? theme.upTint : myVote === -1 ? theme.downTint : theme.card2;
 
   return (
     <View style={[styles.pill, { backgroundColor: tint }]}>
       <Pressable hitSlop={8} onPress={() => vote(1)} style={styles.btn}>
-        <Animated.Text
-          style={[styles.arrow, { color: myVote === 1 ? theme.primary : theme.textMuted, fontSize: size, transform: [{ scale: upPop }] }]}
-        >
-          ▲
-        </Animated.Text>
+        <Animated.View style={{ transform: [{ scale: upPop }] }}>
+          <Ionicons name="caret-up" size={size} color={myVote === 1 ? theme.primary : theme.textMuted} />
+        </Animated.View>
       </Pressable>
       <Text style={[styles.score, { color: scoreColor }]}>{formatScore(score)}</Text>
       <Pressable hitSlop={8} onPress={() => vote(-1)} style={styles.btn}>
-        <Animated.Text
-          style={[styles.arrow, { color: myVote === -1 ? theme.downvote : theme.textMuted, fontSize: size, transform: [{ scale: downPop }] }]}
-        >
-          ▼
-        </Animated.Text>
+        <Animated.View style={{ transform: [{ scale: downPop }] }}>
+          <Ionicons name="caret-down" size={size} color={myVote === -1 ? theme.downvote : theme.textMuted} />
+        </Animated.View>
       </Pressable>
     </View>
   );
@@ -83,7 +80,6 @@ function makeStyles(t: Palette) {
       gap: 2,
     },
     btn: { paddingHorizontal: 6, paddingVertical: 4 },
-    arrow: { fontWeight: "800", lineHeight: 22 },
-    score: { fontSize: 13, fontWeight: "800", minWidth: 22, textAlign: "center" },
+    score: { fontSize: 13, fontWeight: "800", minWidth: 20, textAlign: "center" },
   });
 }

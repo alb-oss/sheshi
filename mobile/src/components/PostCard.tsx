@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
@@ -53,12 +54,12 @@ export function PostCard({
             <VoteControl message={message} compact={compact} />
             {onReply ? (
               <Pressable hitSlop={6} onPress={onReply} style={styles.action}>
-                <Text style={styles.actionIcon}>💬</Text>
+                <Ionicons name="chatbubble-outline" size={14} color={theme.textMuted} />
                 <Text style={styles.actionText}>Përgjigju</Text>
               </Pressable>
             ) : (
               <View style={styles.action}>
-                <Text style={styles.actionIcon}>💬</Text>
+                <Ionicons name="chatbubble-outline" size={14} color={theme.textMuted} />
                 <Text style={styles.actionText}>{message.reply_count ?? 0}</Text>
               </View>
             )}
@@ -102,7 +103,6 @@ function makeStyles(t: Palette) {
     deleted: { fontStyle: "italic", color: t.textFaint },
     actions: { flexDirection: "row", alignItems: "center", gap: 14, marginTop: 4 },
     action: { flexDirection: "row", alignItems: "center", gap: 5 },
-    actionIcon: { fontSize: 13 },
     actionText: { color: t.textMuted, fontWeight: "700", fontSize: 13 },
   });
 }
