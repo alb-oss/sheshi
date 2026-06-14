@@ -228,8 +228,15 @@ public class MessagesController(
     {
         var user = await GetCurrentUserAsync();
         if (user is null) return Unauthorized();
-        if (!await db.Messages.AnyAsync(m => m.Id == id, ct)) return NotFound();
+        var message = await db.Messages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
+        if (message is null) return NotFound();
         if ((request.Note?.Length ?? 0) > 500) return BadRequest(new { error = "NOTE_TOO_LONG" });
+        // Reporting your own message is nonsensical; the UI hides the action but enforce it here too.
+        if (message.AuthorId == user.Id) return BadRequest(new { error = "CANNOT_REPORT_OWN" });
+        // Report once: a second report from the same user is rejected (and a unique index backstops
+        // a race). The client treats 409 as "already reported" rather than an error.
+        if (await db.Reports.AnyAsync(r => r.MessageId == id && r.ReporterId == user.Id, ct))
+            return Conflict(new { error = "ALREADY_REPORTED" });
 
         db.Reports.Add(new Report
         {
