@@ -235,6 +235,8 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         });
         var message = await postResponse.Content.ReadFromJsonAsync<MessageDto>();
         message.Should().NotBeNull();
+        // Report from a different user — you can't report your own message.
+        UseBearer(client, normal.AccessToken);
         var reportResponse = await client.PostAsJsonAsync($"/api/messages/{message!.Id}/report", new
         {
             reason = "hate",

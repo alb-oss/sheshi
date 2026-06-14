@@ -83,20 +83,20 @@ export function ShareDialog({
           <DialogDescription>{sq.share.via}</DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-sm border border-border bg-card/60 px-3 py-2.5">
+        <div className="min-w-0 overflow-hidden rounded-sm border border-border bg-card/60 px-3 py-2.5">
           <div className="text-[9px] font-bold uppercase tracking-widest text-primary">
             {target.roomLabel || sq.appName}
           </div>
-          <div className="mt-1 line-clamp-2 text-sm text-foreground/90">
+          <div className="mt-1 line-clamp-2 break-words text-sm text-foreground/90">
             {target.text || target.title}
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-foreground/40">
+          <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-foreground/40">
             <Link2 className="h-3 w-3 shrink-0" aria-hidden />
-            <span className="truncate">{target.url}</span>
+            <span className="min-w-0 truncate">{target.url}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid min-w-0 grid-cols-3 gap-2">
           {options.map((option) => (
             <a
               key={option.label}
