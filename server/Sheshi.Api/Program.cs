@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Sheshi.Api.Auth;
+using Sheshi.Api.Configuration;
 using Sheshi.Api.Data;
 using Sheshi.Api.Domain;
 using Sheshi.Api.Email;
@@ -33,6 +34,8 @@ builder.Services.AddControllers()
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.PostConfigure<JwtOptions>(o =>
+    o.SigningKey = builder.Configuration.GetRequiredSecretValue("Jwt:SigningKey"));
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
 // Anchor uploads to a stable absolute path under the content root, so files saved in one run
 // aren't orphaned (404) when the app later starts from a different working directory.
@@ -105,6 +108,7 @@ builder.Services
     .AddDefaultTokenProviders();
 
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
+jwt.SigningKey = builder.Configuration.GetRequiredSecretValue("Jwt:SigningKey");
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey));
 var auth = builder.Services
     .AddAuthentication(options =>
