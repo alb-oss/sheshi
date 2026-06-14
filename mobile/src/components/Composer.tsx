@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { postMessage } from "@/api";
+import * as ImagePicker from "expo-image-picker";
+import { postMessage, type PickedImage } from "@/api";
 import { PressableScale } from "@/components/PressableScale";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
@@ -26,20 +27,33 @@ export function Composer({
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const [body, setBody] = useState("");
+  const [image, setImage] = useState<PickedImage | null>(null);
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(false);
-  const canSend = body.trim().length > 0 && !busy;
+  const canSend = (body.trim().length > 0 || image !== null) && !busy;
+
+  async function pickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const a = result.assets[0];
+      setImage({ uri: a.uri, mimeType: a.mimeType, fileName: a.fileName });
+    }
+  }
 
   async function send() {
     if (!canSend) return;
     setBusy(true);
     try {
-      const m = await postMessage({ room_id: roomId, body: body.trim(), parent_id: parentId ?? null });
+      const m = await postMessage({ room_id: roomId, body: body.trim(), parent_id: parentId ?? null, image });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       setBody("");
+      setImage(null);
       onPosted?.(m);
     } catch {
-      // keep the text so the user can retry
+      // keep the text + image so the user can retry
     } finally {
       setBusy(false);
     }
@@ -57,7 +71,18 @@ export function Composer({
           </Pressable>
         </View>
       ) : null}
+      {image ? (
+        <View style={styles.previewRow}>
+          <Image source={{ uri: image.uri }} style={styles.preview} />
+          <Pressable hitSlop={8} onPress={() => setImage(null)} style={styles.previewRemove}>
+            <Ionicons name="close" size={16} color={theme.onPrimary} />
+          </Pressable>
+        </View>
+      ) : null}
       <View style={styles.bar}>
+        <PressableScale onPress={pickImage} style={styles.attach}>
+          <Ionicons name="image-outline" size={22} color={theme.textMuted} />
+        </PressableScale>
         <TextInput
           value={body}
           onChangeText={setBody}
@@ -103,6 +128,20 @@ function makeStyles(t: Palette) {
     replyText: { color: t.primary, fontWeight: "700", fontSize: 12, flex: 1, marginRight: 8 },
     cancel: { color: t.textMuted, fontSize: 14, fontWeight: "700" },
     bar: { flexDirection: "row", alignItems: "center", gap: 8 },
+    attach: { width: 40, height: 44, alignItems: "center", justifyContent: "center" },
+    previewRow: { alignSelf: "flex-start", marginLeft: 4 },
+    preview: { width: 96, height: 96, borderRadius: radius.md, backgroundColor: t.card2 },
+    previewRemove: {
+      position: "absolute",
+      top: -6,
+      right: -6,
+      width: 24,
+      height: 24,
+      borderRadius: radius.pill,
+      backgroundColor: t.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     input: {
       flex: 1,
       minHeight: 44,

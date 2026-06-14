@@ -1,6 +1,7 @@
 import { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { resolveImageUrl } from "@/api";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
@@ -46,9 +47,14 @@ export function PostCard({
           <Text style={styles.dot}>·</Text>
           <Text style={styles.muted}>{time}</Text>
         </View>
-        <Text style={[styles.body, isDeleted && styles.deleted]}>
-          {isDeleted ? "[Mesazhi është fshirë]" : message.body}
-        </Text>
+        {isDeleted || message.body ? (
+          <Text style={[styles.body, isDeleted && styles.deleted]}>
+            {isDeleted ? "[Mesazhi është fshirë]" : message.body}
+          </Text>
+        ) : null}
+        {!isDeleted && message.image_url ? (
+          <Image source={{ uri: resolveImageUrl(message.image_url) }} style={styles.image} resizeMode="cover" />
+        ) : null}
         {!isDeleted && (
           <View style={styles.actions}>
             <VoteControl message={message} compact={compact} />
@@ -100,6 +106,7 @@ function makeStyles(t: Palette) {
     muted: { color: t.textMuted, fontSize: 13 },
     dot: { color: t.textFaint, fontSize: 13 },
     body: { color: t.text, fontSize: 15, lineHeight: 21 },
+    image: { width: "100%", height: 200, borderRadius: radius.md, marginTop: 6, backgroundColor: t.card2 },
     deleted: { fontStyle: "italic", color: t.textFaint },
     actions: { flexDirection: "row", alignItems: "center", gap: 14, marginTop: 4 },
     action: { flexDirection: "row", alignItems: "center", gap: 5 },
