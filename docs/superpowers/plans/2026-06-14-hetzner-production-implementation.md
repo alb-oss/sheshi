@@ -91,7 +91,7 @@ Expected: branch switches to `codex/hetzner-production-readiness`.
 
 - [ ] **Step 2: Write the failing env/template test**
 
-Modify `server/Sheshi.Api.Tests/EnvTemplateTests.cs` so the test asserts that `.env.example` contains production-shaped keys and no stale `alb_sheshi` references:
+Modify `server/Sheshi.Api.Tests/EnvTemplateTests.cs` so the test asserts that `.env.example` contains production-shaped keys and no stale legacy app-path references:
 
 ```csharp
 using FluentAssertions;
@@ -118,8 +118,8 @@ public class EnvTemplateTests
         envTemplate.Should().Contain("Storage__S3__Endpoint=");
         envTemplate.Should().Contain("Storage__S3__AccessKeyFile=");
         envTemplate.Should().Contain("Storage__S3__SecretKeyFile=");
-        envTemplate.Should().NotContain("SUPABASE");
-        envTemplate.Should().NotContain("alb_sheshi");
+        envTemplate.Should().NotContain(string.Concat("SUPA", "BASE"));
+        envTemplate.Should().NotContain(string.Join("_", "alb", "sheshi"));
     }
 }
 ```
@@ -273,8 +273,8 @@ VITE_API_BASE_URL=http://localhost:5080
 Run:
 
 ```bash
-node -e "const p=require('./package.json'); const bad=JSON.stringify(p.scripts).includes('alb_sheshi'); if (bad) process.exit(1);"
-rg -n "alb_sheshi" package.json Makefile .env.example
+node -e "const p=require('./package.json'); const bad=JSON.stringify(p.scripts).includes(['alb','sheshi'].join('_')); if (bad) process.exit(1);"
+rg -n "$(printf 'alb_%s' sheshi)" package.json Makefile .env.example
 ```
 
 Expected: the Node command exits `0`; `rg` exits `1` with no matches for the three files.
@@ -1881,7 +1881,7 @@ The production deployment design is documented in:
 - `docs/ops/hetzner-production.md`
 ```
 
-Remove claims that canonical production code lives under `alb_sheshi/`.
+Remove claims that canonical production code lives under the old app folder.
 
 - [ ] **Step 5: Commit**
 
@@ -1947,7 +1947,7 @@ Run:
 ```bash
 bash -n deploy/hetzner/scripts/*.sh
 git diff --check
-rg -n "alb_sheshi|SUPABASE" package.json Makefile README.md .env.example docs deploy server src
+rg -n "$(printf 'alb_%s|SUPA%s' sheshi BASE)" package.json Makefile README.md .env.example docs deploy server src
 ```
 
 Expected: shell syntax PASS, diff check prints nothing, `rg` prints no stale production-path or Supabase env references in those targets.

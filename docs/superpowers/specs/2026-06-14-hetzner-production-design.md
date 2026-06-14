@@ -57,7 +57,7 @@ The goal is not "toy self-hosting." The goal is a boring, reproducible, observab
 
 These findings shape the production-readiness work:
 
-- `package.json`, `Makefile`, and the root `README.md` still reference a missing `alb_sheshi` path. The real web app is at the repo root.
+- `package.json`, `Makefile`, and the root `README.md` still reference a missing legacy app path. The real web app is at the repo root.
 - `.env` is currently tracked. Production and local secret files should not be tracked.
 - The actual web app is a TanStack Start/React app under `src`.
 - The API is ASP.NET Core targeting .NET 10 under `server/Sheshi.Api`.

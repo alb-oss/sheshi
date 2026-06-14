@@ -1,13 +1,6 @@
-# Legacy Frontend Prototype
+# Sheshi Frontend
 
-This root-level `src/` tree is archived reference material from the earlier
-TanStack prototype. It is not the production frontend ownership boundary.
-
-Current frontend work belongs in:
-
-```bash
-alb_sheshi/frontend
-```
+This is the production TanStack Start frontend for Sheshi.
 
 Use the repository root commands instead:
 
@@ -16,5 +9,5 @@ npm run dev
 npm run frontend:build
 ```
 
-Legacy prototype commands are still available as `legacy:*` scripts in the root
-`package.json` only for comparison or migration work.
+The production Docker image builds from the repository root with
+`Dockerfile.web`.

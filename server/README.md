@@ -1,13 +1,6 @@
-# Legacy Backend Prototype
+# Sheshi API
 
-This root-level `server/` tree is archived reference material from the earlier
-Sheshi backend prototype. It is not the production backend ownership boundary.
-
-Current backend work belongs in:
-
-```bash
-alb_sheshi/server
-```
+This is the production ASP.NET Core backend for Sheshi.
 
 Use the repository root commands instead:
 
@@ -16,5 +9,5 @@ npm run build
 npm run backend:build
 ```
 
-Do not add new migrations, API contracts, or runtime configuration here unless
-the legacy tree is being intentionally migrated or deleted.
+The application project is `server/Sheshi.Api`, tests live in
+`server/Sheshi.Api.Tests`, and the solution is `server/Sheshi.sln`.

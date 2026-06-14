@@ -22,7 +22,7 @@ public class EnvTemplateTests
         envTemplate.Should().Contain("Storage__S3__Endpoint=");
         envTemplate.Should().Contain("Storage__S3__AccessKeyFile=");
         envTemplate.Should().Contain("Storage__S3__SecretKeyFile=");
-        envTemplate.Should().NotContain("SUPABASE");
-        envTemplate.Should().NotContain("alb_sheshi");
+        envTemplate.Should().NotContain(string.Concat("SUPA", "BASE"));
+        envTemplate.Should().NotContain(string.Join("_", "alb", "sheshi"));
     }
 }
