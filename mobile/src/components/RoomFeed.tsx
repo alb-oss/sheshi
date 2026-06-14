@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,11 +15,20 @@ import { getRoomBySlug, listMessages } from "@/api";
 import { PostCard } from "@/components/PostCard";
 import { Composer } from "@/components/Composer";
 import { useAuth } from "@/useAuth";
-import { theme } from "@/theme";
+import { useKeyboardVisible } from "@/useKeyboardVisible";
+import { type Palette } from "@/theme";
+import { useTheme } from "@/useTheme";
 import type { MessageRow, Room } from "@/types";
 
-export function RoomFeed({ slug }: { slug: string }) {
+// `dockOffset` lifts the docked composer above the absolute glass tab bar on tabs that show it
+// (the Sheshi tab). Full-screen Stack rooms pass 0. While the keyboard is up the offset collapses
+// so the composer meets the keyboard cleanly (and the dock hides itself).
+export function RoomFeed({ slug, dockOffset = 0 }: { slug: string; dockOffset?: number }) {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const keyboardUp = useKeyboardVisible();
+  const offset = keyboardUp ? 0 : dockOffset;
   const [room, setRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -91,6 +100,7 @@ export function RoomFeed({ slug }: { slug: string }) {
           data={messages}
           keyExtractor={(m) => m.id}
           contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingBottom: 8 }}
           renderItem={({ item }) => (
             <PostCard message={item} compact onPress={() => router.push(`/tema/${item.id}`)} />
           )}
@@ -104,13 +114,15 @@ export function RoomFeed({ slug }: { slug: string }) {
         />
       )}
       {room && user ? (
-        <Composer
-          roomId={room.id}
-          placeholder={`Shkruaj në ${room.name}…`}
-          onPosted={(m) => setMessages((prev) => [m, ...prev])}
-        />
+        <View style={{ paddingBottom: offset }}>
+          <Composer
+            roomId={room.id}
+            placeholder={`Shkruaj në ${room.name}…`}
+            onPosted={(m) => setMessages((prev) => [m, ...prev])}
+          />
+        </View>
       ) : room ? (
-        <Pressable onPress={() => router.push("/auth")} style={styles.signInBar}>
+        <Pressable onPress={() => router.push("/auth")} style={[styles.signInBar, { paddingBottom: 16 + offset }]}>
           <Text style={styles.signInText}>Hyr për të postuar në {room.name}</Text>
         </Pressable>
       ) : null}
@@ -118,15 +130,19 @@ export function RoomFeed({ slug }: { slug: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: theme.bg },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  sep: { height: StyleSheet.hairlineWidth, backgroundColor: theme.border, marginLeft: 62 },
-  signInBar: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.border,
-    padding: 16,
-    alignItems: "center",
-  },
-  signInText: { color: theme.primary, fontWeight: "700" },
-});
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: t.bg },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    sep: { height: StyleSheet.hairlineWidth, backgroundColor: t.border, marginLeft: 62 },
+    signInBar: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.border,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      alignItems: "center",
+      backgroundColor: t.bg,
+    },
+    signInText: { color: t.primary, fontWeight: "700" },
+  });
+}

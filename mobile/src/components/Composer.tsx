@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { postMessage } from "@/api";
-import { theme, radius } from "@/theme";
+import { radius, type Palette } from "@/theme";
+import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
 
 export function Composer({
@@ -19,8 +20,11 @@ export function Composer({
   onCancelReply?: () => void;
   onPosted?: (m: MessageRow) => void;
 }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const [focused, setFocused] = useState(false);
   const canSend = body.trim().length > 0 && !busy;
 
   async function send() {
@@ -53,9 +57,11 @@ export function Composer({
         <TextInput
           value={body}
           onChangeText={setBody}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder={replyLabel ? "Shkruaj një përgjigje…" : placeholder ?? "Shkruaj në sheshi…"}
           placeholderTextColor={theme.textFaint}
-          style={styles.input}
+          style={[styles.input, focused && styles.inputFocused]}
           multiline
         />
         <Pressable onPress={send} disabled={!canSend} style={[styles.send, !canSend && styles.sendOff]}>
@@ -66,50 +72,53 @@ export function Composer({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.border,
-    backgroundColor: theme.bg,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 10,
-    gap: 8,
-  },
-  replyChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: theme.card,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  replyText: { color: theme.primary, fontWeight: "700", fontSize: 12, flex: 1, marginRight: 8 },
-  cancel: { color: theme.textMuted, fontSize: 14, fontWeight: "700" },
-  bar: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-    backgroundColor: theme.card,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.border,
-    color: theme.text,
-    fontSize: 16,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 12,
-  },
-  send: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: theme.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sendOff: { backgroundColor: theme.card2 },
-  sendText: { color: theme.onPrimary, fontSize: 22, fontWeight: "900", marginTop: -2 },
-});
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
+    wrap: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.border,
+      backgroundColor: t.bg,
+      paddingHorizontal: 12,
+      paddingTop: 8,
+      paddingBottom: 10,
+      gap: 8,
+    },
+    replyChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: t.card,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    replyText: { color: t.primary, fontWeight: "700", fontSize: 12, flex: 1, marginRight: 8 },
+    cancel: { color: t.textMuted, fontSize: 14, fontWeight: "700" },
+    bar: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+    input: {
+      flex: 1,
+      minHeight: 44,
+      maxHeight: 120,
+      backgroundColor: t.card,
+      borderRadius: radius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.border,
+      color: t.text,
+      fontSize: 16,
+      paddingHorizontal: 14,
+      paddingTop: 12,
+      paddingBottom: 12,
+    },
+    inputFocused: { borderColor: t.primary },
+    send: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      backgroundColor: t.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sendOff: { backgroundColor: t.card2 },
+    sendText: { color: t.onPrimary, fontSize: 22, fontWeight: "900", marginTop: -2 },
+  });
+}

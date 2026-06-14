@@ -1,11 +1,17 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listRooms } from "@/api";
-import { theme, radius } from "@/theme";
+import { PressableScale } from "@/components/PressableScale";
+import { radius, type Palette } from "@/theme";
+import { useTheme } from "@/useTheme";
 import type { Room } from "@/types";
 
 export default function Dhoma() {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,12 +40,9 @@ export default function Dhoma() {
       data={rooms}
       keyExtractor={(r) => r.id}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: 12, gap: 10 }}
+      contentContainerStyle={{ padding: 12, paddingBottom: insets.bottom + 61, gap: 10 }}
       renderItem={({ item }) => (
-        <Pressable
-          onPress={() => router.push(`/dhoma/${item.slug}`)}
-          style={({ pressed }) => [styles.card, pressed && { borderColor: theme.primary }]}
-        >
+        <PressableScale onPress={() => router.push(`/dhoma/${item.slug}`)} style={styles.card}>
           <View style={styles.hash}>
             <Text style={styles.hashText}>#</Text>
           </View>
@@ -52,36 +55,38 @@ export default function Dhoma() {
             ) : null}
           </View>
           <Text style={styles.chevron}>›</Text>
-        </Pressable>
+        </PressableScale>
       )}
     />
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: theme.bg },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: theme.bg },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: theme.card,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.border,
-    padding: 14,
-  },
-  hash: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    backgroundColor: theme.card2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  hashText: { color: theme.primary, fontWeight: "900", fontSize: 18 },
-  body: { flex: 1 },
-  name: { color: theme.text, fontWeight: "800", fontSize: 16 },
-  desc: { color: theme.textMuted, fontSize: 13, marginTop: 2 },
-  chevron: { color: theme.textFaint, fontSize: 22, fontWeight: "700" },
-});
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: t.bg },
+    center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: t.bg },
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: t.card,
+      borderRadius: radius.lg,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.border,
+      padding: 14,
+    },
+    hash: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      backgroundColor: t.card2,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    hashText: { color: t.primary, fontWeight: "900", fontSize: 18 },
+    body: { flex: 1 },
+    name: { color: t.text, fontWeight: "800", fontSize: 16 },
+    desc: { color: t.textMuted, fontSize: 13, marginTop: 2 },
+    chevron: { color: t.textFaint, fontSize: 22, fontWeight: "700" },
+  });
+}

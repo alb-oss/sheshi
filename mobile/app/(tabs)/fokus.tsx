@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listHighlights } from "@/api";
-import { theme, radius } from "@/theme";
+import { radius, type Palette } from "@/theme";
+import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
 
 const MODES = [
@@ -12,6 +14,9 @@ const MODES = [
 ] as const;
 
 export default function Fokus() {
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<(typeof MODES)[number]["key"]>("hot");
   const [items, setItems] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +55,7 @@ export default function Fokus() {
           data={items}
           keyExtractor={(m) => m.id}
           contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{ paddingBottom: insets.bottom + 57 }}
           ListEmptyComponent={<Text style={styles.empty}>Asgjë në fokus ende.</Text>}
           renderItem={({ item, index }) => (
             <Pressable
@@ -77,22 +83,24 @@ export default function Fokus() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: theme.bg },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  empty: { color: theme.textMuted, textAlign: "center", marginTop: 40 },
-  segment: { flexDirection: "row", gap: 6, padding: 12 },
-  segBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: theme.card },
-  segActive: { backgroundColor: theme.primary },
-  segText: { color: theme.textMuted, fontWeight: "700", fontSize: 13 },
-  segTextActive: { color: theme.onPrimary },
-  row: { flexDirection: "row", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
-  rank: { color: theme.textFaint, fontWeight: "900", fontSize: 16, width: 26, paddingTop: 1 },
-  rankTop: { color: theme.primary, fontSize: 18 },
-  rowBody: { flex: 1, gap: 8 },
-  body: { color: theme.text, fontSize: 15, lineHeight: 21 },
-  meta: { flexDirection: "row", gap: 14 },
-  metaStrong: { color: theme.primary, fontWeight: "800", fontSize: 13 },
-  metaMuted: { color: theme.textMuted, fontWeight: "700", fontSize: 13 },
-  sep: { height: StyleSheet.hairlineWidth, backgroundColor: theme.border, marginLeft: 54 },
-});
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: t.bg },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    empty: { color: t.textMuted, textAlign: "center", marginTop: 40 },
+    segment: { flexDirection: "row", gap: 6, padding: 12 },
+    segBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: t.card },
+    segActive: { backgroundColor: t.primary },
+    segText: { color: t.textMuted, fontWeight: "700", fontSize: 13 },
+    segTextActive: { color: t.onPrimary },
+    row: { flexDirection: "row", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
+    rank: { color: t.textFaint, fontWeight: "900", fontSize: 16, width: 26, paddingTop: 1 },
+    rankTop: { color: t.primary, fontSize: 18 },
+    rowBody: { flex: 1, gap: 8 },
+    body: { color: t.text, fontSize: 15, lineHeight: 21 },
+    meta: { flexDirection: "row", gap: 14 },
+    metaStrong: { color: t.primary, fontWeight: "800", fontSize: 13 },
+    metaMuted: { color: t.textMuted, fontWeight: "700", fontSize: 13 },
+    sep: { height: StyleSheet.hairlineWidth, backgroundColor: t.border, marginLeft: 54 },
+  });
+}
