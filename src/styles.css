@@ -45,9 +45,44 @@
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Sheshi — Reddit-style dark. Layered near-black neutrals, vivid Albanian-red accent,
-   indigo downvote. Soft radii, calm hairlines, everything animates. */
-:root,
+/* Light theme (default fallback): Reddit-style — white surfaces on a soft grey, red accent. */
+:root {
+  --radius: 0.75rem;
+
+  --background: #f6f7f9;
+  --foreground: #16181c;
+  --card: #ffffff;
+  --card-foreground: #16181c;
+  --popover: #ffffff;
+  --popover-foreground: #16181c;
+  --primary: #e0303c;
+  --primary-foreground: #ffffff;
+  --secondary: #eceef1;
+  --secondary-foreground: #16181c;
+  --muted: #eceef1;
+  --muted-foreground: #65696f;
+  --accent: #eceef1;
+  --accent-foreground: #16181c;
+  --destructive: #e0303c;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --thread-line: rgba(0, 0, 0, 0.15);
+  --upvote: #e0303c;
+  --downvote: #4f6bd6;
+  --input: rgba(0, 0, 0, 0.12);
+  --ring: #e0303c;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #16181c;
+  --sidebar-primary: #e0303c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eceef1;
+  --sidebar-accent-foreground: #16181c;
+  --sidebar-border: rgba(0, 0, 0, 0.1);
+  --sidebar-ring: #e0303c;
+}
+
+/* Sheshi — Reddit-style dark (the brand default on first load). Layered near-black neutrals,
+   vivid Albanian-red accent, indigo downvote. Soft radii, calm hairlines, everything animates. */
 .dark {
   --radius: 0.75rem;
 
