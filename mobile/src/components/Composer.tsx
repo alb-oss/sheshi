@@ -8,12 +8,14 @@ export function Composer({
   roomId,
   parentId,
   replyLabel,
+  placeholder,
   onCancelReply,
   onPosted,
 }: {
   roomId: string;
   parentId?: string | null;
   replyLabel?: string | null;
+  placeholder?: string;
   onCancelReply?: () => void;
   onPosted?: (m: MessageRow) => void;
 }) {
@@ -51,7 +53,7 @@ export function Composer({
         <TextInput
           value={body}
           onChangeText={setBody}
-          placeholder={replyLabel ? "Shkruaj një përgjigje…" : "Shkruaj në sheshi…"}
+          placeholder={replyLabel ? "Shkruaj një përgjigje…" : placeholder ?? "Shkruaj në sheshi…"}
           placeholderTextColor={theme.textFaint}
           style={styles.input}
           multiline

@@ -124,6 +124,9 @@ export function listMessages(roomId: string, cursor?: string | null) {
 
 export const getThread = (id: string) => getJson<ThreadData>(`/api/threads/${id}`);
 
+export const listHighlights = (mode: "hot" | "top" | "replied") =>
+  getJson<MessageRow[]>(`/api/highlights?mode=${mode}`);
+
 export async function setVote(messageId: string, value: -1 | 0 | 1) {
   await request(`/api/messages/${messageId}/vote`, {
     method: "PUT",
