@@ -132,6 +132,12 @@ public class ModerationController(
             .Where(u => authorIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => new ModActorDto(u.Id, u.UserName, u.DisplayName), ct);
 
+        var bannedAuthorIds = (await db.Users
+            .AsNoTracking()
+            .Where(u => authorIds.Contains(u.Id) && u.BannedAt != null)
+            .Select(u => u.Id)
+            .ToListAsync(ct)).ToHashSet();
+
         var flags = rawFlags.Select(f =>
         {
             var msg = messages.GetValueOrDefault(f.MessageId);
@@ -141,7 +147,8 @@ public class ModerationController(
                 f.Severity.ToString().ToLowerInvariant(),
                 f.Score, f.Evidence, f.Status.ToString().ToLowerInvariant(), f.CreatedAt,
                 msg?.Body ?? "", msg?.DeletedAt is not null, msg?.RoomSlug ?? "sheshi",
-                authors.GetValueOrDefault(f.AuthorId));
+                authors.GetValueOrDefault(f.AuthorId),
+                bannedAuthorIds.Contains(f.AuthorId));
         }).ToList();
 
         return Ok(flags);
@@ -361,6 +368,12 @@ public class ModerationController(
             .Where(u => userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => new ModActorDto(u.Id, u.UserName, u.DisplayName), ct);
 
+        var bannedAuthorIds = (await db.Users
+            .AsNoTracking()
+            .Where(u => authorIds.Contains(u.Id) && u.BannedAt != null)
+            .Select(u => u.Id)
+            .ToListAsync(ct)).ToHashSet();
+
         var reportCounts = await db.Reports
             .AsNoTracking()
             .Where(r => authorIds.Contains(r.Message.AuthorId))
@@ -415,7 +428,8 @@ public class ModerationController(
                 openReportCounts.GetValueOrDefault(authorId),
                 openFlagCounts.GetValueOrDefault(authorId),
                 users.GetValueOrDefault(authorId),
-                users.GetValueOrDefault(r.ReporterId));
+                users.GetValueOrDefault(r.ReporterId),
+                bannedAuthorIds.Contains(authorId));
         }).ToList();
     }
 

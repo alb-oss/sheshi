@@ -20,7 +20,8 @@ public record ModReportDto(
     int AuthorOpenReportCount,
     int AuthorOpenFlagCount,
     ModActorDto? Author,
-    ModActorDto? Reporter);
+    ModActorDto? Reporter,
+    bool MessageAuthorBanned);
 
 public record ReportQuery
 {
@@ -85,7 +86,8 @@ public record ModFlagDto(
     string MessageBody,
     bool MessageDeleted,
     string RoomSlug,
-    ModActorDto? Author);
+    ModActorDto? Author,
+    bool AuthorBanned);
 
 public record FlagQuery
 {
