@@ -39,7 +39,7 @@ function ProfilePage() {
   async function shuffleUsername() {
     setShuffling(true);
     try {
-      const res = await apiJson<{ suggestions: string[] }>("/api/me/username-suggestions");
+      const res = await apiJson<{ suggestions: string[] }>("/api/usernames/suggestions");
       if (res.suggestions[0]) setUsername(res.suggestions[0]);
     } catch {
       toast.error(sq.errors.generic);
