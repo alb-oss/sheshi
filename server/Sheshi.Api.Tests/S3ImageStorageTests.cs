@@ -17,18 +17,19 @@ public class S3ImageStorageTests
     public async Task SaveAsync_uploads_sanitized_image_and_returns_public_url()
     {
         var client = new RecordingS3Client();
-        var storage = new S3ImageStorage(
-            Options.Create(new StorageOptions
+        var options = Options.Create(new StorageOptions
+        {
+            PublicBaseUrl = "https://uploads.sheshi.al",
+            MaxBytes = 5242880,
+            S3 = new S3StorageOptions
             {
-                PublicBaseUrl = "https://uploads.sheshi.al",
-                MaxBytes = 5242880,
-                S3 = new S3StorageOptions
-                {
-                    Bucket = "sheshi-uploads"
-                }
-            }),
+                Bucket = "sheshi-uploads"
+            }
+        });
+        var storage = new ImageStorage(
+            options,
             Options.Create(new ImageSafetyOptions()),
-            client);
+            new S3BlobStore(client, options));
 
         await using var stream = new MemoryStream(CreateOnePixelPng());
 

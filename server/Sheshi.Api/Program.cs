@@ -62,34 +62,38 @@ builder.Services.AddScoped<ModerationActionLogger>();
 builder.Services.AddScoped<ModerationMetricsService>();
 builder.Services.AddScoped<ModerationRuleEngine>();
 builder.Services.AddScoped<RoomService>();
-var storageProvider = builder.Configuration["Storage:Provider"]?.Trim().ToLowerInvariant() ?? "local";
-if (storageProvider == "s3")
+builder.Services.AddScoped<Sheshi.Api.Features.Users.UserStatsService>();
+builder.Services.AddScoped<IImageStorage, ImageStorage>();
+builder.Services.AddScoped<IVideoStorage, VideoStorage>();
+// Sink selection: "s3" uploads validated bytes to S3-compatible object storage (MinIO/S3/R2);
+// anything else writes to local disk. Keyed off Storage:Provider so prod flips to S3 by changing
+// only config — the validating ImageStorage/VideoStorage are unaffected.
+if (string.Equals(builder.Configuration["Storage:Provider"], "s3", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddSingleton<IAmazonS3>(_ =>
+    builder.Services.AddSingleton<IAmazonS3>(sp =>
     {
-        var storage = builder.Configuration.GetSection("Storage").Get<StorageOptions>() ?? new StorageOptions();
-        if (string.IsNullOrWhiteSpace(storage.S3.Bucket))
+        var s3 = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<StorageOptions>>().Value.S3;
+        if (string.IsNullOrWhiteSpace(s3.Bucket))
             throw new InvalidOperationException("Storage:S3:Bucket is required when Storage:Provider=s3.");
-        if (string.IsNullOrWhiteSpace(storage.S3.Endpoint))
-            throw new InvalidOperationException("Storage:S3:Endpoint is required when Storage:Provider=s3.");
 
         var accessKey = builder.Configuration.GetRequiredSecretValue("Storage:S3:AccessKey");
         var secretKey = builder.Configuration.GetRequiredSecretValue("Storage:S3:SecretKey");
         var config = new AmazonS3Config
         {
-            ServiceURL = storage.S3.Endpoint,
-            ForcePathStyle = storage.S3.ForcePathStyle,
-            AuthenticationRegion = string.IsNullOrWhiteSpace(storage.S3.Region) ? "us-east-1" : storage.S3.Region
+            ForcePathStyle = s3.ForcePathStyle,
+            AuthenticationRegion = string.IsNullOrWhiteSpace(s3.Region) ? "us-east-1" : s3.Region
         };
+        if (!string.IsNullOrWhiteSpace(s3.Endpoint)) config.ServiceURL = s3.Endpoint;
         return new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), config);
     });
-    builder.Services.AddScoped<IImageStorage, S3ImageStorage>();
+    builder.Services.AddScoped<IBlobStore, S3BlobStore>();
 }
 else
 {
-    builder.Services.AddScoped<IImageStorage, LocalFileImageStorage>();
+    builder.Services.AddScoped<IBlobStore, LocalBlobStore>();
 }
 builder.Services.AddSingleton<PresenceTracker>();
+builder.Services.AddSingleton<HighlightsTicker>();
 builder.Services.AddScoped<RealtimeNotifier>();
 builder.Services.AddSignalR().AddJsonProtocol(o =>
 {
@@ -134,8 +138,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddDbContext<AppDbContext>((sp, o) =>
+    o.UseNpgsql(sp.GetRequiredService<IConfiguration>().GetRequiredSecretValue("ConnectionStrings:Default")));
 
 builder.Services
     .AddIdentityCore<ApplicationUser>(options =>

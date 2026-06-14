@@ -18,7 +18,7 @@ namespace Sheshi.Api.Tests;
 public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
     [Fact]
-    public async Task SignalR_room_members_receive_changed_events_and_presence_counts_update()
+    public async Task SignalR_room_members_receive_realtime_events_and_presence_counts_update()
     {
         var client = factory.CreateClient();
         var user = await RegisterAsync(client, "realtime");
@@ -31,7 +31,8 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
                 options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
             })
             .Build();
-        connection.On("changed", () => changed.TrySetResult());
+        // Clients consume the typed delta directly (the legacy coarse "changed" signal was removed).
+        connection.On<object>("message_created", _ => changed.TrySetResult());
 
         await connection.StartAsync();
         await connection.InvokeAsync("JoinRoom", room.Id);
@@ -120,6 +121,53 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         var payload = await response.Content.ReadFromJsonAsync<ErrorDto>();
         payload.Should().NotBeNull();
         payload!.Error.Should().Be("INVALID_IMAGE");
+    }
+
+    [Fact]
+    public async Task Multipart_message_post_saves_video_and_returns_video_url()
+    {
+        var client = factory.CreateClient();
+        var user = await RegisterAsync(client, "video");
+        var room = await GetRoomAsync(client, "sheshi");
+        UseBearer(client, user.AccessToken);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(room.Id.ToString()), "room_id");
+        form.Add(new StringContent("Message with video"), "body");
+        var video = new ByteArrayContent(CreateMinimalMp4());
+        video.Headers.ContentType = MediaTypeHeaderValue.Parse("video/mp4");
+        form.Add(video, "video", "clip.mp4");
+
+        var response = await client.PostAsync("/api/messages", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var message = await response.Content.ReadFromJsonAsync<MessageDto>();
+        message.Should().NotBeNull();
+        message!.VideoUrl.Should().StartWith("http://localhost:5080/uploads/");
+        message.VideoUrl.Should().EndWith(".mp4");
+    }
+
+    [Fact]
+    public async Task Multipart_upload_rejects_disguised_video_bytes()
+    {
+        var client = factory.CreateClient();
+        var user = await RegisterAsync(client, "fake-video");
+        var room = await GetRoomAsync(client, "sheshi");
+        UseBearer(client, user.AccessToken);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(room.Id.ToString()), "room_id");
+        form.Add(new StringContent("fake video"), "body");
+        var video = new ByteArrayContent("this is not an mp4 container"u8.ToArray());
+        video.Headers.ContentType = MediaTypeHeaderValue.Parse("video/mp4");
+        form.Add(video, "video", "fake.mp4");
+
+        var response = await client.PostAsync("/api/messages", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var payload = await response.Content.ReadFromJsonAsync<ErrorDto>();
+        payload.Should().NotBeNull();
+        payload!.Error.Should().Be("INVALID_VIDEO");
     }
 
     [Fact]
@@ -252,6 +300,46 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         UseBearer(client, futureMod.AccessToken);
         var futureModReportsResponse = await client.GetAsync("/api/mod/reports");
         futureModReportsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    // Regression: banning a reported author must surface on their open reports so the moderation
+    // UI can reflect the block (previously the report DTO carried no banned flag, so the card
+    // looked unchanged after a ban).
+    [Fact]
+    public async Task Open_report_reflects_author_banned_status_after_ban()
+    {
+        var client = factory.CreateClient();
+        var author = await RegisterAsync(client, "banauthor");
+        var reporter = await RegisterAsync(client, "banreporter");
+        var moderator = await RegisterAsync(client, "banmod");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        await WithServicesAsync(async sp =>
+        {
+            var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
+            await userManager.AddToRoleAsync((await userManager.FindByEmailAsync(moderator.Email))!, Roles.Moderator);
+        });
+        moderator = await LoginAsync(client, moderator.Email);
+
+        UseBearer(client, author.AccessToken);
+        var postResponse = await client.PostAsJsonAsync("/api/messages", new { room_id = room.Id, body = "Needs moderation" });
+        var message = await postResponse.Content.ReadFromJsonAsync<MessageDto>();
+        message.Should().NotBeNull();
+
+        UseBearer(client, reporter.AccessToken);
+        await ReportAsync(client, message!.Id, "spam");
+
+        UseBearer(client, moderator.AccessToken);
+        var before = await client.GetFromJsonAsync<ModReportDto[]>("/api/mod/reports?status=open");
+        before.Should().NotBeNull();
+        before!.Single(r => r.MessageId == message.Id).MessageAuthorBanned.Should().BeFalse();
+
+        var banResponse = await client.PostAsync($"/api/mod/users/{author.User.Id}/ban", content: null);
+        banResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var after = await client.GetFromJsonAsync<ModReportDto[]>("/api/mod/reports?status=open");
+        after.Should().NotBeNull();
+        after!.Single(r => r.MessageId == message.Id).MessageAuthorBanned.Should().BeTrue();
     }
 
     [Fact]
@@ -464,6 +552,19 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         return output.ToArray();
     }
 
+    // Smallest payload the video storage layer accepts: an ISO Base Media File Format 'ftyp' box.
+    // size(4) + 'ftyp'(4) + major brand + minor version + compatible brand = 24 bytes. The
+    // storage layer only checks for the 'ftyp' marker at byte offset 4 (shared by mp4/mov).
+    private static byte[] CreateMinimalMp4() =>
+    [
+        0x00, 0x00, 0x00, 0x18,
+        (byte)'f', (byte)'t', (byte)'y', (byte)'p',
+        (byte)'i', (byte)'s', (byte)'o', (byte)'m',
+        0x00, 0x00, 0x02, 0x00,
+        (byte)'i', (byte)'s', (byte)'o', (byte)'m',
+        (byte)'m', (byte)'p', (byte)'4', (byte)'2',
+    ];
+
     private static int FindPngChunkOffset(byte[] png, string chunkType)
     {
         var offset = 8;
@@ -551,6 +652,7 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         [property: JsonPropertyName("parent_id")] Guid? ParentId,
         [property: JsonPropertyName("body")] string Body,
         [property: JsonPropertyName("image_url")] string? ImageUrl,
+        [property: JsonPropertyName("video_url")] string? VideoUrl,
         [property: JsonPropertyName("deleted_at")] DateTimeOffset? DeletedAt,
         [property: JsonPropertyName("created_at")] DateTimeOffset CreatedAt,
         [property: JsonPropertyName("author")] AuthorDto? Author,
@@ -574,7 +676,8 @@ public class RealtimeStorageModerationTests(ApiFactory factory) : IClassFixture<
         [property: JsonPropertyName("age_hours")] double AgeHours,
         [property: JsonPropertyName("author_report_count")] int AuthorReportCount,
         [property: JsonPropertyName("author_open_report_count")] int AuthorOpenReportCount,
-        [property: JsonPropertyName("author_open_flag_count")] int AuthorOpenFlagCount);
+        [property: JsonPropertyName("author_open_flag_count")] int AuthorOpenFlagCount,
+        [property: JsonPropertyName("message_author_banned")] bool MessageAuthorBanned);
 
     private sealed record ModActionDto(
         [property: JsonPropertyName("id")] Guid Id,

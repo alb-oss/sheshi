@@ -8,6 +8,11 @@ import { cn } from "@/lib/utils";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+// Video cap mirrors the server's MaxVideoBytes (50 MB); the server re-validates type by byte
+// signature so the client check is a fast-fail courtesy, not the trust boundary.
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+const ATTACH_ACCEPT = "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime";
 const LEADING_REPLY_MENTIONS = /^(@[A-Za-z0-9._-]+\s*)+/;
 
 interface Props {
@@ -50,9 +55,11 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   const [focused, setFocused] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [video, setVideo] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const attachInputRef = useRef<HTMLInputElement | null>(null);
 
   useImperativeHandle(ref, () => ({
     focus: () => textareaRef.current?.focus(),
@@ -79,6 +86,17 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   }, [image]);
 
   useEffect(() => {
+    if (!video) {
+      setVideoPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(video);
+    setVideoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [video]);
+
+  useEffect(() => {
     if (!replyContext) return;
     setBody((current) => stripLeadingReplyMentions(current));
   }, [replyContext?.label]);
@@ -89,26 +107,45 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     if (autoFocus) textareaRef.current?.focus();
   }, [autoFocus]);
 
-  function clearImage() {
+  // One attachment at a time: picking an image clears any video and vice versa, so the preview
+  // and the multipart payload stay unambiguous.
+  function clearAttachment() {
     setImage(null);
-    if (imageInputRef.current) imageInputRef.current.value = "";
+    setVideo(null);
+    if (attachInputRef.current) attachInputRef.current.value = "";
   }
 
-  function selectImage(file: File | null) {
+  function selectAttachment(file: File | null) {
     if (!file) {
-      clearImage();
+      clearAttachment();
+      return;
+    }
+    if (file.type.startsWith("video/")) {
+      if (!ALLOWED_VIDEO_TYPES.has(file.type)) {
+        toast.error("Lejohen vetëm MP4, WebM ose MOV.");
+        clearAttachment();
+        return;
+      }
+      if (file.size > MAX_VIDEO_BYTES) {
+        toast.error("Videoja duhet të jetë nën 50 MB.");
+        clearAttachment();
+        return;
+      }
+      setImage(null);
+      setVideo(file);
       return;
     }
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      toast.error("Lejohen vetëm PNG, JPG ose WebP.");
-      clearImage();
+      toast.error("Lejohen vetëm PNG, JPG, WebP ose video MP4/WebM/MOV.");
+      clearAttachment();
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
       toast.error("Imazhi duhet të jetë nën 5 MB.");
-      clearImage();
+      clearAttachment();
       return;
     }
+    setVideo(null);
     setImage(file);
   }
 
@@ -128,12 +165,12 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
 
   async function doSubmit() {
     const bodyToPost = replyContext ? stripLeadingReplyMentions(body) : body;
-    if ((!bodyToPost.trim() && !image) || posting) return;
+    if ((!bodyToPost.trim() && !image && !video) || posting) return;
     setPosting(true);
     try {
-      await postMessage({ room_id: roomId, body: bodyToPost, parent_id: parentId, image });
+      await postMessage({ room_id: roomId, body: bodyToPost, parent_id: parentId, image, video });
       setBody("");
-      clearImage();
+      clearAttachment();
       onClearReplyContext?.();
       onPosted?.();
     } catch (err: unknown) {
@@ -146,6 +183,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             ? sq.errors.rateLimited
           : err instanceof SheshiError && err.code === "INVALID_IMAGE"
             ? sq.errors.imageInvalid
+          : err instanceof SheshiError && err.code === "INVALID_VIDEO"
+            ? sq.errors.videoInvalid
           : sq.errors.generic;
       toast.error(msg);
     } finally {
@@ -159,11 +198,11 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   }
 
   const over = body.length > 1800;
-  const canSend = (!!body.trim() || !!image) && !posting;
+  const canSend = (!!body.trim() || !!image || !!video) && !posting;
   // Reddit-style mobile "join conversation" bar: until the box is focused or has content it's a
   // slim one-line prompt — the toolbar (image · counter · send) only appears once you engage.
   // Always expanded on desktop and for the inline reply composer.
-  const expanded = compact || focused || !!body.trim() || !!image || !!replyContext;
+  const expanded = compact || focused || !!body.trim() || !!image || !!video || !!replyContext;
 
   return (
     <form
@@ -224,8 +263,38 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             </div>
             <button
               type="button"
-              onClick={clearImage}
+              onClick={clearAttachment}
               aria-label="Hiq imazhin"
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-foreground/45 transition-colors hover:bg-card hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+        {video && (
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-background/60 px-3 py-2 sm:px-3.5">
+            <div className="flex min-w-0 items-center gap-3">
+              {videoPreviewUrl ? (
+                <video
+                  src={videoPreviewUrl}
+                  className="h-12 w-20 shrink-0 rounded-sm border border-border bg-black object-cover"
+                  muted
+                  playsInline
+                />
+              ) : null}
+              <div className="min-w-0">
+                <div className="truncate text-xs font-bold uppercase tracking-widest text-foreground/60">
+                  {video.name}
+                </div>
+                <div className="mt-0.5 text-[10px] font-bold uppercase tracking-widest text-foreground/35">
+                  {(video.size / 1024 / 1024).toFixed(1)} MB
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearAttachment}
+              aria-label="Hiq videon"
               className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-foreground/45 transition-colors hover:bg-card hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
@@ -251,17 +320,17 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
         />
         <div className={cn("items-center justify-between gap-2 px-2.5 pb-2 pt-1", expanded ? "flex" : "hidden sm:flex")}>
           <input
-            ref={imageInputRef}
+            ref={attachInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept={ATTACH_ACCEPT}
             className="hidden"
-            onChange={(event) => selectImage(event.target.files?.[0] ?? null)}
+            onChange={(event) => selectAttachment(event.target.files?.[0] ?? null)}
           />
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => imageInputRef.current?.click()}
-              aria-label="Shto imazh"
+              onClick={() => attachInputRef.current?.click()}
+              aria-label="Shto imazh ose video"
               className="inline-flex h-9 w-9 items-center justify-center rounded-sm text-foreground/40 transition-colors hover:bg-background hover:text-primary"
             >
               <ImagePlus className="h-4 w-4" />

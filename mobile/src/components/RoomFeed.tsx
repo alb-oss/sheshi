@@ -13,23 +13,21 @@ import {
 import { router } from "expo-router";
 import { getRoomBySlug, listMessages } from "@/api";
 import { PostCard } from "@/components/PostCard";
-import { Composer } from "@/components/Composer";
+import { DockedComposer } from "@/components/DockedComposer";
 import { FeedSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/useAuth";
-import { useKeyboardVisible } from "@/useKeyboardVisible";
+import { useDockOffset } from "@/useDockOffset";
 import { type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { MessageRow, Room } from "@/types";
 
-// `dockOffset` lifts the docked composer above the absolute glass tab bar on tabs that show it
-// (the Sheshi tab). Full-screen Stack rooms pass 0. While the keyboard is up the offset collapses
-// so the composer meets the keyboard cleanly (and the dock hides itself).
-export function RoomFeed({ slug, dockOffset = 0 }: { slug: string; dockOffset?: number }) {
+// The one room stream, used identically by the Sheshi tab and every #dhomë room: chat-ordered
+// (newest at the bottom) with the shared docked composer that floats above the persistent dock.
+export function RoomFeed({ slug }: { slug: string }) {
   const { user } = useAuth();
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const keyboardUp = useKeyboardVisible();
-  const offset = keyboardUp ? 0 : dockOffset;
+  const offset = useDockOffset();
   const [room, setRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -97,11 +95,14 @@ export function RoomFeed({ slug, dockOffset = 0 }: { slug: string; dockOffset?: 
       ) : (
         <FlatList
           data={messages}
+          // Chat order (newest at the bottom): data stays newest-first; `inverted` renders index 0
+          // at the bottom and turns onEndReached into "load older" at the top. [feed mode = drop `inverted`]
+          inverted
           keyExtractor={(m) => m.id}
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{ paddingBottom: 8 }}
+          contentContainerStyle={{ paddingTop: 8 }}
           renderItem={({ item }) => (
-            <PostCard message={item} compact onPress={() => router.push(`/tema/${item.id}`)} />
+            <PostCard message={item} compact currentUserId={user?.id ?? null} onPress={() => router.push(`/tema/${item.id}`)} />
           )}
           ItemSeparatorComponent={() => <View style={styles.sep} />}
           refreshControl={
@@ -113,13 +114,11 @@ export function RoomFeed({ slug, dockOffset = 0 }: { slug: string; dockOffset?: 
         />
       )}
       {room && user ? (
-        <View style={{ paddingBottom: offset }}>
-          <Composer
-            roomId={room.id}
-            placeholder={`Shkruaj në ${room.name}…`}
-            onPosted={(m) => setMessages((prev) => [m, ...prev])}
-          />
-        </View>
+        <DockedComposer
+          roomId={room.id}
+          placeholder={`Shkruaj në ${room.name}…`}
+          onPosted={(m) => setMessages((prev) => [m, ...prev])}
+        />
       ) : room ? (
         <Pressable onPress={() => router.push("/auth")} style={[styles.signInBar, { paddingBottom: 16 + offset }]}>
           <Text style={styles.signInText}>Hyr për të postuar në {room.name}</Text>

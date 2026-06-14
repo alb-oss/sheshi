@@ -37,6 +37,22 @@ public class SecretFileConfigurationTests
     }
 
     [Fact]
+    public async Task GetRequiredSecretValue_supports_connection_string_file_key()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"sheshi-connection-{Guid.NewGuid():N}");
+        await File.WriteAllTextAsync(path, "Host=db;Database=sheshi;Username=sheshi;Password=secret\n");
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:DefaultFile"] = path
+            })
+            .Build();
+
+        configuration.GetRequiredSecretValue("ConnectionStrings:Default")
+            .Should().Be("Host=db;Database=sheshi;Username=sheshi;Password=secret");
+    }
+
+    [Fact]
     public void GetRequiredSecretValue_throws_when_secret_is_missing()
     {
         var configuration = new ConfigurationBuilder().Build();

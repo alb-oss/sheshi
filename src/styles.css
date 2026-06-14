@@ -11,6 +11,8 @@
   --radius-xl: 1rem;
   --font-sans: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
   --font-display: "Hanken Grotesk", system-ui, sans-serif;
+  /* Rounded, warmer display face for lively accents (e.g. the "Në Fokus" header). */
+  --font-lively: "Baloo 2", "Hanken Grotesk", system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

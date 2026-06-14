@@ -63,8 +63,8 @@ These findings shape the production-readiness work:
 - The API is ASP.NET Core targeting .NET 10 under `server/Sheshi.Api`.
 - Local `docker-compose.yml` only starts Postgres and Mailpit for development.
 - The API already has `/health`, migrations, Identity auth, JWT auth, OAuth providers, SMTP email support, SignalR, moderation, and image upload validation.
-- Production image storage currently uses local disk through `LocalFileImageStorage`.
-- `IImageStorage` already exists, so S3-compatible object storage can be added without changing message-controller behavior deeply.
+- Media storage now keeps validation in `IImageStorage`/`IVideoStorage` and switches the durable sink through `IBlobStore`.
+- S3-compatible object storage can be selected through configuration without changing message-controller behavior deeply.
 - SignalR presence is process-local through `PresenceTracker`. That is acceptable for one app instance.
 - Current rate limiting is process-local. That is acceptable for one app instance, with Cloudflare providing edge-level protection.
 - OAuth callback URL generation uses `Request.Scheme`, so forwarded headers must be configured before production proxying.
@@ -279,7 +279,7 @@ For a single app instance, process-local SignalR presence and rate limiting are 
 
 Hetzner Object Storage should hold:
 
-- Uploaded images.
+- Uploaded images and videos.
 - Encrypted database backups.
 - Optional restore drill outputs.
 
@@ -289,32 +289,31 @@ It should not hold:
 - Unencrypted production secrets.
 - Raw user uploads before image validation.
 
-Image upload flow:
+Media upload flow:
 
 ```text
 Browser/mobile
-  -> API receives multipart image
+  -> API receives multipart image/video
   -> API validates content type and size
-  -> API detects actual image format
-  -> API strips metadata
-  -> API re-encodes image
-  -> API uploads sanitized bytes to Hetzner Object Storage
+  -> API verifies image format or video signature
+  -> API strips metadata and re-encodes images
+  -> API uploads validated bytes to Hetzner Object Storage
   -> API stores public object URL in Postgres
 ```
 
-The existing `IImageStorage` interface should remain the API boundary. Production should select S3-compatible storage through configuration, while dev/test can keep `LocalFileImageStorage`.
+The existing `IImageStorage` and `IVideoStorage` interfaces should remain the API boundary. Production should select the S3-compatible `IBlobStore` through configuration, while dev/test can keep the local `IBlobStore`.
 
 Recommended config shape:
 
 ```text
 Storage__Provider=s3
 Storage__PublicBaseUrl=https://uploads.sheshi.al
-Storage__Bucket=sheshi-uploads
-Storage__Endpoint=https://<hetzner-object-storage-endpoint>
-Storage__Region=<region>
-Storage__AccessKeyFile=/run/secrets/object_storage_access_key
-Storage__SecretKeyFile=/run/secrets/object_storage_secret_key
 Storage__MaxBytes=5242880
+Storage__S3__Bucket=sheshi-uploads
+Storage__S3__Endpoint=https://<hetzner-object-storage-endpoint>
+Storage__S3__Region=<region>
+Storage__S3__AccessKeyFile=/run/secrets/object_storage_access_key
+Storage__S3__SecretKeyFile=/run/secrets/object_storage_secret_key
 ```
 
 ## Secrets Model
@@ -382,10 +381,11 @@ secrets:
 The API should support `*_FILE` style configuration for high-risk values. This avoids passing secrets through broad environment output. Examples:
 
 ```text
-ConnectionStrings__DefaultPasswordFile=/run/secrets/db_password
+ConnectionStrings__DefaultFile=/run/secrets/db_connection_string
 Jwt__SigningKeyFile=/run/secrets/jwt_signing_key
 Smtp__PasswordFile=/run/secrets/smtp_password
-Storage__SecretKeyFile=/run/secrets/object_storage_secret_key
+Storage__S3__AccessKeyFile=/run/secrets/object_storage_access_key
+Storage__S3__SecretKeyFile=/run/secrets/object_storage_secret_key
 ```
 
 If .NET configuration remains environment-only temporarily, use a narrow entrypoint shim as a transitional measure, then replace it with native file-secret support.

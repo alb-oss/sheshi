@@ -18,9 +18,9 @@ function ThemedStack() {
           contentStyle: { backgroundColor: theme.bg },
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="tema/[id]" options={{ title: "Tema" }} />
-        <Stack.Screen name="dhoma/[slug]" options={{ title: "Dhomë" }} />
+        {/* title doubles as the back-button label on pushed screens (was the raw route group "(tabs)") */}
+        {/* Detail screens (tema/[id], dhoma/[slug]) now live inside (tabs) so the dock persists. */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Sheshi" }} />
         <Stack.Screen name="auth" options={{ title: "Hyr", presentation: "modal" }} />
       </Stack>
     </GestureHandlerRootView>

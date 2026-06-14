@@ -24,9 +24,16 @@ public class HighlightsController(AppDbContext db, MessageService messageService
         List<Guid> candidateIds;
         if (mode == "hot")
         {
-            // Hot weights recency heavily, so the newest 200 (all-time) is a sound candidate pool.
+            // Hot is engagement-first now, so candidates are the top 200 by raw engagement (vote sum +
+            // reply count) over the last 7 days — not merely the newest, which silently dropped engaged
+            // posts once volume was high. Final ordering is applied by HotScore below.
+            var since = DateTimeOffset.UtcNow.AddDays(-7);
             candidateIds = await topLevel
-                .OrderByDescending(m => m.CreatedAt)
+                .Where(m => m.CreatedAt >= since)
+                .OrderByDescending(m =>
+                    db.Votes.Where(v => v.MessageId == m.Id).Sum(v => (int)v.Value)
+                    + db.Messages.Count(c => c.ParentId == m.Id && c.DeletedAt == null))
+                .ThenByDescending(m => m.CreatedAt)
                 .Take(200)
                 .Select(m => m.Id)
                 .ToListAsync(ct);
@@ -48,9 +55,10 @@ public class HighlightsController(AppDbContext db, MessageService messageService
 
         var candidates = await db.Messages.AsNoTracking().Where(m => candidateIds.Contains(m.Id)).ToListAsync(ct);
         var enriched = await messageService.EnrichAsync(candidates, User.GetUserId(), ct);
+        var now = DateTimeOffset.UtcNow;
         var ranked = mode switch
         {
-            "hot" => enriched.OrderByDescending(HotScore),
+            "hot" => enriched.OrderByDescending(m => HotScore(m, now)).ThenByDescending(m => m.CreatedAt),
             "top" => enriched.OrderByDescending(m => m.Score).ThenByDescending(m => m.CreatedAt),
             _ => enriched.OrderByDescending(m => m.ReplyCount).ThenByDescending(m => m.CreatedAt)
         };
@@ -58,15 +66,20 @@ public class HighlightsController(AppDbContext db, MessageService messageService
         return Ok(ranked.Take(10).ToList());
     }
 
-    // Reddit's "hot" algorithm over the net score (up − down): sign- and time-weighted, so
-    // rank decays with age and a downvoted post sinks below a zero-score one of the same age.
-    private const long RedditEpoch = 1134028003L;
-    private static double HotScore(MessageDto message)
+    // "Hot" = engagement-first with a delayed, gentle time decay (see
+    // docs/2026-06-14-hot-engagement-ranking-design.md). Within the first GraceHours the rank is pure
+    // engagement (votes + comments, comments weighted a bit more); after a day a gentle gravity decay
+    // applies so age matters only mildly. Zero-engagement scores 0 (can't lead); downvoted goes
+    // negative and sinks.
+    private const double CommentWeight = 1.5; // a comment counts a bit more than an upvote
+    private const double GraceHours = 24.0;   // no time decay for the first day
+    private const double DecayGravity = 0.8;  // gentle decay afterwards (Reddit/HN use ~1.8)
+
+    private static double HotScore(MessageDto m, DateTimeOffset now)
     {
-        var s = message.Score;
-        var order = Math.Log10(Math.Max(Math.Abs(s), 1));
-        var sign = Math.Sign(s);
-        var seconds = message.CreatedAt.ToUnixTimeSeconds() - RedditEpoch;
-        return sign * order + seconds / 45000.0;
+        var engagement = m.Score + CommentWeight * m.ReplyCount;
+        var ageHours = Math.Max(0.0001, (now - m.CreatedAt).TotalHours);
+        var recency = Math.Min(1.0, Math.Pow(GraceHours / ageHours, DecayGravity));
+        return engagement * recency;
     }
 }

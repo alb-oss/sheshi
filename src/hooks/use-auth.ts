@@ -16,6 +16,7 @@ export type ApiUser = {
   avatar_url: string | null;
   roles: string[];
   is_banned: boolean;
+  karma: number;
 };
 
 type AuthState = {

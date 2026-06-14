@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -262,6 +263,142 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         deleted!.DeletedAt.Should().NotBeNull();
     }
 
+    // Regression: a brand-new post with zero votes and zero replies must NOT top "hot" over an
+    // engaged post — the old recency-dominated formula ranked empty newest posts first.
+    [Fact]
+    public async Task Hot_highlights_rank_engaged_posts_above_newer_empty_ones()
+    {
+        var client = factory.CreateClient();
+        var author = await RegisterAsync(client, "hot-author");
+        var voter = await RegisterAsync(client, "hot-voter");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        UseBearer(client, author.AccessToken);
+        var engaged = (await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "engaged post" })).Content.ReadFromJsonAsync<MessageDto>())!;
+        var empty = (await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "brand new empty post" })).Content.ReadFromJsonAsync<MessageDto>())!;
+
+        UseBearer(client, voter.AccessToken);
+        (await client.PutAsJsonAsync($"/api/messages/{engaged.Id}/vote", new { value = 1 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var hot = await client.GetFromJsonAsync<MessageDto[]>("/api/highlights?mode=hot");
+        hot.Should().NotBeNull();
+        var ids = hot!.Select(h => h.Id).ToList();
+        ids.Should().Contain(engaged.Id).And.Contain(empty.Id);
+        ids.IndexOf(engaged.Id).Should().BeLessThan(ids.IndexOf(empty.Id),
+            "an engaged post must outrank a newer zero-engagement post in hot");
+    }
+
+    // Engagement-first: within the 24h grace window time is irrelevant, so a discussed (comment-heavy)
+    // older post outranks a fresher one with a single upvote.
+    [Fact]
+    public async Task Hot_highlights_favor_engagement_over_recency_within_the_grace_window()
+    {
+        var client = factory.CreateClient();
+        var author = await RegisterAsync(client, "hot-eng-author");
+        var commenter = await RegisterAsync(client, "hot-eng-commenter");
+        var voter = await RegisterAsync(client, "hot-eng-voter");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        // discussed post (created first → older): 0 votes but 3 replies
+        UseBearer(client, author.AccessToken);
+        var discussed = (await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "discussed thread" })).Content.ReadFromJsonAsync<MessageDto>())!;
+        UseBearer(client, commenter.AccessToken);
+        for (var i = 0; i < 3; i++)
+            (await client.PostAsJsonAsync("/api/messages",
+                new { room_id = room.Id, parent_id = discussed.Id, body = $"reply {i}" }))
+                .StatusCode.Should().Be(HttpStatusCode.Created);
+
+        // fresher post with a single upvote (less total engagement)
+        UseBearer(client, author.AccessToken);
+        var fresh = (await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "fresh one upvote" })).Content.ReadFromJsonAsync<MessageDto>())!;
+        UseBearer(client, voter.AccessToken);
+        (await client.PutAsJsonAsync($"/api/messages/{fresh.Id}/vote", new { value = 1 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var hot = await client.GetFromJsonAsync<MessageDto[]>("/api/highlights?mode=hot");
+        hot.Should().NotBeNull();
+        var ids = hot!.Select(h => h.Id).ToList();
+        ids.Should().Contain(discussed.Id).And.Contain(fresh.Id);
+        ids.IndexOf(discussed.Id).Should().BeLessThan(ids.IndexOf(fresh.Id),
+            "within the grace window the more-engaged (3 replies) post must outrank a fresher 1-upvote post");
+    }
+
+    [Fact]
+    public async Task Karma_reflects_votes_and_activity_and_profile_lists_posts_vs_comments()
+    {
+        var client = factory.CreateClient();
+        var alice = await RegisterAsync(client, "karma-alice");
+        var bob = await RegisterAsync(client, "karma-bob");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        // Alice contributes a root post + a reply (2 contributions).
+        UseBearer(client, alice.AccessToken);
+        var post = await (await client.PostAsJsonAsync("/api/messages", new { room_id = room.Id, body = "alice post" }))
+            .Content.ReadFromJsonAsync<MessageDto>();
+        var reply = await (await client.PostAsJsonAsync("/api/messages", new { room_id = room.Id, parent_id = post!.Id, body = "alice reply" }))
+            .Content.ReadFromJsonAsync<MessageDto>();
+
+        // Fresh user has no votes/messages → karma 0.
+        UseBearer(client, bob.AccessToken);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(0);
+
+        // Bob upvotes Alice's post (net +1 received).
+        (await client.PutAsJsonAsync($"/api/messages/{post.Id}/vote", new { value = 1 })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // karma = UpvoteWeight(2)*netVotes(1) + contributions(2) = 4.
+        UseBearer(client, alice.AccessToken);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(4);
+
+        // Profile lists separate posts from comments, scoped to the author.
+        var posts = await client.GetFromJsonAsync<CursorPageDto<MessageDto>>($"/api/users/{alice.User.Id}/messages?type=posts");
+        posts!.Items.Should().ContainSingle(m => m.Id == post.Id);
+        posts.Items.Should().NotContain(m => m.Id == reply!.Id);
+
+        var comments = await client.GetFromJsonAsync<CursorPageDto<MessageDto>>($"/api/users/{alice.User.Id}/messages?type=comments");
+        comments!.Items.Should().ContainSingle(m => m.Id == reply!.Id);
+        comments.Items.Should().NotContain(m => m.Id == post.Id);
+    }
+
+    [Fact]
+    public async Task Username_is_anonymous_at_signup_editable_and_unique()
+    {
+        var client = factory.CreateClient();
+        var alice = await RegisterAsync(client, "uname-alice");
+        var bob = await RegisterAsync(client, "uname-bob");
+
+        // Anonymous by default: word_word_hex, never derived from the email local part.
+        alice.User.Username.Should().MatchRegex("^[a-z]+_[a-z]+_[0-9a-f]{4}$");
+        alice.User.Username.Should().NotContain("uname-alice");
+
+        UseBearer(client, alice.AccessToken);
+
+        // Shuffle suggestions: five free, valid handles.
+        var suggestions = await client.GetFromJsonAsync<SuggestionsDto>("/api/me/username-suggestions");
+        suggestions!.Suggestions.Should().HaveCount(5);
+        suggestions.Suggestions.Should().OnlyContain(s => Regex.IsMatch(s, "^[a-z0-9_]{3,20}$"));
+
+        // Pick a new username; it sticks.
+        const string picked = "qytetar_anonim_7";
+        var patched = await (await client.PatchAsJsonAsync("/api/me", new { username = picked }))
+            .Content.ReadFromJsonAsync<UserDto>();
+        patched!.Username.Should().Be(picked);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Username.Should().Be(picked);
+
+        // Invalid charset/length → 400.
+        (await client.PatchAsJsonAsync("/api/me", new { username = "AB" })).StatusCode
+            .Should().Be(HttpStatusCode.BadRequest);
+
+        // Taken → 409 (Bob can't grab Alice's handle).
+        UseBearer(client, bob.AccessToken);
+        (await client.PatchAsJsonAsync("/api/me", new { username = picked })).StatusCode
+            .Should().Be(HttpStatusCode.Conflict);
+    }
+
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
         var email = $"{label}-{Guid.NewGuid():N}@example.com";
@@ -327,13 +464,17 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         [property: JsonPropertyName("display_name")] string? DisplayName,
         [property: JsonPropertyName("avatar_url")] string? AvatarUrl,
         [property: JsonPropertyName("roles")] string[] Roles,
-        [property: JsonPropertyName("is_banned")] bool IsBanned);
+        [property: JsonPropertyName("is_banned")] bool IsBanned,
+        [property: JsonPropertyName("karma")] int Karma = 0);
 
     private sealed record AuthorDto(
         [property: JsonPropertyName("id")] Guid Id,
         [property: JsonPropertyName("username")] string? Username,
         [property: JsonPropertyName("display_name")] string? DisplayName,
         [property: JsonPropertyName("avatar_url")] string? AvatarUrl);
+
+    private sealed record SuggestionsDto(
+        [property: JsonPropertyName("suggestions")] string[] Suggestions);
 
     private sealed record MessageDto(
         [property: JsonPropertyName("id")] Guid Id,

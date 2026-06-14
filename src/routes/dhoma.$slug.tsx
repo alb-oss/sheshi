@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
 import { Composer } from "@/components/Composer";
@@ -42,6 +42,10 @@ function RoomPage({ slug }: { slug: string }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [newCount, setNewCount] = useState(0);
   const loadingMoreRef = useRef(false);
+  // Chat mode (newest at the bottom): pending scroll-to-bottom, and the pre-prepend height used to
+  // anchor the viewport when older messages load in at the top.
+  const scrollToBottomRef = useRef(false);
+  const olderAdjustRef = useRef<number | null>(null);
 
   useEffect(() => {
     listRooms()
@@ -78,20 +82,26 @@ function RoomPage({ slug }: { slug: string }) {
         setCursor(page.next_cursor);
         setNewCount(0);
         firstIdRef.current = firstId;
-        requestAnimationFrame(() => {
-          if ((loading || isNew) && scrollRef.current)
-            scrollRef.current.scrollTo({ top: 0, behavior: loading ? "auto" : "smooth" });
-        });
+        // Chat mode: land on the latest message (bottom) on first load or when the newest changed
+        // (e.g. right after you post). Applied in the layout effect once the list has rendered.
+        scrollToBottomRef.current = Boolean(loading || isNew);
+        // FEED MODE (newest at top) — kept for later:
+        // requestAnimationFrame(() => {
+        //   if ((loading || isNew) && scrollRef.current)
+        //     scrollRef.current.scrollTo({ top: 0, behavior: loading ? "auto" : "smooth" });
+        // });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   };
 
-  // Infinite scroll: pull older pages via the cursor API as the user nears the bottom.
+  // Infinite scroll: pull older pages via the cursor API. Chat mode: older messages render at the
+  // TOP, so we capture the scroll height first and re-anchor in the layout effect (no jump).
   const loadMore = () => {
     if (!room || !cursor || loadingMoreRef.current) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
+    olderAdjustRef.current = scrollRef.current?.scrollHeight ?? null;
     listMessages(room.id, cursor)
       .then((page) => {
         setMessages((prev) => {
@@ -110,9 +120,28 @@ function RoomPage({ slug }: { slug: string }) {
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    if (el.scrollTop < 40 && newCount > 0) setNewCount(0);
-    if (cursor && el.scrollHeight - el.scrollTop - el.clientHeight < 400) loadMore();
+    // Chat mode: you're "caught up" near the BOTTOM; older history loads when you scroll near the TOP.
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 40 && newCount > 0) setNewCount(0);
+    if (cursor && el.scrollTop < 400) loadMore();
+    // FEED MODE — kept for later:
+    // if (el.scrollTop < 40 && newCount > 0) setNewCount(0);
+    // if (cursor && el.scrollHeight - el.scrollTop - el.clientHeight < 400) loadMore();
   };
+
+  // Apply pending scroll adjustments after the message list re-renders.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (olderAdjustRef.current != null) {
+      el.scrollTop += el.scrollHeight - olderAdjustRef.current; // keep older-load from jumping the view
+      olderAdjustRef.current = null;
+      return;
+    }
+    if (scrollToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+      scrollToBottomRef.current = false;
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (!room) return;
@@ -127,12 +156,15 @@ function RoomPage({ slug }: { slug: string }) {
       if (!msg || msg.room_id !== roomId) return;
       if (msg.parent_id == null) {
         setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [msg, ...prev]));
+        // Chat mode: a new message lands at the bottom — follow it if you're already near the bottom,
+        // otherwise show the "new messages ↓" pill instead of yanking the view.
         const el = scrollRef.current;
-        if (!el || el.scrollTop < 60) {
-          requestAnimationFrame(() => el?.scrollTo({ top: 0, behavior: "smooth" }));
-        } else {
-          setNewCount((n) => n + 1); // reading below — show a pill instead of yanking the view
-        }
+        const nearBottom = !el || el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        if (nearBottom) scrollToBottomRef.current = true;
+        else setNewCount((n) => n + 1);
+        // FEED MODE — kept for later:
+        // if (!el || el.scrollTop < 60) requestAnimationFrame(() => el?.scrollTo({ top: 0, behavior: "smooth" }));
+        // else setNewCount((n) => n + 1);
       } else if (p.root_id) {
         // a reply: bump its top-level ancestor's reply count in the feed
         setMessages((prev) =>
@@ -143,7 +175,7 @@ function RoomPage({ slug }: { slug: string }) {
       setMessages((prev) => prev.map((m) => (m.id === p.message_id ? { ...m, score: p.score } : m)));
     const onDeleted = (p: { id: string }) =>
       setMessages((prev) =>
-        prev.map((m) => (m.id === p.id ? { ...m, deleted_at: new Date().toISOString(), body: "", image_url: null } : m)));
+        prev.map((m) => (m.id === p.id ? { ...m, deleted_at: new Date().toISOString(), body: "", image_url: null, video_url: null } : m)));
 
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise
@@ -196,49 +228,57 @@ function RoomPage({ slug }: { slug: string }) {
             {messages.length} {sq.chat.messagesCount}
           </span>
         </div>
-        <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="relative flex-1 min-h-0">
+          <div ref={scrollRef} onScroll={onScroll} className="absolute inset-0 overflow-y-auto no-scrollbar">
+            {loading ? (
+              <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
+                {sq.chat.loading}
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="p-10 text-center">
+                <div className="text-xs uppercase tracking-widest font-bold text-foreground/40 mb-2">
+                  Sheshi është bosh
+                </div>
+                <div className="text-sm text-foreground/60">{sq.chat.empty}</div>
+              </div>
+            ) : (
+              // Chat-style stream (newest at the bottom): older history at the top, latest at the
+              // bottom — dense compact messages, each still votable and clickable to its thread.
+              <div className="flex flex-col divide-y divide-border/40 py-1">
+                {cursor && (
+                  <div className="p-4 text-center text-[11px] uppercase tracking-widest font-bold text-foreground/40">
+                    {loadingMore ? sq.chat.loading : "•"}
+                  </div>
+                )}
+                {/* data is newest-first; reverse for display so the latest renders at the bottom.
+                    FEED MODE (newest at top) — kept for later: {messages.map((m) => …)} */}
+                {messages
+                  .slice()
+                  .reverse()
+                  .map((m) => (
+                    <MessageCard
+                      key={m.id}
+                      message={m}
+                      roomSlug={slug}
+                      currentUserId={userId}
+                      onChanged={reload}
+                      compact
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
           {newCount > 0 && (
             <button
               onClick={() => {
-                scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                const el = scrollRef.current;
+                if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
                 setNewCount(0);
               }}
-              className="sticky top-2 z-10 mx-auto block bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow"
+              className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow"
             >
-              {newCount === 1 ? "1 postim i ri" : `${newCount} postime të reja`} ↑
+              {newCount === 1 ? "1 postim i ri" : `${newCount} postime të reja`} ↓
             </button>
-          )}
-          {loading ? (
-            <div className="p-6 text-xs uppercase tracking-widest font-bold text-foreground/40">
-              {sq.chat.loading}
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="p-10 text-center">
-              <div className="text-xs uppercase tracking-widest font-bold text-foreground/40 mb-2">
-                Sheshi është bosh
-              </div>
-              <div className="text-sm text-foreground/60">{sq.chat.empty}</div>
-            </div>
-          ) : (
-            // Chat-style stream: dense compact messages with hairline separators — fast to scan,
-            // each still votable and clickable through to its thread.
-            <div className="flex flex-col divide-y divide-border/40 py-1">
-              {messages.map((m) => (
-                <MessageCard
-                  key={m.id}
-                  message={m}
-                  roomSlug={slug}
-                  currentUserId={userId}
-                  onChanged={reload}
-                  compact
-                />
-              ))}
-              {cursor && (
-                <div className="p-4 text-center text-[11px] uppercase tracking-widest font-bold text-foreground/40">
-                  {loadingMore ? sq.chat.loading : "•"}
-                </div>
-              )}
-            </div>
           )}
         </div>
         {room && <Composer roomId={room.id} currentUserId={userId} onPosted={reload} />}
