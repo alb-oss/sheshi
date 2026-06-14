@@ -1,13 +1,13 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Award, LogOut, ShieldCheck, Star } from "lucide-react";
+import { Award, LogOut, Shuffle, ShieldCheck, Star } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { apiJson, apiNoContent } from "@/lib/api-client";
+import { ApiError, apiJson, apiNoContent } from "@/lib/api-client";
 import { getStoredTokens } from "@/lib/token-store";
 import { signOutLocal, useAuth, type ApiUser } from "@/hooks/use-auth";
 import { listUserMessages, type MessageRow } from "@/lib/sheshi";
@@ -26,10 +26,53 @@ function ProfilePage() {
   const loading = !isReady;
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [username, setUsername] = useState("");
+  const [savingUsername, setSavingUsername] = useState(false);
+  const [shuffling, setShuffling] = useState(false);
 
   useEffect(() => {
     setDisplayName(user?.display_name ?? "");
   }, [user?.display_name]);
+
+  useEffect(() => {
+    setUsername(user?.username ?? "");
+  }, [user?.username]);
+
+  async function shuffleUsername() {
+    setShuffling(true);
+    try {
+      const res = await apiJson<{ suggestions: string[] }>("/api/me/username-suggestions");
+      if (res.suggestions[0]) setUsername(res.suggestions[0]);
+    } catch {
+      toast.error(sq.errors.generic);
+    } finally {
+      setShuffling(false);
+    }
+  }
+
+  async function saveUsername() {
+    if (!user) return;
+    setSavingUsername(true);
+    try {
+      const updated = await apiJson<ApiUser>("/api/me", {
+        method: "PATCH",
+        body: { username: username.trim().toLowerCase() },
+      });
+      setUsername(updated.username ?? "");
+      toast.success("Username u ruajt");
+    } catch (e) {
+      const status = e instanceof ApiError ? e.status : 0;
+      toast.error(
+        status === 409
+          ? "Ky username është i zënë."
+          : status === 400
+            ? "Username i pavlefshëm (3–20 shenja: a–z, 0–9, _)."
+            : sq.errors.generic,
+      );
+    } finally {
+      setSavingUsername(false);
+    }
+  }
 
   async function save() {
     if (!user) return;
@@ -68,6 +111,8 @@ function ProfilePage() {
     .join("")
     .toUpperCase();
   const dirty = !!user && displayName.trim() !== (user.display_name ?? "");
+  const usernameDirty =
+    !!user && username.trim().length > 0 && username.trim().toLowerCase() !== (user.username ?? "");
 
   return (
     <AppShell>
@@ -137,6 +182,42 @@ function ProfilePage() {
               <Button onClick={save} disabled={saving || !dirty} className="rounded-full">
                 {saving ? "Po ruhet…" : "Ruaj"}
               </Button>
+
+              <div className="space-y-2 border-t border-border pt-4">
+                <Label htmlFor="un" className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Username
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="un"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    maxLength={20}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    className="rounded-xl lowercase"
+                    placeholder="username_juaj"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={shuffleUsername}
+                    disabled={shuffling}
+                    title="Sugjero një username anonim"
+                    aria-label="Sugjero një username anonim"
+                    className="shrink-0 rounded-xl"
+                  >
+                    <Shuffle className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  3–20 shenja: a–z, 0–9, _. Përdor butonin për një emër anonim.
+                </p>
+                <Button onClick={saveUsername} disabled={savingUsername || !usernameDirty} className="rounded-full">
+                  {savingUsername ? "Po ruhet…" : "Ruaj username"}
+                </Button>
+              </div>
             </div>
 
             <ProfileMessages userId={user.id} currentUserId={user.id} />
