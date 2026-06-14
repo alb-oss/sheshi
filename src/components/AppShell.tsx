@@ -1,11 +1,12 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Home, Flame, User, Radio, Shield } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { sq } from "@/i18n/sq";
-import { useAuth } from "@/hooks/use-auth";
+import { signOutLocal, useAuth } from "@/hooks/use-auth";
 import { listRooms, type Room } from "@/lib/sheshi";
 import { cn } from "@/lib/utils";
-import { apiJson } from "@/lib/api-client";
+import { apiJson, apiNoContent } from "@/lib/api-client";
+import { getStoredTokens } from "@/lib/token-store";
 import { ensureRealtimeStarted } from "@/lib/realtime";
 import { canModerate } from "@/lib/roles";
 
@@ -13,8 +14,21 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
   const [rooms, setRooms] = useState<Room[]>([]);
   const [presence, setPresence] = useState<Record<string, number>>({});
   const { user } = useAuth();
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isMod = canModerate(user);
+
+  async function handleSignOut() {
+    const refreshToken = getStoredTokens()?.refreshToken;
+    try {
+      if (refreshToken)
+        await apiNoContent("/api/auth/logout", { method: "POST", body: { refresh_token: refreshToken } });
+    } catch {
+      // proceed with local sign-out even if the server session is already gone
+    }
+    signOutLocal();
+    navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
+  }
 
   useEffect(() => {
     listRooms()
@@ -81,12 +95,22 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
               {sq.nav.admin}
             </Link>
           ) : null}
-          <Link
-            to={user ? "/profili" : "/auth"}
-            className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/85"
-          >
-            {user ? sq.auth.signOut : sq.auth.signIn}
-          </Link>
+          {user ? (
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/85"
+            >
+              {sq.auth.signOut}
+            </button>
+          ) : (
+            <Link
+              to="/auth"
+              className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/85"
+            >
+              {sq.auth.signIn}
+            </Link>
+          )}
         </div>
       </header>
 
