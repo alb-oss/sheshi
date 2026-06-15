@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { sq } from "@/i18n/sq";
-import { listHighlights, type HighlightMode, type MessageRow } from "@/lib/sheshi";
+import { listHighlights, type HighlightMode } from "@/lib/sheshi";
 import { ensureRealtimeStarted } from "@/lib/realtime";
 import { Link } from "@tanstack/react-router";
 import { Flame, ArrowUp, MessageSquare, ArrowUpRight } from "lucide-react";
@@ -16,35 +17,14 @@ export function HighlightsPanel({
   roomSlugLookup: Map<string, string>;
 }) {
   const [mode, setMode] = useState<HighlightMode>("hot");
-  const [items, setItems] = useState<MessageRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const modeRef = useRef(mode);
-  modeRef.current = mode;
+  const queryClient = useQueryClient();
+  const { data: items = [], isPending: loading } = useQuery({
+    queryKey: ["highlights", mode, currentUserId],
+    queryFn: () => listHighlights(mode),
+    staleTime: 30_000,
+  });
 
-  const refresh = useCallback(
-    () => listHighlights(modeRef.current).then(setItems).catch(() => {}),
-    [],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    listHighlights(mode)
-      .then((r) => {
-        if (!cancelled) setItems(r);
-      })
-      .catch(() => {
-        if (!cancelled) setItems([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [mode, currentUserId]);
-
-  // Phase B: keep the global "Hot" live — debounced refetch on any realtime activity
+  // Keep the panel live — a debounced cache invalidation on any realtime highlights activity
   // (the panel is joined to no room/thread group, so it listens for the global tick).
   useEffect(() => {
     let disposed = false;
@@ -52,7 +32,7 @@ export function HighlightsPanel({
     const tick = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
-        if (!disposed) void refresh();
+        if (!disposed) void queryClient.invalidateQueries({ queryKey: ["highlights"] });
       }, 800);
     };
     const conn = ensureRealtimeStarted();
@@ -62,7 +42,7 @@ export function HighlightsPanel({
       if (timer) clearTimeout(timer);
       conn.then((c) => c.off("highlights_changed", tick)).catch(() => {});
     };
-  }, [refresh]);
+  }, [queryClient]);
 
   const tabs: { id: HighlightMode; label: string }[] = [
     { id: "hot", label: sq.fokus.hot },
