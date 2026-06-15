@@ -7,6 +7,7 @@ import {
   subscribeTokenStore,
   type StoredTokens,
 } from "@/lib/token-store";
+import { queryPersister } from "@/lib/query-persist";
 
 export type ApiUser = {
   id: string;
@@ -106,4 +107,7 @@ export async function setAuthTokens(tokens: StoredTokens) {
 
 export function signOutLocal() {
   clearStoredTokens();
+  // Wipe the persisted query cache so nothing survives a logout (only public reads are persisted
+  // today, but this keeps it safe as more queries move to React Query).
+  void queryPersister.removeClient();
 }
