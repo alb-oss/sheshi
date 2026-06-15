@@ -74,6 +74,49 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
 
   const activeSlug = pathname.startsWith("/dhoma/") ? pathname.split("/")[2] : null;
 
+  // Mobile dock tabs. The liquid-glass indicator lands on the LAST matching tab so the specific room
+  // ("Live" = /dhoma/sheshi) wins over the broader "Dhoma" match.
+  const dockTabs = [
+    {
+      to: "/",
+      icon: <Home className="h-5 w-5" />,
+      label: sq.nav.rooms,
+      active: pathname === "/" || pathname.startsWith("/dhoma/") || pathname.startsWith("/tema/"),
+    },
+    {
+      to: "/dhoma/sheshi",
+      icon: <Radio className="h-5 w-5" />,
+      label: sq.nav.live,
+      active: pathname === "/dhoma/sheshi",
+    },
+    {
+      to: "/fokus",
+      icon: <Flame className="h-5 w-5" />,
+      label: sq.nav.fokus,
+      active: pathname === "/fokus",
+    },
+    {
+      to: "/profili",
+      icon: <User className="h-5 w-5" />,
+      label: sq.nav.profile,
+      active: pathname === "/profili",
+    },
+    ...(isMod
+      ? [
+          {
+            to: "/moderim",
+            icon: <Shield className="h-5 w-5" />,
+            label: sq.nav.admin,
+            active: pathname === "/moderim",
+          },
+        ]
+      : []),
+  ];
+  let dockActive = -1;
+  dockTabs.forEach((t, i) => {
+    if (t.active) dockActive = i;
+  });
+
   return (
     <div className="flex flex-col h-dvh w-full overflow-hidden bg-background text-foreground">
       {/* Top header */}
@@ -197,42 +240,34 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
       </div>
 
       {/* Mobile bottom nav — a real flex child (not fixed) so the docked composer sits above it. */}
-      <nav className="shrink-0 md:hidden border-t border-border bg-background">
-        <div className={cn("grid h-16", isMod ? "grid-cols-5" : "grid-cols-4")}>
-          <BottomLink
-            to="/"
-            icon={<Home className="h-5 w-5" />}
-            label={sq.nav.rooms}
-            active={
-              pathname === "/" || pathname.startsWith("/dhoma/") || pathname.startsWith("/tema/")
-            }
-          />
-          <BottomLink
-            to="/dhoma/sheshi"
-            icon={<Radio className="h-5 w-5" />}
-            label={sq.nav.live}
-            active={pathname === "/dhoma/sheshi"}
-          />
-          <BottomLink
-            to="/fokus"
-            icon={<Flame className="h-5 w-5" />}
-            label={sq.nav.fokus}
-            active={pathname === "/fokus"}
-          />
-          <BottomLink
-            to="/profili"
-            icon={<User className="h-5 w-5" />}
-            label={sq.nav.profile}
-            active={pathname === "/profili"}
-          />
-          {isMod ? (
-            <BottomLink
-              to="/moderim"
-              icon={<Shield className="h-5 w-5" />}
-              label={sq.nav.admin}
-              active={pathname === "/moderim"}
-            />
-          ) : null}
+      <nav className="shrink-0 md:hidden border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+        <div
+          className="relative grid h-16"
+          style={{ gridTemplateColumns: `repeat(${dockTabs.length}, minmax(0, 1fr))` }}
+        >
+          {/* Liquid-glass active indicator: a frosted pill that springs between tabs, squashing as it
+              settles, with a sheen that sweeps across on each switch. */}
+          {dockActive >= 0 && (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 transition-transform duration-[460ms] [transition-timing-function:cubic-bezier(0.34,1.6,0.5,1)] motion-reduce:transition-none"
+              style={{
+                width: `calc(100% / ${dockTabs.length})`,
+                transform: `translateX(${dockActive * 100}%)`,
+              }}
+            >
+              <span
+                key={dockActive}
+                className="animate-dock-liquid motion-reduce:animate-none absolute inset-x-3 inset-y-2.5 overflow-hidden rounded-2xl border border-primary/30 bg-primary/12 shadow-[0_8px_24px_-10px_var(--primary)] backdrop-blur-md"
+              >
+                <span className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/20 to-transparent" />
+                <span className="animate-dock-sheen motion-reduce:hidden absolute inset-y-0 -left-1/2 w-1/2 bg-white/30 blur-md" />
+              </span>
+            </span>
+          )}
+          {dockTabs.map((t) => (
+            <BottomLink key={t.to} to={t.to} icon={t.icon} label={t.label} active={t.active} />
+          ))}
         </div>
       </nav>
     </div>
@@ -275,11 +310,18 @@ function BottomLink({
     <Link
       to={to}
       className={cn(
-        "flex flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-widest font-bold transition-colors",
+        "relative flex flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-widest font-bold transition-colors",
         active ? "text-primary" : "text-foreground/40 hover:text-foreground/70",
       )}
     >
-      {icon}
+      <span
+        className={cn(
+          "transition-transform duration-300 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)]",
+          active && "-translate-y-0.5 scale-110",
+        )}
+      >
+        {icon}
+      </span>
       <span>{label}</span>
     </Link>
   );
