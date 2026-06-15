@@ -9,6 +9,28 @@ public class MessageService(AppDbContext db)
     private const int DefaultRoomLimit = 40;
     private const int DefaultReplyLimit = 80;
     private const int MaxLimit = 100;
+    private const int MediaCap = 1000;
+
+    // All non-deleted media in a room (images + videos), chronological, for the swipeable gallery.
+    // Capped at the most recent MediaCap items.
+    public async Task<IReadOnlyList<MediaDto>> ListRoomMediaAsync(Guid roomId, CancellationToken ct = default)
+    {
+        var rows = await db.Messages
+            .AsNoTracking()
+            .Where(m => m.RoomId == roomId && m.DeletedAt == null && (m.ImageUrl != null || m.VideoUrl != null))
+            .OrderByDescending(m => m.CreatedAt)
+            .ThenByDescending(m => m.Id)
+            .Take(MediaCap)
+            .Select(m => new MediaDto(
+                m.Id,
+                m.ImageUrl != null ? "image" : "video",
+                m.ImageUrl ?? m.VideoUrl!,
+                m.CreatedAt,
+                m.Author.DisplayName ?? m.Author.UserName))
+            .ToListAsync(ct);
+        rows.Reverse(); // query is newest-first (for the cap); the gallery wants oldest-first.
+        return rows;
+    }
 
     public async Task<CursorPageDto<MessageDto>> ListRoomMessagesAsync(
         Guid roomId,

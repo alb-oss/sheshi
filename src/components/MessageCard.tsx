@@ -6,6 +6,7 @@ import {
   Flag,
   MessageSquare,
   MoreHorizontal,
+  Play,
   Share2,
   Trash2,
   X,
@@ -15,7 +16,8 @@ import { formatDistanceToNowStrict } from "date-fns";
 import { sq as sqLocale } from "date-fns/locale";
 import { sq } from "@/i18n/sq";
 import { cn } from "@/lib/utils";
-import { softDeleteMessage, type MessageRow } from "@/lib/sheshi";
+import { softDeleteMessage, type MediaItem, type MessageRow } from "@/lib/sheshi";
+import { MediaViewer } from "./MediaViewer";
 import { isSaved, onSavedChanged, toggleSaved } from "@/lib/saved";
 import { isReported, onReportedChanged } from "@/lib/reported";
 import { VoteControl } from "./VoteControl";
@@ -103,16 +105,6 @@ export function MessageCard({
     setReported(isReported(message.id));
     return onReportedChanged(() => setReported(isReported(message.id)));
   }, [message.id]);
-
-  // Close the image lightbox on Escape (click-away also closes it).
-  useEffect(() => {
-    if (!viewerOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setViewerOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [viewerOpen]);
 
   function onToggleSave() {
     const next = toggleSaved(message.id);
@@ -273,15 +265,30 @@ export function MessageCard({
           </button>
         ) : null}
         {!isDeleted && message.video_url ? (
-          <video
-            src={message.video_url}
-            controls
-            playsInline
-            preload="metadata"
-            className="mt-2.5 max-h-96 max-w-full rounded-xl border border-border bg-black"
-            // Card-level click opens the thread; don't let video scrubbing trigger navigation.
-            onClick={(e) => e.stopPropagation()}
-          />
+          <button
+            type="button"
+            // Tap opens the full-screen gallery (where it plays); stop propagation so it doesn't also
+            // open the thread.
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewerOpen(true);
+            }}
+            className="relative mt-2.5 block cursor-zoom-in"
+            aria-label="Hap videon"
+          >
+            <video
+              src={message.video_url}
+              muted
+              playsInline
+              preload="metadata"
+              className="max-h-96 max-w-full rounded-xl border border-border bg-black"
+            />
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/55 text-white">
+                <Play className="h-6 w-6" fill="currentColor" aria-hidden />
+              </span>
+            </span>
+          </button>
         ) : null}
 
         {!isDeleted && (
@@ -373,30 +380,22 @@ export function MessageCard({
         <ShareDialog open={shareOpen} onOpenChange={setShareOpen} target={buildShareTarget()} />
       )}
 
-      {viewerOpen && message.image_url ? (
-        // Full-screen image viewer. Click anywhere (or Escape, or the ×) closes it.
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-          role="dialog"
-          aria-modal="true"
-          onClick={(e) => {
-            e.stopPropagation();
-            setViewerOpen(false);
-          }}
-        >
-          <img src={message.image_url} alt="" className="max-h-full max-w-full object-contain" />
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setViewerOpen(false);
-            }}
-            aria-label="Mbyll"
-            className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+      {viewerOpen && (message.image_url || message.video_url) ? (
+        // Full-screen swipeable gallery over the whole room's media, opened on this item.
+        <MediaViewer
+          roomId={message.room_id}
+          focusMessageId={message.id}
+          fallback={
+            {
+              message_id: message.id,
+              kind: message.image_url ? "image" : "video",
+              url: (message.image_url ?? message.video_url)!,
+              created_at: message.created_at,
+              author: message.author?.display_name || message.author?.username || null,
+            } satisfies MediaItem
+          }
+          onClose={() => setViewerOpen(false)}
+        />
       ) : null}
     </article>
   );

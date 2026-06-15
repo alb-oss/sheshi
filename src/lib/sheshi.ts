@@ -130,6 +130,19 @@ export function listMessages(
   return apiJson<CursorPage<MessageRow>>(`/api/rooms/${roomId}/messages?${params.toString()}`);
 }
 
+export interface MediaItem {
+  message_id: string;
+  kind: "image" | "video";
+  url: string;
+  created_at: string;
+  author: string | null;
+}
+
+// All media (images + videos) in a room, chronological — for the swipeable gallery.
+export function listRoomMedia(roomId: string): Promise<MediaItem[]> {
+  return apiJson<MediaItem[]>(`/api/rooms/${roomId}/media`);
+}
+
 export async function getMessage(id: string): Promise<MessageRow | null> {
   try {
     return await apiJson<MessageRow>(`/api/messages/${id}`);

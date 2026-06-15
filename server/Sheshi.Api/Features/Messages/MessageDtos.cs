@@ -30,3 +30,6 @@ public record ThreadDto(MessageDto Root, IReadOnlyList<ReplyNodeDto> Replies);
 public record ReplyNodeDto(MessageDto Message, IReadOnlyList<ReplyNodeDto> Replies, int Depth);
 
 public record CursorPageDto<T>(IReadOnlyList<T> Items, string? NextCursor);
+
+// Lightweight media item for the room gallery (swipeable lightbox). Kind is "image" or "video".
+public record MediaDto(Guid MessageId, string Kind, string Url, DateTimeOffset CreatedAt, string? Author);
