@@ -3,7 +3,6 @@ import { CornerDownRight, ImagePlus, SendHorizontal, X } from "lucide-react";
 import { sq } from "@/i18n/sq";
 import { postMessage, SheshiError } from "@/lib/sheshi";
 import { toast } from "sonner";
-import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
@@ -151,19 +150,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     setImage(file);
   }
 
-  if (!currentUserId) {
-    return (
-      <div className="border-t border-border bg-background px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-3">
-        <span className="text-sm text-foreground/60">{sq.chat.signInToPost}</span>
-        <Link
-          to="/auth"
-          className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/85 transition-colors rounded-full"
-        >
-          {sq.auth.signIn}
-        </Link>
-      </div>
-    );
-  }
+  // Logged-out readers get no composer CTA here — the header already offers sign-in.
+  if (!currentUserId) return null;
 
   async function doSubmit() {
     const bodyToPost = replyContext ? stripLeadingReplyMentions(body) : body;
