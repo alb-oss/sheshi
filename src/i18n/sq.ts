@@ -91,5 +91,6 @@ export const sq = {
     rateLimited: "Shumë veprime në pak kohë. Provo pas pak.",
     imageInvalid: "Imazhi nuk pranohet. Ngarko PNG, JPG ose WebP të vlefshëm.",
     videoInvalid: "Videoja nuk pranohet. Ngarko MP4, WebM ose MOV nën 50 MB.",
+    uploadFailed: "Ngarkimi dështoi. Provo sërish për pak.",
   },
 } as const;
