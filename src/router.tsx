@@ -13,7 +13,10 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
+    // Preload route loaders on intent (touch/hover) so the thread route's loader doesn't block the
+    // feed→thread tap; a short freshness window lets the click reuse the preloaded data.
+    defaultPreload: "intent",
+    defaultPreloadStaleTime: 30_000,
   });
 
   return router;
