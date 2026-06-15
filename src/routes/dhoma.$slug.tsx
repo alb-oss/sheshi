@@ -137,11 +137,19 @@ function RoomPage({ slug }: { slug: string }) {
       const saved = typeof window !== "undefined" ? window.sessionStorage.getItem(scrollKey) : null;
       if (anchor && messages.some((m) => m.id === anchor)) {
         window.sessionStorage.removeItem(anchorKey); // consume once
-        const target = el.querySelector<HTMLElement>(`[data-mid="${anchor}"]`);
-        if (target) {
-          target.scrollIntoView({ block: "center" });
-          return;
-        }
+        // Re-center across a short window: the first scroll lands before media above the target finish
+        // loading, which reflows the list and drifts the post away (it can end up near the bottom).
+        // Re-assert as the layout settles so we land on the EXACT post the reader opened.
+        let frame = 0;
+        const recenter = () => {
+          el.querySelector<HTMLElement>(`[data-mid="${anchor}"]`)?.scrollIntoView({
+            block: "center",
+          });
+          if (frame++ < 10) requestAnimationFrame(recenter);
+        };
+        recenter();
+        window.setTimeout(recenter, 300);
+        return;
       }
       if (saved !== null) {
         // Clamp in case the feed is now shorter than when we left.
