@@ -74,8 +74,7 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
 
   const activeSlug = pathname.startsWith("/dhoma/") ? pathname.split("/")[2] : null;
 
-  // Mobile dock tabs. The liquid-glass indicator lands on the LAST matching tab so the specific room
-  // ("Live" = /dhoma/sheshi) wins over the broader "Dhoma" match.
+  // Mobile dock tabs.
   const dockTabs = [
     {
       to: "/",
@@ -112,10 +111,6 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
         ]
       : []),
   ];
-  let dockActive = -1;
-  dockTabs.forEach((t, i) => {
-    if (t.active) dockActive = i;
-  });
 
   return (
     <div className="flex flex-col h-dvh w-full overflow-hidden bg-background text-foreground">
@@ -239,31 +234,12 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
         )}
       </div>
 
-      {/* Mobile bottom nav — a floating frosted-glass pill. Real flex child (in flow) so the docked
-          composer sits above it; detached from the edges into a rounded, translucent, blurred panel. */}
-      <nav className="shrink-0 md:hidden px-3 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+      {/* Mobile bottom nav — a real flex child (not fixed) so the docked composer sits above it. */}
+      <nav className="shrink-0 md:hidden border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
         <div
-          className="relative grid h-16 overflow-hidden rounded-[1.65rem] border border-border/60 bg-background/70 shadow-[0_10px_34px_-12px_rgba(0,0,0,0.6)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/55"
+          className="grid h-16"
           style={{ gridTemplateColumns: `repeat(${dockTabs.length}, minmax(0, 1fr))` }}
         >
-          {/* Glass top-edge highlight. */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-foreground/15 to-transparent"
-          />
-          {/* Static active indicator: a soft frosted pill under the current tab — no motion. */}
-          {dockActive >= 0 && (
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0"
-              style={{
-                width: `calc(100% / ${dockTabs.length})`,
-                transform: `translateX(${dockActive * 100}%)`,
-              }}
-            >
-              <span className="absolute inset-x-2.5 inset-y-2 rounded-[1.15rem] bg-primary/15 shadow-[0_4px_18px_-4px_var(--primary)]" />
-            </span>
-          )}
           {dockTabs.map((t) => (
             <BottomLink key={t.to} to={t.to} icon={t.icon} label={t.label} active={t.active} />
           ))}
@@ -309,18 +285,11 @@ function BottomLink({
     <Link
       to={to}
       className={cn(
-        "relative flex flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-widest font-bold transition-colors",
+        "flex flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-widest font-bold transition-colors",
         active ? "text-primary" : "text-foreground/40 hover:text-foreground/70",
       )}
     >
-      <span
-        className={cn(
-          "transition-transform duration-300 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)]",
-          active && "-translate-y-0.5 scale-110",
-        )}
-      >
-        {icon}
-      </span>
+      {icon}
       <span>{label}</span>
     </Link>
   );
