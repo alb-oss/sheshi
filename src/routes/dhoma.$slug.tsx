@@ -1,4 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 import { useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import { MessageCard } from "@/components/MessageCard";
@@ -6,7 +12,7 @@ import { Composer } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
-import { getRoomBySlug, listMessages, type MessageRow, type Room } from "@/lib/sheshi";
+import { getRoomBySlug, listMessages, type CursorPage, type MessageRow } from "@/lib/sheshi";
 import { useRooms } from "@/hooks/use-rooms";
 import { MessageListSkeleton } from "@/components/Skeletons";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
@@ -26,111 +32,76 @@ export const Route = createFileRoute("/dhoma/$slug")({
   component: RoomRoute,
 });
 
+type FeedData = InfiniteData<CursorPage<MessageRow>, string | null>;
+
 function RoomRoute() {
   const { slug } = Route.useParams();
   return <RoomPage slug={slug} />;
 }
 
 function RoomPage({ slug }: { slug: string }) {
-  const [room, setRoom] = useState<Room | null>(null);
+  const queryClient = useQueryClient();
   const { data: rooms = [] } = useRooms();
-  const [messages, setMessages] = useState<MessageRow[]>([]);
+  // The room is seeded instantly from the persisted rooms list when available; getRoomBySlug only
+  // backstops a cold deep-link before that list has loaded.
+  const roomQuery = useQuery({
+    queryKey: ["room", slug],
+    queryFn: () => getRoomBySlug(slug),
+    initialData: () => rooms.find((r) => r.slug === slug),
+    staleTime: 60_000,
+  });
+  const room = roomQuery.data ?? null;
+  const roomId = room?.id ?? null;
+
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const [loading, setLoading] = useState(true);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const firstIdRef = useRef<string | null>(null);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
+
+  // The feed is the source of truth in the React Query cache (persisted), so re-entering a room — or
+  // a hard refresh — renders the last-seen messages instantly, then revalidates quietly. page[0] holds
+  // the newest 40 (newest-first); fetchNextPage pulls older history onto the tail.
+  const messagesKey = useMemo(() => ["messages", roomId] as const, [roomId]);
+  const q = useInfiniteQuery({
+    queryKey: messagesKey,
+    queryFn: ({ pageParam }) => listMessages(roomId!, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.next_cursor,
+    enabled: !!roomId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+  const messages = useMemo(() => q.data?.pages.flatMap((p) => p.items) ?? [], [q.data]);
+  const loading = roomQuery.isPending || (!!roomId && q.isPending);
+
   const [newCount, setNewCount] = useState(0);
-  const loadingMoreRef = useRef(false);
-  // Chat mode (newest at the bottom): pending scroll-to-bottom, and the pre-prepend height used to
-  // anchor the viewport when older messages load in at the top.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Chat mode (newest at the bottom). Scroll intents applied after the cache changes (layout effect):
   const scrollToBottomRef = useRef(false);
-  const olderAdjustRef = useRef<number | null>(null);
-  // Restore the reader's scroll position when they come back to this room (e.g. after opening a
-  // thread from the middle of the feed) instead of force-scrolling to the bottom. Persisted per
-  // room in sessionStorage and consumed once, on the initial load.
-  const restoreScrollRef = useRef<number | null>(null);
-  // The exact post the reader opened a thread from — scroll it back into view on return (more
-  // reliable than a raw scroll offset once images/videos reflow). Falls back to the saved offset.
-  const anchorRef = useRef<string | null>(null);
+  // One-time initial placement per room: feed-anchor (the exact post you opened a thread from) → saved
+  // offset → bottom. Gated by a ref because the cache can hydrate instantly (q.isPending is no longer
+  // the "first paint" signal).
+  const didInitialScrollRef = useRef(false);
   const scrollKey = `sheshi:feed-scroll:${slug}`;
   const anchorKey = `sheshi:feed-anchor:${slug}`;
 
+  // Reset per-room scroll bookkeeping when switching rooms (same component instance).
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    getRoomBySlug(slug).then((r) => {
-      if (cancelled) return;
-      if (!r) {
-        setRoom(null);
-        setMessages([]);
-        setLoading(false);
-        return;
-      }
-      setRoom(r);
+    didInitialScrollRef.current = false;
+    scrollToBottomRef.current = false;
+    setNewCount(0);
+  }, [roomId]);
+
+  // Infinite scroll: pull older pages via the cursor API. Chat mode: older messages render at the TOP,
+  // so capture scrollHeight before fetching and re-anchor scrollTop after paint (no jump). Decoupled
+  // from the shared layout effect so a concurrent realtime patch can't consume the anchor early.
+  const loadMore = async () => {
+    if (!roomId || !q.hasNextPage || q.isFetchingNextPage) return;
+    const el = scrollRef.current;
+    const before = el?.scrollHeight ?? 0;
+    await q.fetchNextPage();
+    requestAnimationFrame(() => {
+      const el2 = scrollRef.current;
+      if (el2) el2.scrollTop += el2.scrollHeight - before;
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
-
-  const reload = () => {
-    if (!room) return;
-    listMessages(room.id)
-      .then((page) => {
-        const rows = page.items;
-        const firstId = rows[0]?.id ?? null;
-        const isNew = firstId && firstId !== firstIdRef.current;
-        setMessages(rows);
-        setCursor(page.next_cursor);
-        setNewCount(0);
-        firstIdRef.current = firstId;
-        // Chat mode: land on the latest message (bottom) on first load or when the newest changed
-        // (e.g. right after you post). Applied in the layout effect once the list has rendered.
-        // Exception: on the very first load, prefer scrolling back to the exact post the reader
-        // opened a thread from; else fall back to the saved scroll offset; else jump to bottom.
-        const anchor = loading && typeof window !== "undefined" ? window.sessionStorage.getItem(anchorKey) : null;
-        const saved = loading && typeof window !== "undefined" ? window.sessionStorage.getItem(scrollKey) : null;
-        if (anchor && rows.some((m) => m.id === anchor)) {
-          anchorRef.current = anchor;
-          window.sessionStorage.removeItem(anchorKey); // consume once
-        } else if (saved !== null) {
-          restoreScrollRef.current = Number(saved);
-        } else {
-          scrollToBottomRef.current = Boolean(loading || isNew);
-        }
-        // FEED MODE (newest at top) — kept for later:
-        // requestAnimationFrame(() => {
-        //   if ((loading || isNew) && scrollRef.current)
-        //     scrollRef.current.scrollTo({ top: 0, behavior: loading ? "auto" : "smooth" });
-        // });
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-
-  // Infinite scroll: pull older pages via the cursor API. Chat mode: older messages render at the
-  // TOP, so we capture the scroll height first and re-anchor in the layout effect (no jump).
-  const loadMore = () => {
-    if (!room || !cursor || loadingMoreRef.current) return;
-    loadingMoreRef.current = true;
-    setLoadingMore(true);
-    olderAdjustRef.current = scrollRef.current?.scrollHeight ?? null;
-    listMessages(room.id, cursor)
-      .then((page) => {
-        setMessages((prev) => {
-          const seen = new Set(prev.map((m) => m.id));
-          return [...prev, ...page.items.filter((m) => !seen.has(m.id))];
-        });
-        setCursor(page.next_cursor);
-      })
-      .catch(() => {})
-      .finally(() => {
-        loadingMoreRef.current = false;
-        setLoadingMore(false);
-      });
   };
 
   const onScroll = () => {
@@ -138,80 +109,117 @@ function RoomPage({ slug }: { slug: string }) {
     if (!el) return;
     // Chat mode: you're "caught up" near the BOTTOM; older history loads when you scroll near the TOP.
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 40 && newCount > 0) setNewCount(0);
-    if (cursor && el.scrollTop < 400) loadMore();
+    if (q.hasNextPage && el.scrollTop < 400) void loadMore();
     // Remember where the reader is, so returning to this room (after opening a thread) lands here.
     try {
       window.sessionStorage.setItem(scrollKey, String(el.scrollTop));
     } catch {
       // sessionStorage disabled — restore is best-effort.
     }
-    // FEED MODE — kept for later:
-    // if (el.scrollTop < 40 && newCount > 0) setNewCount(0);
-    // if (cursor && el.scrollHeight - el.scrollTop - el.clientHeight < 400) loadMore();
   };
 
-  // Apply pending scroll adjustments after the message list re-renders.
+  // Apply scroll placement after the message list renders.
   useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    if (olderAdjustRef.current != null) {
-      el.scrollTop += el.scrollHeight - olderAdjustRef.current; // keep older-load from jumping the view
-      olderAdjustRef.current = null;
-      return;
-    }
-    if (anchorRef.current != null) {
-      const target = el.querySelector<HTMLElement>(`[data-mid="${anchorRef.current}"]`);
-      anchorRef.current = null;
-      if (target) {
-        target.scrollIntoView({ block: "center" });
+    if (!el || messages.length === 0) return;
+
+    // One-time initial placement for this room: exact feed-anchor → saved offset → bottom.
+    if (!didInitialScrollRef.current) {
+      didInitialScrollRef.current = true;
+      const anchor =
+        typeof window !== "undefined" ? window.sessionStorage.getItem(anchorKey) : null;
+      const saved = typeof window !== "undefined" ? window.sessionStorage.getItem(scrollKey) : null;
+      if (anchor && messages.some((m) => m.id === anchor)) {
+        window.sessionStorage.removeItem(anchorKey); // consume once
+        const target = el.querySelector<HTMLElement>(`[data-mid="${anchor}"]`);
+        if (target) {
+          target.scrollIntoView({ block: "center" });
+          return;
+        }
+      }
+      if (saved !== null) {
+        // Clamp in case the feed is now shorter than when we left.
+        el.scrollTop = Math.min(Number(saved), el.scrollHeight);
         return;
       }
-    }
-    if (restoreScrollRef.current != null) {
-      // Clamp in case the feed is now shorter than when we left.
-      el.scrollTop = Math.min(restoreScrollRef.current, el.scrollHeight);
-      restoreScrollRef.current = null;
+      el.scrollTop = el.scrollHeight; // default: land at the latest (bottom)
       return;
     }
+
     if (scrollToBottomRef.current) {
-      el.scrollTop = el.scrollHeight;
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
       scrollToBottomRef.current = false;
     }
-  }, [messages]);
+  }, [messages, anchorKey, scrollKey]);
 
+  // Super-realtime: apply typed delta events to the feed cache — no refetch. Other people's posts,
+  // votes and deletes appear instantly.
   useEffect(() => {
-    if (!room) return;
-    const roomId = room.id;
+    if (!roomId) return;
+    const key = ["messages", roomId] as const;
     let disposed = false;
-    reload();
+    const read = () => queryClient.getQueryData<FeedData>(key);
+    const write = (next: FeedData) => queryClient.setQueryData<FeedData>(key, next);
+    const blank = (m: MessageRow): MessageRow => ({
+      ...m,
+      deleted_at: new Date().toISOString(),
+      body: "",
+      image_url: null,
+      video_url: null,
+    });
 
-    // Super-realtime (Phase 1b): apply typed delta events to local state — no refetch.
-    // Other people's posts, votes and deletes appear instantly.
     const onCreated = (p: { message: MessageRow; root_id: string | null }) => {
       const msg = p.message;
       if (!msg || msg.room_id !== roomId) return;
+      const d = read();
+      if (!d || !d.pages[0]) return;
       if (msg.parent_id == null) {
-        setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [msg, ...prev]));
+        if (d.pages.some((pg) => pg.items.some((m) => m.id === msg.id))) return; // dedup
         // Chat mode: a new message lands at the bottom — follow it if you're already near the bottom,
-        // otherwise show the "new messages ↓" pill instead of yanking the view.
+        // otherwise show the "new messages ↓" pill instead of yanking the view. Measure BEFORE patch.
         const el = scrollRef.current;
         const nearBottom = !el || el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        write({
+          ...d,
+          pages: [{ ...d.pages[0], items: [msg, ...d.pages[0].items] }, ...d.pages.slice(1)],
+        });
         if (nearBottom) scrollToBottomRef.current = true;
         else setNewCount((n) => n + 1);
-        // FEED MODE — kept for later:
-        // if (!el || el.scrollTop < 60) requestAnimationFrame(() => el?.scrollTo({ top: 0, behavior: "smooth" }));
-        // else setNewCount((n) => n + 1);
       } else if (p.root_id) {
         // a reply: bump its top-level ancestor's reply count in the feed
-        setMessages((prev) =>
-          prev.map((m) => (m.id === p.root_id ? { ...m, reply_count: (m.reply_count ?? 0) + 1 } : m)));
+        write({
+          ...d,
+          pages: d.pages.map((pg) => ({
+            ...pg,
+            items: pg.items.map((m) =>
+              m.id === p.root_id ? { ...m, reply_count: (m.reply_count ?? 0) + 1 } : m,
+            ),
+          })),
+        });
       }
     };
-    const onVote = (p: { message_id: string; score: number }) =>
-      setMessages((prev) => prev.map((m) => (m.id === p.message_id ? { ...m, score: p.score } : m)));
-    const onDeleted = (p: { id: string }) =>
-      setMessages((prev) =>
-        prev.map((m) => (m.id === p.id ? { ...m, deleted_at: new Date().toISOString(), body: "", image_url: null, video_url: null } : m)));
+    const onVote = (p: { message_id: string; score: number }) => {
+      const d = read();
+      if (!d) return;
+      write({
+        ...d,
+        pages: d.pages.map((pg) => ({
+          ...pg,
+          items: pg.items.map((m) => (m.id === p.message_id ? { ...m, score: p.score } : m)),
+        })),
+      });
+    };
+    const onDeleted = (p: { id: string }) => {
+      const d = read();
+      if (!d) return;
+      write({
+        ...d,
+        pages: d.pages.map((pg) => ({
+          ...pg,
+          items: pg.items.map((m) => (m.id === p.id ? blank(m) : m)),
+        })),
+      });
+    };
 
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise
@@ -235,7 +243,13 @@ function RoomPage({ slug }: { slug: string }) {
         .catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room?.id, userId]);
+  }, [roomId, userId]);
+
+  const onChanged = () => void queryClient.invalidateQueries({ queryKey: messagesKey });
+  const onPosted = () => {
+    scrollToBottomRef.current = true;
+    void queryClient.invalidateQueries({ queryKey: messagesKey });
+  };
 
   const roomLookup = useMemo(() => new Map(rooms.map((r) => [r.id, r.slug])), [rooms]);
 
@@ -265,7 +279,11 @@ function RoomPage({ slug }: { slug: string }) {
           </span>
         </div>
         <div className="relative flex-1 min-h-0">
-          <div ref={scrollRef} onScroll={onScroll} className="absolute inset-0 overflow-y-auto no-scrollbar">
+          <div
+            ref={scrollRef}
+            onScroll={onScroll}
+            className="absolute inset-0 overflow-y-auto no-scrollbar"
+          >
             {loading ? (
               <MessageListSkeleton compact />
             ) : messages.length === 0 ? (
@@ -279,13 +297,12 @@ function RoomPage({ slug }: { slug: string }) {
               // Chat-style stream (newest at the bottom): older history at the top, latest at the
               // bottom — dense compact messages, each still votable and clickable to its thread.
               <div className="flex flex-col divide-y divide-border/40 py-1">
-                {cursor && (
+                {q.hasNextPage && (
                   <div className="p-4 text-center text-[11px] uppercase tracking-widest font-bold text-foreground/40">
-                    {loadingMore ? sq.chat.loading : "•"}
+                    {q.isFetchingNextPage ? sq.chat.loading : "•"}
                   </div>
                 )}
-                {/* data is newest-first; reverse for display so the latest renders at the bottom.
-                    FEED MODE (newest at top) — kept for later: {messages.map((m) => …)} */}
+                {/* data is newest-first; reverse for display so the latest renders at the bottom. */}
                 {messages
                   .slice()
                   .reverse()
@@ -295,7 +312,7 @@ function RoomPage({ slug }: { slug: string }) {
                         message={m}
                         roomSlug={slug}
                         currentUserId={userId}
-                        onChanged={reload}
+                        onChanged={onChanged}
                         compact
                       />
                     </div>
@@ -316,7 +333,7 @@ function RoomPage({ slug }: { slug: string }) {
             </button>
           )}
         </div>
-        {room && <Composer roomId={room.id} currentUserId={userId} onPosted={reload} />}
+        {room && <Composer roomId={room.id} currentUserId={userId} onPosted={onPosted} />}
       </div>
     </AppShell>
   );
