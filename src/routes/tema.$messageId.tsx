@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsRestoring, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -13,10 +13,34 @@ import { useRooms } from "@/hooks/use-rooms";
 import { ThreadSkeleton } from "@/components/Skeletons";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
 
+// Server-render the thread so crawlers + link unfurls see the real discussion, and seed the query
+// cache from it (initialData) so the client renders identical markup — no hydration mismatch, no
+// double-fetch. getThread hits a public endpoint; it runs anonymously on the server and authed on
+// client navigation.
 export const Route = createFileRoute("/tema/$messageId")({
-  head: () => ({ meta: [{ title: "Tema — Sheshi" }] }),
+  loader: ({ params }) => getThread(params.messageId).then((thread) => ({ thread })),
+  head: ({ loaderData }) => buildThreadHead(loaderData?.thread ?? null),
   component: ThreadPage,
 });
+
+function buildThreadHead(thread: ThreadData | null) {
+  const root = thread?.root;
+  const text = root && !root.deleted_at ? root.body.trim() : "";
+  if (!text) return { meta: [{ title: "Tema — Sheshi" }] };
+  const title = `${text.length > 60 ? `${text.slice(0, 60)}…` : text} — Sheshi`;
+  const description = text.length > 160 ? `${text.slice(0, 157)}…` : text;
+  return {
+    meta: [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:type", content: "article" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+    ],
+  };
+}
 
 type ReplyTarget = {
   messageId: string;
@@ -59,13 +83,15 @@ function insertUnderParent(
 
 function ThreadPage() {
   const { messageId } = Route.useParams();
+  const { thread: loaderThread } = Route.useLoaderData();
   const queryClient = useQueryClient();
-  // The thread tree lives in the React Query cache (in-memory only — threads aren't persisted, they're
-  // unbounded in number). The realtime events below patch this cache via setQueryData; nothing keeps a
-  // local useState copy anymore, so re-entering a thread you just saw is instant.
+  // The thread tree lives in the React Query cache (in-memory only — threads aren't persisted). It's
+  // seeded from the route loader (initialData) so the server and first client render are identical
+  // (SSR'd content, no hydration mismatch); realtime events patch this cache via setQueryData.
   const { data: thread = null, isPending: loading } = useQuery({
     queryKey: ["thread", messageId],
     queryFn: () => getThread(messageId),
+    initialData: loaderThread ?? undefined,
     staleTime: 15_000,
     refetchOnWindowFocus: false,
   });
@@ -87,7 +113,11 @@ function ThreadPage() {
 
   const root = thread?.root ?? null;
   const roomLookup = useMemo(() => new Map(rooms.map((r) => [r.id, r.slug])), [rooms]);
-  const slug = root ? (roomLookup.get(root.room_id) ?? "sheshi") : "sheshi";
+  // The room slug comes from the PERSISTED rooms cache (empty server-side / while restoring), but the
+  // thread root is now SSR'd via the loader — so resolve the slug only after restore, falling back to
+  // the default until then, to keep the back-link identical across SSR and the first client render.
+  const isRestoring = useIsRestoring();
+  const slug = root && !isRestoring ? (roomLookup.get(root.room_id) ?? "sheshi") : "sheshi";
   const replyTotal = useMemo(() => (thread ? countNodes(thread.replies) : 0), [thread]);
   const joinedThreadId = root?.id ?? messageId;
 

@@ -85,7 +85,10 @@ export function MessageCard({
     .toUpperCase();
   const time = (() => {
     try {
-      return formatDistanceToNowStrict(new Date(message.created_at), { locale: sqLocale, addSuffix: false });
+      return formatDistanceToNowStrict(new Date(message.created_at), {
+        locale: sqLocale,
+        addSuffix: false,
+      });
     } catch {
       return "";
     }
@@ -118,7 +121,8 @@ export function MessageCard({
   }
 
   function buildShareTarget(): ShareTarget {
-    const url = (typeof window !== "undefined" ? window.location.origin : "") + `/tema/${message.id}`;
+    const url =
+      (typeof window !== "undefined" ? window.location.origin : "") + `/tema/${message.id}`;
     const body = isDeleted ? sq.chat.deleted : message.body.trim();
     const excerpt = body.length > 160 ? `${body.slice(0, 157)}…` : body;
     return {
@@ -173,8 +177,7 @@ export function MessageCard({
   // as a thread root). True for feed posts AND for replies inside a thread (so you can drill
   // into a reply's own page); false only for the root you're already viewing. The action row
   // stops propagation so its buttons still work.
-  const opensThread =
-    !isDeleted && (!isTopLevel || (asThreadLink && !onReply));
+  const opensThread = !isDeleted && (!isTopLevel || (asThreadLink && !onReply));
   const replyInner = (
     <>
       <MessageSquare className="h-4 w-4" aria-hidden />
@@ -230,7 +233,11 @@ export function MessageCard({
           )}
           <span className="truncate font-bold">{name}</span>
           <span className="text-foreground/30">·</span>
-          <span className="shrink-0 text-foreground/40">{time}</span>
+          {/* Relative time is "now"-based; when SSR'd it can tick over between server and client render,
+              so let React keep the client value without a hydration warning. */}
+          <span className="shrink-0 text-foreground/40" suppressHydrationWarning>
+            {time}
+          </span>
         </div>
 
         <div
@@ -313,12 +320,20 @@ export function MessageCard({
                   <Share2 className="h-4 w-4" aria-hidden /> {sq.share.action}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={onToggleSave}>
-                  <Bookmark className="h-4 w-4" fill={saved ? "currentColor" : "none"} aria-hidden />
+                  <Bookmark
+                    className="h-4 w-4"
+                    fill={saved ? "currentColor" : "none"}
+                    aria-hidden
+                  />
                   {saved ? sq.chat.saved : sq.chat.save}
                 </DropdownMenuItem>
                 {currentUserId && !isOwn ? (
                   <DropdownMenuItem disabled={reported} onSelect={() => setReportOpen(true)}>
-                    <Flag className="h-4 w-4" fill={reported ? "currentColor" : "none"} aria-hidden />
+                    <Flag
+                      className="h-4 w-4"
+                      fill={reported ? "currentColor" : "none"}
+                      aria-hidden
+                    />
                     {reported ? sq.chat.reported : sq.chat.report}
                   </DropdownMenuItem>
                 ) : null}
@@ -339,10 +354,7 @@ export function MessageCard({
       <ReportDialog open={reportOpen} onOpenChange={setReportOpen} messageId={message.id} />
 
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
-        <DialogContent
-          className="sm:max-w-sm"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <DialogContent className="sm:max-w-sm" onClick={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>Fshij mesazhin?</DialogTitle>
             <DialogDescription>Ky veprim nuk mund të kthehet.</DialogDescription>
