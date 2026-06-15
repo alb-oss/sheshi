@@ -11,8 +11,11 @@ public class LocalBlobStore(IOptions<StorageOptions> options) : IBlobStore
 
     public async Task<string> PutAsync(byte[] content, string fileName, string contentType, CancellationToken ct = default)
     {
-        Directory.CreateDirectory(_options.UploadPath);
-        await File.WriteAllBytesAsync(Path.Combine(_options.UploadPath, fileName), content, ct);
+        // fileName is always server-generated (GUID uploads, fixed health-probe keys), so create the
+        // full target directory — handles nested keys like "health/…" the way S3 keys allow.
+        var path = Path.Combine(_options.UploadPath, fileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await File.WriteAllBytesAsync(path, content, ct);
         return $"{_options.PublicBaseUrl.TrimEnd('/')}/{fileName}";
     }
 }
