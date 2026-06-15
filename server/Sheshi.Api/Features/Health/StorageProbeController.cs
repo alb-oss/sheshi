@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Sheshi.Api.Domain;
 using Sheshi.Api.Storage;
 
 namespace Sheshi.Api.Features.Health;
 
-// TEMPORARY diagnostic: writes a tiny object through the configured IBlobStore (S3/R2 in prod) and
-// returns the real outcome — so an upload failure can be pinpointed without server-shell access.
-// Auth-gated (any signed-in user) on purpose so it can be probed remotely; it exposes only the error
-// type/message (never credentials). Remove or lock to admins once uploads are confirmed healthy.
+// Ops diagnostic: writes a tiny object through the configured IBlobStore (S3/R2 in prod) and returns
+// the real outcome — so an upload failure can be pinpointed without server-shell access. Admin-only:
+// it surfaces internal storage error text, so it must not be reachable by ordinary users.
 [ApiController]
 [Route("api/health")]
 public class StorageProbeController(
@@ -16,7 +16,7 @@ public class StorageProbeController(
     IOptions<StorageOptions> options,
     ILogger<StorageProbeController> logger) : ControllerBase
 {
-    [Authorize]
+    [Authorize(Roles = Roles.Admin)]
     [HttpGet("storage")]
     public async Task<IActionResult> Storage(CancellationToken ct)
     {
