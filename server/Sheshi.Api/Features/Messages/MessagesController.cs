@@ -208,8 +208,12 @@ public class MessagesController(
         await db.SaveChangesAsync(ct);
 
         var score = await db.Votes.Where(v => v.MessageId == id).SumAsync(v => (int)v.Value, ct);
-        await realtime.VoteChangedAsync(id, message.RoomId, score,
-            message.ParentId is null ? null : await GetThreadRootIdAsync(message, ct), ct);
+        // The thread detail page joins the THREAD group keyed by the thread root id. For a root post
+        // that root IS the message itself, so resolve the root unconditionally (not just for replies)
+        // — otherwise a vote on a root post broadcasts only to the room group and the open thread view
+        // never sees the live score change.
+        var threadRootId = message.ParentId is null ? message.Id : await GetThreadRootIdAsync(message, ct);
+        await realtime.VoteChangedAsync(id, message.RoomId, score, threadRootId, ct);
         return NoContent();
     }
 
