@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowBigDown, ArrowBigUp } from "lucide-react";
 import { SheshiError, setVote, type MessageRow } from "@/lib/sheshi";
 import { sq } from "@/i18n/sq";
@@ -28,6 +29,7 @@ export function VoteControl({
   currentUserId: string | null;
   compact?: boolean;
 }) {
+  const queryClient = useQueryClient();
   const [myVote, setMyVote] = useState(message.my_vote ?? 0);
   const [serverVote, setServerVote] = useState(message.my_vote ?? 0);
   const [pop, setPop] = useState(0);
@@ -67,6 +69,7 @@ export function VoteControl({
         } catch (error) {
           myVoteRef.current = serverVoteRef.current;
           setMyVote(serverVoteRef.current);
+          writeMyVoteToCaches(queryClient, message.id, serverVoteRef.current); // roll the cache back too
           toast.error(
             error instanceof SheshiError && error.code === "UNAUTH"
               ? sq.errors.auth
@@ -92,6 +95,10 @@ export function VoteControl({
     const next = myVoteRef.current === dir ? 0 : dir; // clicking your current vote clears it
     myVoteRef.current = next;
     setMyVote(next);
+    // Persist the vote into the (persisted) query caches so the colour survives a refresh — local
+    // component state alone is lost on reload, and the feed cache's my_vote otherwise stays at what
+    // the last fetch returned (0 if you voted after loading). Rolled back in syncVotes on error.
+    writeMyVoteToCaches(queryClient, message.id, next);
     if (next !== 0) setPop((p) => p + 1);
     void syncVotes();
   }
@@ -159,4 +166,46 @@ export function VoteControl({
 function formatScore(n: number) {
   if (Math.abs(n) >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
   return String(n);
+}
+
+// Set my_vote on the matching message wherever it lives in the React Query cache (the feed's
+// InfiniteData, the thread tree, highlights, single-message). Walks every cached query and patches
+// any node that is a MessageRow with this id — shape-agnostic, immutable, and a no-op where nothing
+// changes (so unrelated queries don't re-render). The score is left to the realtime echo, which
+// carries the absolute total.
+function writeMyVoteToCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  messageId: string,
+  value: number,
+) {
+  queryClient.setQueriesData({}, (data: unknown) => patchMyVote(data, messageId, value));
+}
+
+function patchMyVote<T>(data: T, id: string, value: number): T {
+  if (Array.isArray(data)) {
+    let changed = false;
+    const next = data.map((item) => {
+      const patched = patchMyVote(item, id, value);
+      if (patched !== item) changed = true;
+      return patched;
+    });
+    return (changed ? next : data) as T;
+  }
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    // A MessageRow is the only cached node with a my_vote field — match on it to avoid touching
+    // unrelated objects that happen to carry an `id`.
+    if (obj.id === id && "my_vote" in obj) {
+      return obj.my_vote === value ? data : ({ ...obj, my_vote: value } as T);
+    }
+    let changed = false;
+    const next: Record<string, unknown> = {};
+    for (const key in obj) {
+      const patched = patchMyVote(obj[key], id, value);
+      if (patched !== obj[key]) changed = true;
+      next[key] = patched;
+    }
+    return (changed ? next : data) as T;
+  }
+  return data;
 }
