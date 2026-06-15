@@ -9,17 +9,21 @@ import { toast } from "sonner";
 // Reddit-style up/down vote pill: ▲ score ▼. Up is the Albanian-red accent, down is indigo, the score
 // takes the colour of the caller's vote.
 //
-// Two pieces of local state keep it correct under fast clicks and live updates:
-//   • myVote       — the caller's optimistic intent (flips instantly on click).
-//   • serverVote   — the vote the server has recorded for the caller, which message.score ALREADY
-//                    includes.
-// The displayed score overlays the optimistic delta on the server total:
-//   displayScore = message.score + (myVote − serverVote)
-// so the realtime `vote_changed` echo — which carries only the net score, never a per-user my_vote —
-// can move message.score (e.g. someone else votes) without ever clobbering the caller's own vote.
-// Writes are coalesced: at most one request is in flight, and when it settles the sender sends the
-// caller's LATEST intent, so mashing the button is ~1–2 requests that converge (never N stacked votes,
-// never a dropped final vote, never tripping the 30/min write limit).
+// THE CACHE IS THE SINGLE SOURCE OF TRUTH. The displayed vote (colour) and score derive *directly*
+// from the `message` prop — i.e. from the React Query cache that the feed, thread, highlights and
+// single-message views all share. A click writes the new vote into every cache holding this message
+// (optimistic AND persisted, so the colour survives a refresh) and adjusts the score by the delta;
+// the realtime `vote_changed` echo later overwrites the score with the server's absolute total,
+// idempotently. Because NOTHING about the display lives in component state, the control cannot drift
+// out of sync with the cache — the old "stuck colour / won't toggle off" failures are gone by
+// construction (they came from a parallel myVote/serverVote state machine diverging from the cache).
+//
+// The only local state is the network bookkeeping below, which never feeds the display:
+//   • targetRef    — the caller's latest intended vote (what the next request should send).
+//   • confirmedRef — the vote the server has acknowledged.
+// The sender is coalesced: at most one request in flight; when it settles it sends the LATEST intent,
+// so mashing the button collapses to ~1–2 requests that converge (never N stacked votes, never a
+// dropped final vote, never tripping the 30/min write limit).
 export function VoteControl({
   message,
   currentUserId,
@@ -30,46 +34,43 @@ export function VoteControl({
   compact?: boolean;
 }) {
   const queryClient = useQueryClient();
-  const [myVote, setMyVote] = useState(message.my_vote ?? 0);
-  const [serverVote, setServerVote] = useState(message.my_vote ?? 0);
+  const myVote = message.my_vote ?? 0; // derived truth — there is deliberately no useState for this
+  const score = message.score ?? 0; // already includes the optimistic delta we wrote on click
   const [pop, setPop] = useState(0);
 
-  const idRef = useRef(message.id);
-  const myVoteRef = useRef(myVote); // latest intent, readable synchronously by the sender
-  const serverVoteRef = useRef(serverVote);
+  const targetRef = useRef(myVote);
+  const confirmedRef = useRef(myVote);
   const sendingRef = useRef(false);
+  const idRef = useRef(message.id);
 
-  // Adopt the server's record only when a different message renders into this slot, or when a refetch
-  // delivers a new my_vote and nothing is pending locally. Never re-sync on a bare score echo (it
-  // carries no my_vote), and never clobber an in-flight optimistic vote.
+  // Reconcile the network refs with the server's record when it changes underneath us — a refetch
+  // delivering a new my_vote, or a different message rendering into this slot. Skip while a write is
+  // pending so we never clobber an in-flight optimistic vote. The realtime echo only moves `score`
+  // (never my_vote), so this stays quiet on a bare vote echo.
   useEffect(() => {
-    const fresh = message.my_vote ?? 0;
     const idChanged = idRef.current !== message.id;
     idRef.current = message.id;
-    const pending = myVoteRef.current !== serverVoteRef.current;
-    if (idChanged || (!pending && fresh !== serverVoteRef.current)) {
-      myVoteRef.current = fresh;
-      serverVoteRef.current = fresh;
-      setMyVote(fresh);
-      setServerVote(fresh);
+    const idle = !sendingRef.current && targetRef.current === confirmedRef.current;
+    if (idChanged || idle) {
+      targetRef.current = myVote;
+      confirmedRef.current = myVote;
     }
-  }, [message.id, message.my_vote]);
+  }, [message.id, myVote]);
 
   // Self-converging sender: one request in flight at a time; when it settles, if the intent changed
-  // during the flight, send the latest. Rolls the optimistic vote back to the last confirmed value on
-  // error.
-  async function syncVotes() {
+  // during the flight, send the latest. On error, roll the optimistic cache write back to the last
+  // confirmed vote.
+  async function flush() {
     if (sendingRef.current) return;
     sendingRef.current = true;
     try {
-      while (myVoteRef.current !== serverVoteRef.current) {
-        const target = myVoteRef.current;
+      while (targetRef.current !== confirmedRef.current) {
+        const target = targetRef.current;
         try {
           await setVote(message.id, target as -1 | 0 | 1);
         } catch (error) {
-          myVoteRef.current = serverVoteRef.current;
-          setMyVote(serverVoteRef.current);
-          writeMyVoteToCaches(queryClient, message.id, serverVoteRef.current); // roll the cache back too
+          applyVoteToCaches(queryClient, message.id, confirmedRef.current);
+          targetRef.current = confirmedRef.current;
           toast.error(
             error instanceof SheshiError && error.code === "UNAUTH"
               ? sq.errors.auth
@@ -77,10 +78,9 @@ export function VoteControl({
                 ? sq.errors.rateLimited
                 : "Vota nuk u ruajt. Provo sërish.",
           );
-          break;
+          return;
         }
-        serverVoteRef.current = target;
-        setServerVote(target);
+        confirmedRef.current = target;
       }
     } finally {
       sendingRef.current = false;
@@ -92,18 +92,15 @@ export function VoteControl({
       toast.error(sq.chat.signInToPost);
       return;
     }
-    const next = myVoteRef.current === dir ? 0 : dir; // clicking your current vote clears it
-    myVoteRef.current = next;
-    setMyVote(next);
-    // Persist the vote into the (persisted) query caches so the colour survives a refresh — local
-    // component state alone is lost on reload, and the feed cache's my_vote otherwise stays at what
-    // the last fetch returned (0 if you voted after loading). Rolled back in syncVotes on error.
-    writeMyVoteToCaches(queryClient, message.id, next);
+    const next = myVote === dir ? 0 : dir; // clicking your current vote clears it
+    targetRef.current = next;
+    // Optimistic + persisted: update my_vote (colour) and score (by the delta) in every cache holding
+    // this message, so the change is instant, survives a refresh, and is consistent across views.
+    applyVoteToCaches(queryClient, message.id, next);
     if (next !== 0) setPop((p) => p + 1);
-    void syncVotes();
+    void flush();
   }
 
-  const displayScore = (message.score ?? 0) + myVote - serverVote;
   const icon = compact ? "h-[18px] w-[18px]" : "h-5 w-5";
   const btn = "inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors";
 
@@ -138,7 +135,7 @@ export function VoteControl({
           myVote === 1 ? "text-upvote" : myVote === -1 ? "text-downvote" : "text-foreground/80",
         )}
       >
-        {formatScore(displayScore)}
+        {formatScore(score)}
       </span>
       <button
         type="button"
@@ -168,24 +165,24 @@ function formatScore(n: number) {
   return String(n);
 }
 
-// Set my_vote on the matching message wherever it lives in the React Query cache (the feed's
-// InfiniteData, the thread tree, highlights, single-message). Walks every cached query and patches
-// any node that is a MessageRow with this id — shape-agnostic, immutable, and a no-op where nothing
-// changes (so unrelated queries don't re-render). The score is left to the realtime echo, which
-// carries the absolute total.
-function writeMyVoteToCaches(
+// Set this message's vote to `nextVote` wherever it lives in the React Query cache (the feed's
+// InfiniteData, the thread tree, highlights, single-message), adjusting the score by the delta from
+// its current vote. Shape-agnostic, immutable, and a no-op where nothing changes (so unrelated
+// queries don't re-render). Used for both the optimistic write and the rollback — passing the last
+// confirmed vote reverses an optimistic change exactly, because the delta is computed live.
+function applyVoteToCaches(
   queryClient: ReturnType<typeof useQueryClient>,
   messageId: string,
-  value: number,
+  nextVote: number,
 ) {
-  queryClient.setQueriesData({}, (data: unknown) => patchMyVote(data, messageId, value));
+  queryClient.setQueriesData({}, (data: unknown) => patchVote(data, messageId, nextVote));
 }
 
-function patchMyVote<T>(data: T, id: string, value: number): T {
+function patchVote<T>(data: T, id: string, nextVote: number): T {
   if (Array.isArray(data)) {
     let changed = false;
     const next = data.map((item) => {
-      const patched = patchMyVote(item, id, value);
+      const patched = patchVote(item, id, nextVote);
       if (patched !== item) changed = true;
       return patched;
     });
@@ -193,15 +190,21 @@ function patchMyVote<T>(data: T, id: string, value: number): T {
   }
   if (data && typeof data === "object") {
     const obj = data as Record<string, unknown>;
-    // A MessageRow is the only cached node with a my_vote field — match on it to avoid touching
+    // A MessageRow is the only cached node with a my_vote field — match on it so we never touch
     // unrelated objects that happen to carry an `id`.
     if (obj.id === id && "my_vote" in obj) {
-      return obj.my_vote === value ? data : ({ ...obj, my_vote: value } as T);
+      const prevVote = (obj.my_vote as number) ?? 0;
+      if (prevVote === nextVote) return data;
+      return {
+        ...obj,
+        my_vote: nextVote,
+        score: ((obj.score as number) ?? 0) + (nextVote - prevVote),
+      } as T;
     }
     let changed = false;
     const next: Record<string, unknown> = {};
     for (const key in obj) {
-      const patched = patchMyVote(obj[key], id, value);
+      const patched = patchVote(obj[key], id, nextVote);
       if (patched !== obj[key]) changed = true;
       next[key] = patched;
     }
