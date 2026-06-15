@@ -111,6 +111,16 @@ function ThreadPage() {
   const invalidateThread = () =>
     void queryClient.invalidateQueries({ queryKey: ["thread", messageId] });
 
+  // The thread is SSR'd anonymously — on a hard refresh the loader runs server-side with no token, so
+  // my_vote comes back 0 for everyone (score is caller-independent, so it still reads correctly). For a
+  // signed-in reader, revalidate once on mount so their own vote colours light up; without this a
+  // refresh drops the colour AND the vote control (seeded from my_vote=0) won't toggle the vote off on
+  // the next click. Anonymous readers have nothing to resolve, so skip the extra fetch.
+  useEffect(() => {
+    if (userId) invalidateThread();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, messageId]);
+
   const root = thread?.root ?? null;
   const roomLookup = useMemo(() => new Map(rooms.map((r) => [r.id, r.slug])), [rooms]);
   // The room slug comes from the PERSISTED rooms cache (empty server-side / while restoring), but the
