@@ -37,5 +37,9 @@ export function clearStoredTokens() {
 
 export function subscribeTokenStore(listener: () => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  // Return a void-returning unsubscribe — Set.delete yields a boolean, which is not a valid
+  // React effect cleanup (Destructor must return void).
+  return () => {
+    listeners.delete(listener);
+  };
 }
