@@ -1,18 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Composer, type ComposerHandle } from "@/components/Composer";
 import { HighlightsPanel } from "@/components/HighlightsPanel";
 import { MessageCard } from "@/components/MessageCard";
 import { sq } from "@/i18n/sq";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  getThread,
-  type MessageRow,
-  type ReplyNode,
-  type ThreadData,
-} from "@/lib/sheshi";
+import { getThread, type MessageRow, type ReplyNode, type ThreadData } from "@/lib/sheshi";
 import { useRooms } from "@/hooks/use-rooms";
 import { ThreadSkeleton } from "@/components/Skeletons";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
@@ -29,11 +25,16 @@ type ReplyTarget = {
 };
 
 // Pure, immutable tree updates for super-realtime delta-apply (Phase A).
-function updateNode(nodes: ReplyNode[], id: string, fn: (m: MessageRow) => MessageRow): ReplyNode[] {
+function updateNode(
+  nodes: ReplyNode[],
+  id: string,
+  fn: (m: MessageRow) => MessageRow,
+): ReplyNode[] {
   return nodes.map((n) =>
     n.message.id === id
       ? { ...n, message: fn(n.message) }
-      : { ...n, replies: updateNode(n.replies, id, fn) });
+      : { ...n, replies: updateNode(n.replies, id, fn) },
+  );
 }
 function hasNode(nodes: ReplyNode[], id: string): boolean {
   return nodes.some((n) => n.message.id === id || hasNode(n.replies, id));
@@ -58,19 +59,31 @@ function insertUnderParent(
 
 function ThreadPage() {
   const { messageId } = Route.useParams();
-  const [thread, setThread] = useState<ThreadData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  // The thread tree lives in the React Query cache (in-memory only — threads aren't persisted, they're
+  // unbounded in number). The realtime events below patch this cache via setQueryData; nothing keeps a
+  // local useState copy anymore, so re-entering a thread you just saw is instant.
+  const { data: thread = null, isPending: loading } = useQuery({
+    queryKey: ["thread", messageId],
+    queryFn: () => getThread(messageId),
+    staleTime: 15_000,
+    refetchOnWindowFocus: false,
+  });
   const { data: rooms = [] } = useRooms();
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastReplyIdRef = useRef<string | null>(null);
-  const activeMessageIdRef = useRef(messageId);
-  const reloadRequestIdRef = useRef(0);
+  // Scroll intent applied after the cache changes (see the layout effect): first load, your own reply,
+  // and a realtime reply that lands while you're already near the bottom all scroll you to the bottom.
+  const scrollToBottomRef = useRef(false);
+  const hadDataRef = useRef(false);
   const composerRef = useRef<ComposerHandle | null>(null);
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
-  activeMessageIdRef.current = messageId;
+
+  const invalidateThread = () =>
+    void queryClient.invalidateQueries({ queryKey: ["thread", messageId] });
 
   const root = thread?.root ?? null;
   const roomLookup = useMemo(() => new Map(rooms.map((r) => [r.id, r.slug])), [rooms]);
@@ -89,43 +102,34 @@ function ThreadPage() {
             messageId: m.id,
             label: m.author?.username ? `@${m.author.username}` : "@anonim",
             excerpt: m.deleted_at ? sq.chat.deleted : m.body.slice(0, 120),
-          });
+          },
+    );
     requestAnimationFrame(() => composerRef.current?.focus());
   };
 
-  const reload = () => {
-    const requestedMessageId = messageId;
-    const requestId = reloadRequestIdRef.current + 1;
-    reloadRequestIdRef.current = requestId;
-    const isCurrentRequest = () =>
-      reloadRequestIdRef.current === requestId && activeMessageIdRef.current === requestedMessageId;
+  // Reset per-thread scroll tracking when navigating to a different thread (same component instance).
+  useEffect(() => {
+    hadDataRef.current = false;
+    lastReplyIdRef.current = null;
+  }, [messageId]);
 
-    setLoading((current) => current && !thread);
-    getThread(requestedMessageId)
-      .then((data) => {
-        if (!isCurrentRequest()) return;
-        const lastReplyId = data ? findLastReplyId(data.replies) : null;
-        const el = scrollRef.current;
-        const wasAtBottom = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 120 : true;
-        const isNew = lastReplyId && lastReplyId !== lastReplyIdRef.current;
-
-        setThread(data);
-        lastReplyIdRef.current = lastReplyId;
-
-        requestAnimationFrame(() => {
-          if (!isCurrentRequest()) return;
-          if (el && (wasAtBottom || isNew))
-            el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-        });
-      })
-      .catch(() => {
-        if (!isCurrentRequest()) return;
-        setThread(null);
-      })
-      .finally(() => {
-        if (isCurrentRequest()) setLoading(false);
-      });
-  };
+  // Apply scroll intents after the cached tree changes: land at the bottom on first load, and follow
+  // new replies to the bottom when the reader is already near it (intent set by the realtime handler).
+  useLayoutEffect(() => {
+    if (!thread) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const firstLoad = !hadDataRef.current;
+    if (firstLoad) {
+      hadDataRef.current = true;
+      scrollToBottomRef.current = true;
+    }
+    if (scrollToBottomRef.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: firstLoad ? "auto" : "smooth" });
+      scrollToBottomRef.current = false;
+    }
+    lastReplyIdRef.current = findLastReplyId(thread.replies);
+  }, [thread]);
 
   useEffect(() => {
     if (!root || typeof window === "undefined") return;
@@ -138,38 +142,60 @@ function ThreadPage() {
 
   useEffect(() => {
     let disposed = false;
-    reload();
+    const key = ["thread", messageId] as const;
+    const read = () => queryClient.getQueryData<ThreadData | null>(key) ?? null;
+    const write = (next: ThreadData) => queryClient.setQueryData<ThreadData | null>(key, next);
 
-    // Super-realtime: mutate the thread tree in place from typed events — no full reload.
+    // Super-realtime: patch the cached thread tree in place from typed events — no full refetch.
     const blank = (m: MessageRow): MessageRow => ({
-      ...m, deleted_at: new Date().toISOString(), body: "", image_url: null, video_url: null,
+      ...m,
+      deleted_at: new Date().toISOString(),
+      body: "",
+      image_url: null,
+      video_url: null,
     });
     const onCreated = (p: { message: MessageRow; root_id: string | null }) => {
       const msg = p.message;
       if (!msg || msg.parent_id == null) return;
       if (p.root_id && p.root_id !== joinedThreadId) return; // a reply in another thread
-      setThread((prev) => {
-        if (!prev) return prev;
-        if (msg.id === prev.root.id || hasNode(prev.replies, msg.id)) return prev; // dedupe
-        if (msg.parent_id === prev.root.id)
-          return { ...prev, replies: [...prev.replies, { message: msg, replies: [], depth: 1 }] };
-        const r = insertUnderParent(prev.replies, msg.parent_id!, msg);
-        if (!r.inserted) { reload(); return prev; } // parent not loaded → fall back to a refetch
-        return { ...prev, replies: r.nodes };
-      });
+      const prev = read();
+      if (!prev) return;
+      if (msg.id === prev.root.id || hasNode(prev.replies, msg.id)) return; // already have it
+      const el = scrollRef.current;
+      const wasAtBottom = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 120 : true;
+      if (msg.parent_id === prev.root.id) {
+        write({ ...prev, replies: [...prev.replies, { message: msg, replies: [], depth: 1 }] });
+      } else {
+        const r = insertUnderParent(prev.replies, msg.parent_id, msg);
+        if (!r.inserted) {
+          invalidateThread();
+          return;
+        } // parent not loaded → reconcile via refetch
+        write({ ...prev, replies: r.nodes });
+      }
+      if (wasAtBottom) scrollToBottomRef.current = true;
     };
-    const onVote = (p: { message_id: string; score: number }) =>
-      setThread((prev) =>
-        !prev ? prev
-          : prev.root.id === p.message_id
-            ? { ...prev, root: { ...prev.root, score: p.score } }
-            : { ...prev, replies: updateNode(prev.replies, p.message_id, (m) => ({ ...m, score: p.score })) });
-    const onDeleted = (p: { id: string }) =>
-      setThread((prev) =>
-        !prev ? prev
-          : prev.root.id === p.id
-            ? { ...prev, root: blank(prev.root) }
-            : { ...prev, replies: updateNode(prev.replies, p.id, blank) });
+    const onVote = (p: { message_id: string; score: number }) => {
+      const prev = read();
+      if (!prev) return;
+      write(
+        prev.root.id === p.message_id
+          ? { ...prev, root: { ...prev.root, score: p.score } }
+          : {
+              ...prev,
+              replies: updateNode(prev.replies, p.message_id, (m) => ({ ...m, score: p.score })),
+            },
+      );
+    };
+    const onDeleted = (p: { id: string }) => {
+      const prev = read();
+      if (!prev) return;
+      write(
+        prev.root.id === p.id
+          ? { ...prev, root: blank(prev.root) }
+          : { ...prev, replies: updateNode(prev.replies, p.id, blank) },
+      );
+    };
 
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise
@@ -258,7 +284,7 @@ function ThreadPage() {
                 roomSlug={slug}
                 currentUserId={userId}
                 asThreadLink={false}
-                onChanged={reload}
+                onChanged={invalidateThread}
                 onReply={handleReply}
               />
 
@@ -275,7 +301,7 @@ function ThreadPage() {
                     currentUserId={userId}
                     collapsed={collapsed}
                     onToggleCollapse={toggleCollapse}
-                    onChanged={reload}
+                    onChanged={invalidateThread}
                     onReply={handleReply}
                   />
                 ))}
@@ -295,9 +321,12 @@ function ThreadPage() {
             currentUserId={userId}
             onPosted={() => {
               setReplyTarget(null);
-              reload();
+              scrollToBottomRef.current = true;
+              invalidateThread();
             }}
-            placeholder={replyTarget ? `${sq.chat.reply} ${replyTarget.label}…` : sq.chat.placeholder}
+            placeholder={
+              replyTarget ? `${sq.chat.reply} ${replyTarget.label}…` : sq.chat.placeholder
+            }
             replyContext={replyTarget}
             onClearReplyContext={replyTarget ? () => setReplyTarget(null) : undefined}
           />
