@@ -32,4 +32,14 @@ public class S3ClientFactoryTests
         var config = S3ClientFactory.BuildConfig(new S3StorageOptions { Region = "" });
         config.AuthenticationRegion.Should().Be("us-east-1");
     }
+
+    // R2 (HTTPS) doesn't implement chunked streaming payload signing, so we must send UNSIGNED-PAYLOAD;
+    // that's only valid over HTTPS, so plain-HTTP MinIO must keep signing on.
+    [Theory]
+    [InlineData("https://acc.r2.cloudflarestorage.com", true)] // R2
+    [InlineData("", true)] // real AWS S3 (no endpoint) — HTTPS
+    [InlineData("http://localhost:9000", false)] // local MinIO over HTTP
+    [InlineData("HTTPS://Acc.R2.CloudflareStorage.com", true)] // case-insensitive
+    public void ShouldDisablePayloadSigning_only_over_https(string endpoint, bool expected)
+        => S3ClientFactory.ShouldDisablePayloadSigning(endpoint).Should().Be(expected);
 }
