@@ -1,6 +1,13 @@
 import { api, ApiError, apiForm, apiJson, apiNoContent } from "@/lib/api-client";
 
-export type SheshiErrorCode = "EMPTY" | "TOO_LONG" | "UNAUTH" | "RATE_LIMITED" | "INVALID_IMAGE" | "INVALID_VIDEO";
+export type SheshiErrorCode =
+  | "EMPTY"
+  | "TOO_LONG"
+  | "UNAUTH"
+  | "RATE_LIMITED"
+  | "INVALID_IMAGE"
+  | "INVALID_VIDEO"
+  | "UPLOAD_FAILED";
 
 export class SheshiError extends Error {
   code: SheshiErrorCode;
@@ -19,12 +26,21 @@ function toMessageMutationError(error: unknown): SheshiError | null {
   if (error.status === 401) return new SheshiError("UNAUTH", { cause: error, status: 401 });
   if (error.status === 429) return new SheshiError("RATE_LIMITED", { cause: error, status: 429 });
   const code = apiErrorCode(error);
-  if (code === "TOO_LONG") return new SheshiError("TOO_LONG", { cause: error, status: error.status });
+  if (code === "TOO_LONG")
+    return new SheshiError("TOO_LONG", { cause: error, status: error.status });
   if (code === "EMPTY") return new SheshiError("EMPTY", { cause: error, status: error.status });
-  if (code === "INVALID_IMAGE" || code === "UNSUPPORTED_IMAGE_TYPE" || code === "IMAGE_DIMENSIONS_TOO_LARGE" || code === "IMAGE_TOO_LARGE")
+  if (
+    code === "INVALID_IMAGE" ||
+    code === "UNSUPPORTED_IMAGE_TYPE" ||
+    code === "IMAGE_DIMENSIONS_TOO_LARGE" ||
+    code === "IMAGE_TOO_LARGE"
+  )
     return new SheshiError("INVALID_IMAGE", { cause: error, status: error.status });
   if (code === "INVALID_VIDEO" || code === "UNSUPPORTED_VIDEO_TYPE" || code === "VIDEO_TOO_LARGE")
     return new SheshiError("INVALID_VIDEO", { cause: error, status: error.status });
+  // The object store rejected the upload (502 UPLOAD_FAILED) — a real reason, not a silent generic 500.
+  if (code === "UPLOAD_FAILED" || error.status === 502)
+    return new SheshiError("UPLOAD_FAILED", { cause: error, status: error.status });
   return null;
 }
 
@@ -193,8 +209,10 @@ export async function setVote(messageId: string, value: -1 | 0 | 1) {
   try {
     await apiNoContent(`/api/messages/${messageId}/vote`, { method: "PUT", body: { value } });
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) throw new SheshiError("UNAUTH", { cause: error, status: 401 });
-    if (error instanceof ApiError && error.status === 429) throw new SheshiError("RATE_LIMITED", { cause: error, status: 429 });
+    if (error instanceof ApiError && error.status === 401)
+      throw new SheshiError("UNAUTH", { cause: error, status: 401 });
+    if (error instanceof ApiError && error.status === 429)
+      throw new SheshiError("RATE_LIMITED", { cause: error, status: 429 });
     throw error;
   }
 }
@@ -216,7 +234,8 @@ export async function submitReport(input: {
       body: JSON.stringify({ reason: input.reason, note: input.note || null }),
     });
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) throw new SheshiError("UNAUTH", { cause: error, status: 401 });
+    if (error instanceof ApiError && error.status === 401)
+      throw new SheshiError("UNAUTH", { cause: error, status: 401 });
     throw error;
   }
 }

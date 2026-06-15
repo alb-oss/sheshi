@@ -23,7 +23,8 @@ public class MessagesController(
     IVideoStorage videoStorage,
     RealtimeNotifier realtime,
     ModerationActionLogger actionLogger,
-    ModerationRuleEngine moderationRuleEngine) : ControllerBase
+    ModerationRuleEngine moderationRuleEngine,
+    ILogger<MessagesController> logger) : ControllerBase
 {
     private static readonly JsonSerializerOptions RequestJsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -136,6 +137,16 @@ public class MessagesController(
         catch (ImageStorageException ex)
         {
             return BadRequest(new { error = ex.Code });
+        }
+        catch (Exception ex)
+        {
+            // A storage-backend failure (e.g. the object store rejecting the request) — log the real
+            // cause and return a clear, mapped error instead of a silent generic 500.
+            logger.LogError(
+                ex,
+                "Upload to object storage failed (image={HasImage}, video={HasVideo}, videoType={VideoType})",
+                hasImage, hasVideo, parsed.Video?.ContentType);
+            return StatusCode(StatusCodes.Status502BadGateway, new { error = "UPLOAD_FAILED" });
         }
 
         var message = new Message

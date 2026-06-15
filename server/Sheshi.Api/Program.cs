@@ -78,13 +78,7 @@ if (string.Equals(builder.Configuration["Storage:Provider"], "s3", StringCompari
 
         var accessKey = builder.Configuration.GetRequiredSecretValue("Storage:S3:AccessKey");
         var secretKey = builder.Configuration.GetRequiredSecretValue("Storage:S3:SecretKey");
-        var config = new AmazonS3Config
-        {
-            ForcePathStyle = s3.ForcePathStyle,
-            AuthenticationRegion = string.IsNullOrWhiteSpace(s3.Region) ? "us-east-1" : s3.Region
-        };
-        if (!string.IsNullOrWhiteSpace(s3.Endpoint)) config.ServiceURL = s3.Endpoint;
-        return new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), config);
+        return new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), S3ClientFactory.BuildConfig(s3));
     });
     builder.Services.AddScoped<IBlobStore, S3BlobStore>();
 }

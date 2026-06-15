@@ -187,7 +187,9 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
                 ? sq.errors.imageInvalid
                 : err instanceof SheshiError && err.code === "INVALID_VIDEO"
                   ? sq.errors.videoInvalid
-                  : sq.errors.generic;
+                  : err instanceof SheshiError && err.code === "UPLOAD_FAILED"
+                    ? sq.errors.uploadFailed
+                    : sq.errors.generic;
       toast.error(msg);
     } finally {
       setPosting(false);
