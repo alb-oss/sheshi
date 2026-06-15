@@ -17,7 +17,7 @@ export const queryPersister = createSyncStoragePersister({
 
 // Allowlist of query-key prefixes that are safe to write to disk — only PUBLIC reads. Anything
 // user-specific or sensitive is never persisted, even if a future query forgets to opt out.
-const PERSISTED_PREFIXES = new Set<string>(["rooms", "highlights"]);
+const PERSISTED_PREFIXES = new Set<string>(["rooms", "highlights", "messages"]);
 
 export const persistOptions: Omit<PersistQueryClientOptions, "queryClient"> = {
   persister: queryPersister,
