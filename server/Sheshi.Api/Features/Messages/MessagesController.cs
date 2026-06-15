@@ -41,6 +41,11 @@ public class MessagesController(
         return Ok(await messageService.ListRoomMessagesAsync(roomId, User.GetUserId(), limit, cursor, ct));
     }
 
+    // Flat, chronological list of every image/video in the room — feeds the swipeable media gallery.
+    [HttpGet("rooms/{roomId:guid}/media")]
+    public async Task<ActionResult<IReadOnlyList<MediaDto>>> ListRoomMedia(Guid roomId, CancellationToken ct) =>
+        Ok(await messageService.ListRoomMediaAsync(roomId, ct));
+
     [HttpGet("messages/{id:guid}")]
     public async Task<ActionResult<MessageDto>> GetMessage(Guid id, CancellationToken ct)
     {
