@@ -23,4 +23,14 @@ public static class S3ClientFactory
         if (!string.IsNullOrWhiteSpace(s3.Endpoint)) config.ServiceURL = s3.Endpoint;
         return config;
     }
+
+    // AWS SDK v4 signs the PutObject body with chunked streaming signing
+    // (STREAMING-AWS4-HMAC-SHA256-PAYLOAD), which Cloudflare R2 does not implement ("not implemented" →
+    // 500). Sending an UNSIGNED-PAYLOAD (DisablePayloadSigning) sidesteps it, but the SDK only allows
+    // that over HTTPS (TLS provides integrity). So disable payload signing for HTTPS endpoints (R2, and
+    // real AWS S3 when no endpoint is set) and leave it on for plain-HTTP endpoints like local MinIO,
+    // which implement chunked signing fine.
+    public static bool ShouldDisablePayloadSigning(string? endpoint)
+        => string.IsNullOrWhiteSpace(endpoint)
+            || endpoint.Trim().StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 }

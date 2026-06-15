@@ -15,13 +15,18 @@ public class S3BlobStore(IAmazonS3 s3, IOptions<StorageOptions> options) : IBlob
     public async Task<string> PutAsync(byte[] content, string fileName, string contentType, CancellationToken ct = default)
     {
         using var stream = new MemoryStream(content);
-        await s3.PutObjectAsync(new PutObjectRequest
+        var request = new PutObjectRequest
         {
             BucketName = _options.S3.Bucket,
             Key = fileName,
             InputStream = stream,
             ContentType = contentType,
-        }, ct);
+        };
+        // R2 doesn't implement chunked streaming payload signing; send UNSIGNED-PAYLOAD over HTTPS
+        // instead (see S3ClientFactory.ShouldDisablePayloadSigning). Left off for plain-HTTP MinIO.
+        if (S3ClientFactory.ShouldDisablePayloadSigning(_options.S3.Endpoint))
+            request.DisablePayloadSigning = true;
+        await s3.PutObjectAsync(request, ct);
 
         return $"{_options.PublicBaseUrl.TrimEnd('/')}/{fileName}";
     }

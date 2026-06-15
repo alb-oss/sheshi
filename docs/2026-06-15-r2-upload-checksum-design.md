@@ -47,6 +47,16 @@ the user hit.
 
 No change to validation, size caps, or the blob layout.
 
+### Follow-up (confirmed via the `/api/health/storage` probe)
+
+The checksum fix removed the CRC32 *trailer* but the deployed probe returned the real R2 error:
+**`AmazonS3Exception: "STREAMING-AWS4-HMAC-SHA256-PAYLOAD not implemented"`**. AWS SDK v4 also signs
+the body with **chunked streaming signing**, which R2 doesn't implement (MinIO does — why local worked).
+Fix: send an **`UNSIGNED-PAYLOAD`** (`PutObjectRequest.DisablePayloadSigning = true`) for **HTTPS**
+endpoints — valid because TLS provides integrity — gated by `S3ClientFactory.ShouldDisablePayloadSigning`
+so plain-HTTP MinIO keeps chunked signing (verified still `ok:true`). Both knobs are needed together:
+no checksum trailer **and** no streaming signature → a plain PUT R2 accepts.
+
 ## Tests
 
 - Unit (`S3ClientFactoryTests`): `BuildConfig` sets both checksum knobs to `WHEN_REQUIRED`, carries
