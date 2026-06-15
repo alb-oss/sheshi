@@ -347,12 +347,21 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         UseBearer(client, bob.AccessToken);
         (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(0);
 
-        // Bob upvotes Alice's post (net +1 received).
+        // Posting earns NOTHING on its own — Alice has 2 messages but no upvotes from others → karma 0.
+        UseBearer(client, alice.AccessToken);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(0);
+
+        // Self-votes don't count: Alice upvoting her own post leaves her karma at 0 (no solo farming).
+        (await client.PutAsJsonAsync($"/api/messages/{post!.Id}/vote", new { value = 1 })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(0);
+
+        // An upvote from ANOTHER user counts: Bob upvotes Alice's post (net +1 from others).
+        UseBearer(client, bob.AccessToken);
         (await client.PutAsJsonAsync($"/api/messages/{post.Id}/vote", new { value = 1 })).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        // karma = UpvoteWeight(2)*netVotes(1) + contributions(2) = 4.
+        // karma = dampened net upvotes from others = KarmaCurve.Message(1) = 1.
         UseBearer(client, alice.AccessToken);
-        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(4);
+        (await client.GetFromJsonAsync<UserDto>("/api/me"))!.Karma.Should().Be(1);
 
         // Profile lists separate posts from comments, scoped to the author.
         var posts = await client.GetFromJsonAsync<CursorPageDto<MessageDto>>($"/api/users/{alice.User.Id}/messages?type=posts");
