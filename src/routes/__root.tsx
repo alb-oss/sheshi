@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import {
   Outlet,
   Link,
@@ -10,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { persistOptions } from "@/lib/query-persist";
 import { Toaster } from "@/components/ui/sonner";
 import { subscribeTokenStore } from "@/lib/token-store";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
@@ -147,9 +149,9 @@ function RootComponent() {
   }, [router]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <Outlet />
       <Toaster richColors position="top-center" />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
