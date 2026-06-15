@@ -239,30 +239,29 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
         )}
       </div>
 
-      {/* Mobile bottom nav — a real flex child (not fixed) so the docked composer sits above it. */}
-      <nav className="shrink-0 md:hidden border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+      {/* Mobile bottom nav — a floating frosted-glass pill. Real flex child (in flow) so the docked
+          composer sits above it; detached from the edges into a rounded, translucent, blurred panel. */}
+      <nav className="shrink-0 md:hidden px-3 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
         <div
-          className="relative grid h-16"
+          className="relative grid h-16 overflow-hidden rounded-[1.65rem] border border-border/60 bg-background/70 shadow-[0_10px_34px_-12px_rgba(0,0,0,0.6)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/55"
           style={{ gridTemplateColumns: `repeat(${dockTabs.length}, minmax(0, 1fr))` }}
         >
-          {/* Liquid-glass active indicator: a frosted pill that springs between tabs, squashing as it
-              settles, with a sheen that sweeps across on each switch. */}
+          {/* Glass top-edge highlight. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-foreground/15 to-transparent"
+          />
+          {/* Static active indicator: a soft frosted pill under the current tab — no motion. */}
           {dockActive >= 0 && (
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0 transition-transform duration-[460ms] [transition-timing-function:cubic-bezier(0.34,1.6,0.5,1)] motion-reduce:transition-none"
+              className="pointer-events-none absolute inset-y-0 left-0"
               style={{
                 width: `calc(100% / ${dockTabs.length})`,
                 transform: `translateX(${dockActive * 100}%)`,
               }}
             >
-              <span
-                key={dockActive}
-                className="animate-dock-liquid motion-reduce:animate-none absolute inset-x-3 inset-y-2.5 overflow-hidden rounded-2xl border border-primary/30 bg-primary/12 shadow-[0_8px_24px_-10px_var(--primary)] backdrop-blur-md"
-              >
-                <span className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/20 to-transparent" />
-                <span className="animate-dock-sheen motion-reduce:hidden absolute inset-y-0 -left-1/2 w-1/2 bg-white/30 blur-md" />
-              </span>
+              <span className="absolute inset-x-2.5 inset-y-2 rounded-[1.15rem] bg-primary/15 shadow-[0_4px_18px_-4px_var(--primary)]" />
             </span>
           )}
           {dockTabs.map((t) => (
