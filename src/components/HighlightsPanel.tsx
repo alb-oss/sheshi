@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsRestoring, useQuery, useQueryClient } from "@tanstack/react-query";
 import { sq } from "@/i18n/sq";
 import { listHighlights, type HighlightMode } from "@/lib/sheshi";
 import { ensureRealtimeStarted } from "@/lib/realtime";
@@ -18,11 +18,15 @@ export function HighlightsPanel({
 }) {
   const [mode, setMode] = useState<HighlightMode>("hot");
   const queryClient = useQueryClient();
-  const { data: items = [], isPending: loading } = useQuery({
+  // Highlights come from the PERSISTED cache; keep the skeleton on the server and the first client render
+  // (while the cache restores) so the panel doesn't pop restored items and trip React 19 hydration.
+  const isRestoring = useIsRestoring();
+  const { data: items = [], isPending } = useQuery({
     queryKey: ["highlights", mode, currentUserId],
     queryFn: () => listHighlights(mode),
     staleTime: 30_000,
   });
+  const loading = isPending || isRestoring;
 
   // Keep the panel live — a debounced cache invalidation on any realtime highlights activity
   // (the panel is joined to no room/thread group, so it listens for the global tick).
