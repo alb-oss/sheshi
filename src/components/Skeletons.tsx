@@ -4,7 +4,14 @@ import { Skeleton } from "./ui/skeleton";
 // Content-shaped loading placeholders that mirror the real components (MessageCard, RoomCard) so the
 // layout doesn't jump when data arrives. Body-line widths are cycled deterministically per row, so
 // each row looks a little different without re-randomizing on every render (SSR-safe).
-const BODY_LINES = [["88%", "52%"], ["70%"], ["94%", "40%"], ["64%", "80%"], ["48%"], ["82%", "60%"]];
+const BODY_LINES = [
+  ["88%", "52%"],
+  ["70%"],
+  ["94%", "40%"],
+  ["64%", "80%"],
+  ["48%"],
+  ["82%", "60%"],
+];
 
 export function MessageSkeleton({ index = 0, compact }: { index?: number; compact?: boolean }) {
   const lines = BODY_LINES[index % BODY_LINES.length];
@@ -74,5 +81,20 @@ export function RoomListSkeleton({ count = 4 }: { count?: number }) {
         <RoomCardSkeleton key={i} />
       ))}
     </div>
+  );
+}
+
+// Mirrors the AppShell sidebar nav items (px-3 py-2 rounded-lg rows). Shown on the server and the first
+// client render while the persisted rooms cache restores, so the sidebar never hydration-mismatches.
+export function SidebarRoomsSkeleton({ count = 5 }: { count?: number }) {
+  const widths = ["72%", "56%", "84%", "48%", "64%"];
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="flex items-center px-3 py-2">
+          <Skeleton className="h-4" style={{ width: widths[i % widths.length] }} />
+        </div>
+      ))}
+    </>
   );
 }

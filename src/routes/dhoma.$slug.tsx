@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   useInfiniteQuery,
+  useIsRestoring,
   useQuery,
   useQueryClient,
   type InfiniteData,
@@ -70,7 +71,12 @@ function RoomPage({ slug }: { slug: string }) {
     refetchOnWindowFocus: false,
   });
   const messages = useMemo(() => q.data?.pages.flatMap((p) => p.items) ?? [], [q.data]);
-  const loading = roomQuery.isPending || (!!roomId && q.isPending);
+  // The room header is seeded synchronously from the persisted rooms list (initialData) and the feed
+  // from the persisted ["messages", roomId] query, so keep the skeleton on the server and the first
+  // client render until the cache restores — otherwise the body pops restored content and React 19
+  // reports a hydration mismatch.
+  const isRestoring = useIsRestoring();
+  const loading = isRestoring || roomQuery.isPending || (!!roomId && q.isPending);
 
   const [newCount, setNewCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -258,9 +264,12 @@ function RoomPage({ slug }: { slug: string }) {
       <div className="flex flex-col h-full">
         <div className="h-12 px-6 flex items-center justify-between border-b border-border shrink-0">
           <div className="flex items-center gap-4 min-w-0">
+            {/* The room name/description come from the PERSISTED rooms cache (via initialData), so render
+                the "…" placeholder until restore completes — otherwise the header text differs from the
+                SSR HTML and React 19 reports a hydration mismatch. */}
             <h2 className="font-display font-bold text-lg truncate">
-              {room?.name ?? "…"}
-              {room?.description && (
+              {isRestoring ? "…" : (room?.name ?? "…")}
+              {!isRestoring && room?.description && (
                 <>
                   <span className="text-sm font-normal text-foreground/40 mx-2">—</span>
                   <span className="text-sm font-normal text-foreground/70">{room.description}</span>
@@ -275,7 +284,7 @@ function RoomPage({ slug }: { slug: string }) {
             </div>
           </div>
           <span className="hidden sm:block text-xs text-foreground/40 font-medium tabular-nums">
-            {messages.length} {sq.chat.messagesCount}
+            {isRestoring ? 0 : messages.length} {sq.chat.messagesCount}
           </span>
         </div>
         <div className="relative flex-1 min-h-0">
@@ -333,7 +342,9 @@ function RoomPage({ slug }: { slug: string }) {
             </button>
           )}
         </div>
-        {room && <Composer roomId={room.id} currentUserId={userId} onPosted={onPosted} />}
+        {!isRestoring && room && (
+          <Composer roomId={room.id} currentUserId={userId} onPosted={onPosted} />
+        )}
       </div>
     </AppShell>
   );

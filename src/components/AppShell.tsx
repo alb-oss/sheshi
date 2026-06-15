@@ -7,6 +7,8 @@ import { signOutLocal, useAuth } from "@/hooks/use-auth";
 import { type Room } from "@/lib/sheshi";
 import { useRooms, roomsKey } from "@/hooks/use-rooms";
 import { useQueryClient } from "@tanstack/react-query";
+import { RestoreGate } from "@/components/RestoreGate";
+import { SidebarRoomsSkeleton } from "@/components/Skeletons";
 import { cn } from "@/lib/utils";
 import { apiJson, apiNoContent } from "@/lib/api-client";
 import { getStoredTokens } from "@/lib/token-store";
@@ -26,7 +28,10 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
     const refreshToken = getStoredTokens()?.refreshToken;
     try {
       if (refreshToken)
-        await apiNoContent("/api/auth/logout", { method: "POST", body: { refresh_token: refreshToken } });
+        await apiNoContent("/api/auth/logout", {
+          method: "POST",
+          body: { refresh_token: refreshToken },
+        });
     } catch {
       // proceed with local sign-out even if the server session is already gone
     }
@@ -73,7 +78,11 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
     <div className="flex flex-col h-dvh w-full overflow-hidden bg-background text-foreground">
       {/* Top header */}
       <header className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
-        <Link to="/" className="group flex min-h-10 items-center" aria-label="Sheshi — Zëri Qytetar Live">
+        <Link
+          to="/"
+          className="group flex min-h-10 items-center"
+          aria-label="Sheshi — Zëri Qytetar Live"
+        >
           {/* Full lockup logo; the variant blends into each theme's navbar background. */}
           <img
             src="/sheshi-logo-light.png"
@@ -132,43 +141,52 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
               {sq.rooms.title}
             </h3>
             <nav className="space-y-1">
-              {rooms.map((r) => {
-                const active = activeSlug === r.slug;
-                const count = presence[r.id] ?? 0;
-                return (
-                  <Link
-                    key={r.id}
-                    to="/dhoma/$slug"
-                    params={{ slug: r.slug }}
-                    className={cn(
-                      "flex items-center justify-between group px-3 py-2 rounded-lg transition-colors",
-                      active
-                        ? "bg-card text-primary font-semibold"
-                        : "text-foreground/70 hover:bg-card/50 hover:text-foreground",
-                    )}
-                  >
-                    <span className="truncate">{r.name}</span>
-                    <span className="flex items-center gap-2 shrink-0">
-                      {active && (
-                        <span
-                          className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
-                          aria-hidden
-                        />
+              {/* Rooms come from the PERSISTED cache — gate on restore so the first client render matches
+                  the (empty) SSR HTML instead of popping the restored list and tripping React 19
+                  hydration. The skeleton renders on the server and the first client paint identically. */}
+              <RestoreGate fallback={<SidebarRoomsSkeleton />}>
+                {rooms.map((r) => {
+                  const active = activeSlug === r.slug;
+                  const count = presence[r.id] ?? 0;
+                  return (
+                    <Link
+                      key={r.id}
+                      to="/dhoma/$slug"
+                      params={{ slug: r.slug }}
+                      className={cn(
+                        "flex items-center justify-between group px-3 py-2 rounded-lg transition-colors",
+                        active
+                          ? "bg-card text-primary font-semibold"
+                          : "text-foreground/70 hover:bg-card/50 hover:text-foreground",
                       )}
-                      {count > 0 && (
-                        <span className="text-[10px] tabular-nums text-foreground/30">{count}</span>
-                      )}
-                    </span>
-                  </Link>
-                );
-              })}
+                    >
+                      <span className="truncate">{r.name}</span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        {active && (
+                          <span
+                            className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"
+                            aria-hidden
+                          />
+                        )}
+                        {count > 0 && (
+                          <span className="text-[10px] tabular-nums text-foreground/30">
+                            {count}
+                          </span>
+                        )}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </RestoreGate>
             </nav>
           </div>
         </aside>
 
         {/* Center. overflow-y-auto so pages that don't manage their own scroll (moderim,
             profili, fokus) can scroll; room/thread fill h-full and scroll internally. */}
-        <main className="flex-1 min-w-0 flex flex-col overflow-y-auto bg-background">{children}</main>
+        <main className="flex-1 min-w-0 flex flex-col overflow-y-auto bg-background">
+          {children}
+        </main>
 
         {/* Right column */}
         {right && (
@@ -185,7 +203,9 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
             to="/"
             icon={<Home className="h-5 w-5" />}
             label={sq.nav.rooms}
-            active={pathname === "/" || pathname.startsWith("/dhoma/") || pathname.startsWith("/tema/")}
+            active={
+              pathname === "/" || pathname.startsWith("/dhoma/") || pathname.startsWith("/tema/")
+            }
           />
           <BottomLink
             to="/dhoma/sheshi"
