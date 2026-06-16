@@ -225,11 +225,50 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
         });
         newLoginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var revokedRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        // Use a fresh (cookie-free) client so ONLY the body token is presented — the new login above
+        // left a valid refresh cookie on `client`, which would correctly authenticate a refresh. This
+        // asserts the register-time token was revoked by the password reset.
+        var bodyOnlyClient = factory.CreateClient();
+        var revokedRefreshResponse = await bodyOnlyClient.PostAsJsonAsync("/api/auth/refresh", new
         {
             refresh_token = registered!.RefreshToken
         });
         revokedRefreshResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Refresh_and_logout_work_via_the_httponly_cookie_with_no_body_token()
+    {
+        // The WebApplicationFactory client keeps a cookie container, so the sheshi_rt cookie set on
+        // login persists and authenticates refresh/logout with NO token in the body — the browser path.
+        var client = factory.CreateClient();
+        var email = $"cookie-{Guid.NewGuid():N}@example.com";
+
+        (await client.PostAsJsonAsync("/api/auth/register",
+            new { email, password = "Password123!", display_name = "Cookie" })).EnsureSuccessStatusCode();
+
+        var login = await client.PostAsJsonAsync("/api/auth/login", new { email, password = "Password123!" });
+        login.EnsureSuccessStatusCode();
+        var setCookie = login.Headers.GetValues("Set-Cookie").Single(c => c.StartsWith("sheshi_rt="));
+        var lower = setCookie.ToLowerInvariant();
+        lower.Should().Contain("httponly", "the refresh cookie must be unreadable by JS");
+        lower.Should().Contain("path=/api/auth", "the cookie is scoped to the auth endpoints only");
+        lower.Should().Contain("samesite=lax");
+
+        var loggedIn = await login.Content.ReadFromJsonAsync<AuthResponse>();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loggedIn!.AccessToken);
+
+        // Refresh with an empty body — the cookie alone must authenticate it.
+        var refresh = await client.PostAsJsonAsync("/api/auth/refresh", new { });
+        refresh.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Logout with an empty body clears the cookie (Set-Cookie with a past expiry).
+        var logout = await client.PostAsJsonAsync("/api/auth/logout", new { });
+        logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Cookie gone (and the token revoked) → a cookie-only refresh is now rejected.
+        var afterLogout = await client.PostAsJsonAsync("/api/auth/refresh", new { });
+        afterLogout.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     private sealed record AuthResponse(

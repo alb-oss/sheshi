@@ -6,9 +6,11 @@ public record RegisterRequest(string Email, string Password, string? DisplayName
 
 public record LoginRequest(string Email, string Password);
 
-public record RefreshRequest(string RefreshToken);
+// RefreshToken is optional: browser clients send it via the HttpOnly sheshi_rt cookie (nothing in the
+// body), mobile/legacy clients send it in the body. The endpoints read the cookie first, body second.
+public record RefreshRequest(string? RefreshToken = null);
 
-public record LogoutRequest(string RefreshToken);
+public record LogoutRequest(string? RefreshToken = null);
 
 public record ForgotPasswordRequest(string Email);
 

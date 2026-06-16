@@ -62,7 +62,9 @@ public class AuthController(
         }
 
         await userManager.AddToRoleAsync(user, Roles.User);
-        return Ok(await tokenService.CreateAuthResponseAsync(user, ct));
+        var registered = await tokenService.CreateAuthResponseAsync(user, ct);
+        tokenService.SetRefreshCookie(Response, registered.RefreshToken);
+        return Ok(registered);
     }
 
     [EnableRateLimiting("auth")]
@@ -93,17 +95,24 @@ public class AuthController(
         if (await userManager.GetAccessFailedCountAsync(user) > 0)
             await userManager.ResetAccessFailedCountAsync(user);
 
-        return Ok(await tokenService.CreateAuthResponseAsync(user, ct));
+        var auth = await tokenService.CreateAuthResponseAsync(user, ct);
+        tokenService.SetRefreshCookie(Response, auth.RefreshToken);
+        return Ok(auth);
     }
 
     [EnableRateLimiting("auth")]
     [HttpPost("refresh")]
     public async Task<ActionResult<AuthResponse>> Refresh(RefreshRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.RefreshToken)) return Unauthorized();
+        // Browser clients carry the token in the sheshi_rt cookie (nothing in the body); mobile/legacy
+        // clients send it in the body. Prefer the cookie, fall back to the body.
+        var rawToken = tokenService.ExtractRawRefreshToken(Request, request.RefreshToken);
+        if (string.IsNullOrWhiteSpace(rawToken)) return Unauthorized();
 
-        var response = await tokenService.RotateRefreshTokenAsync(request.RefreshToken, ct);
-        return response is null ? Unauthorized() : Ok(response);
+        var response = await tokenService.RotateRefreshTokenAsync(rawToken, ct);
+        if (response is null) return Unauthorized();
+        tokenService.SetRefreshCookie(Response, response.RefreshToken);
+        return Ok(response);
     }
 
     [Authorize]
@@ -111,9 +120,12 @@ public class AuthController(
     [HttpPost("logout")]
     public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.RefreshToken)) return BadRequest(new { error = "MISSING_REFRESH_TOKEN" });
-
-        await tokenService.RevokeRefreshTokenAsync(request.RefreshToken, ct);
+        // Cookie-only browser logout sends no body; mobile sends the body token. Revoke whichever we
+        // can find, then always clear the cookie so the browser session is fully gone.
+        var rawToken = tokenService.ExtractRawRefreshToken(Request, request.RefreshToken);
+        if (!string.IsNullOrWhiteSpace(rawToken))
+            await tokenService.RevokeRefreshTokenAsync(rawToken, ct);
+        tokenService.ClearRefreshCookie(Response);
         return NoContent();
     }
 
@@ -231,7 +243,10 @@ public class AuthController(
 
         await HttpContext.SignOutAsync(AuthSchemes.External);
         var tokens = await tokenService.CreateAuthResponseAsync(user, ct);
+        tokenService.SetRefreshCookie(Response, tokens.RefreshToken);
         var frontend = (configuration["Frontend:BaseUrl"] ?? "http://localhost:3000").TrimEnd('/');
+        // The refresh_token stays in the fragment for now so the current web callback keeps working;
+        // the frontend cutover (PR2) reads the cookie and stops relying on the fragment.
         return Redirect($"{frontend}/auth/callback#access_token={Uri.EscapeDataString(tokens.AccessToken)}&refresh_token={Uri.EscapeDataString(tokens.RefreshToken)}");
     }
 
