@@ -238,6 +238,20 @@ function ThreadPage() {
           : { ...prev, replies: updateNode(prev.replies, p.id, blank) },
       );
     };
+    // The caller's OWN vote, pushed only to their connections — syncs the vote colour (my_vote) across
+    // this user's other devices/tabs (the public vote_changed echo only moves the score).
+    const onMyVote = (p: { message_id: string; value: number }) => {
+      const prev = read();
+      if (!prev) return;
+      write(
+        prev.root.id === p.message_id
+          ? { ...prev, root: { ...prev.root, my_vote: p.value } }
+          : {
+              ...prev,
+              replies: updateNode(prev.replies, p.message_id, (m) => ({ ...m, my_vote: p.value })),
+            },
+      );
+    };
 
     // Re-sync the thread to server truth on reconnect and on tab foreground — both are moments a
     // (mobile) client may have missed fire-and-forget deltas while the socket was down.
@@ -254,6 +268,7 @@ function ThreadPage() {
         if (disposed) return;
         connection.on("message_created", onCreated);
         connection.on("vote_changed", onVote);
+        connection.on("my_vote_changed", onMyVote);
         connection.on("message_deleted", onDeleted);
         if (roomId) void invokeRealtime("JoinRoom", roomId);
       })
@@ -267,6 +282,7 @@ function ThreadPage() {
         .then((connection) => {
           connection.off("message_created", onCreated);
           connection.off("vote_changed", onVote);
+          connection.off("my_vote_changed", onMyVote);
           connection.off("message_deleted", onDeleted);
           if (roomId) void invokeRealtime("LeaveRoom", roomId);
         })

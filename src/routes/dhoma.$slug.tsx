@@ -234,6 +234,19 @@ function RoomPage({ slug }: { slug: string }) {
         })),
       });
     };
+    // The caller's OWN vote, pushed only to their connections — syncs the vote colour (my_vote) across
+    // this user's other devices/tabs. The public vote_changed echo only moves the score.
+    const onMyVote = (p: { message_id: string; value: number }) => {
+      const d = read();
+      if (!d) return;
+      write({
+        ...d,
+        pages: d.pages.map((pg) => ({
+          ...pg,
+          items: pg.items.map((m) => (m.id === p.message_id ? { ...m, my_vote: p.value } : m)),
+        })),
+      });
+    };
 
     // Re-sync to the server's truth on reconnect AND when the tab returns to the foreground — both are
     // moments a (mobile) client may have missed fire-and-forget deltas while the socket was down.
@@ -250,6 +263,7 @@ function RoomPage({ slug }: { slug: string }) {
         if (disposed) return;
         connection.on("message_created", onCreated);
         connection.on("vote_changed", onVote);
+        connection.on("my_vote_changed", onMyVote);
         connection.on("message_deleted", onDeleted);
         void invokeRealtime("JoinRoom", roomId);
       })
@@ -263,6 +277,7 @@ function RoomPage({ slug }: { slug: string }) {
         .then((connection) => {
           connection.off("message_created", onCreated);
           connection.off("vote_changed", onVote);
+          connection.off("my_vote_changed", onMyVote);
           connection.off("message_deleted", onDeleted);
           void invokeRealtime("LeaveRoom", roomId);
         })

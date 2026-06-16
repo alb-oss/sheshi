@@ -1,11 +1,49 @@
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from "@microsoft/signalr";
 import { getApiBaseUrl } from "@/lib/api-client";
-import { getAccessToken } from "@/lib/token-store";
+import { getAccessToken, subscribeTokenStore } from "@/lib/token-store";
 
 let connection: HubConnection | null = null;
 let startPromise: Promise<HubConnection> | null = null;
+// The user identity (JWT `sub`) the current connection handshook as. The hub handshake captures the
+// token ONCE at connect time, so a connection opened anonymously (e.g. before a boot session-restore
+// finished) stays anonymous — and never receives per-user pushes (Clients.User, e.g. the my_vote
+// colour sync). When the identity changes we tear the connection down so it re-handshakes with the
+// new token.
+let connectedSub: string | null = null;
 
 const CONNECT_WAIT_MS = 5_000;
+
+function tokenSub(token: string | null): string | null {
+  if (!token) return null;
+  try {
+    return (JSON.parse(atob(token.split(".")[1])) as { sub?: string }).sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function resetRealtimeConnection() {
+  const old = connection;
+  connection = null;
+  startPromise = null;
+  connectedSub = tokenSub(getAccessToken());
+  if (old) {
+    try {
+      await old.stop();
+    } catch {
+      // discarding it anyway
+    }
+  }
+}
+
+// Reconnect when the signed-in identity changes (login / logout / boot session-restore). Same-user
+// token refresh (same sub) is ignored to avoid needless churn. The route effects (keyed on userId)
+// re-run on the same change and re-register handlers + re-join groups on the fresh connection.
+if (typeof window !== "undefined") {
+  subscribeTokenStore(() => {
+    if (tokenSub(getAccessToken()) !== connectedSub) void resetRealtimeConnection();
+  });
+}
 
 // The groups this client is currently subscribed to (JoinRoom/JoinThread/JoinModeration). A reconnect
 // is a brand-new server-side connection with NO group memberships, so we must re-join everything or
@@ -42,6 +80,7 @@ export function ensureRealtimeConnection() {
   // Replay group memberships after an automatic reconnect (new connection id → empty groups), then
   // tell views to re-sync so they catch up on any deltas missed while the socket was down.
   connection.onreconnected(() => {
+    connectedSub = tokenSub(getAccessToken());
     for (const { method, args } of activeGroups.values())
       void connection?.invoke(method, ...args).catch(() => {});
     for (const listener of reconnectedListeners) listener();
@@ -57,7 +96,10 @@ export async function ensureRealtimeStarted() {
     if (!startPromise) {
       startPromise = conn
         .start()
-        .then(() => conn)
+        .then(() => {
+          connectedSub = tokenSub(getAccessToken());
+          return conn;
+        })
         .finally(() => {
           startPromise = null;
         });

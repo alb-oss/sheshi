@@ -17,6 +17,14 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub, HighlightsTicker highlig
         => await BroadcastAsync(roomId, threadRootId, "vote_changed",
             new VoteChangedEvent(messageId, score, roomId, threadRootId), ct);
 
+    // The voter's OWN vote, pushed only to that user's connections (Clients.User → all of their
+    // devices/tabs). The public vote_changed echo carries only the net score — it deliberately never
+    // says WHO voted (vote privacy) — so the colour (driven by my_vote) can't sync across a user's
+    // devices from it. This per-user side-channel does that without leaking the vote to anyone else.
+    public async Task MyVoteChangedAsync(Guid userId, Guid messageId, int value, CancellationToken ct = default)
+        => await hub.Clients.User(userId.ToString())
+            .SendAsync("my_vote_changed", new MyVoteChangedEvent(messageId, value), ct);
+
     public async Task MessageDeletedAsync(Guid messageId, Guid roomId, Guid? threadRootId, CancellationToken ct = default)
         => await BroadcastAsync(roomId, threadRootId, "message_deleted",
             new MessageDeletedEvent(messageId, roomId, threadRootId), ct);
@@ -45,4 +53,5 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub, HighlightsTicker highlig
 // `message` field is byte-identical to the REST MessageDto the client already consumes.
 public record MessageCreatedEvent(MessageDto Message, Guid? RootId);
 public record VoteChangedEvent(Guid MessageId, int Score, Guid RoomId, Guid? RootId);
+public record MyVoteChangedEvent(Guid MessageId, int Value);
 public record MessageDeletedEvent(Guid Id, Guid RoomId, Guid? RootId);
