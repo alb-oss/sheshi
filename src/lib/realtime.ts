@@ -1,6 +1,6 @@
 import { HubConnection, HubConnectionBuilder, HubConnectionState } from "@microsoft/signalr";
 import { getApiBaseUrl } from "@/lib/api-client";
-import { getStoredTokens } from "@/lib/token-store";
+import { getAccessToken } from "@/lib/token-store";
 
 let connection: HubConnection | null = null;
 let startPromise: Promise<HubConnection> | null = null;
@@ -12,7 +12,7 @@ export function ensureRealtimeConnection() {
 
   connection = new HubConnectionBuilder()
     .withUrl(getApiBaseUrl() + "/hub", {
-      accessTokenFactory: () => getStoredTokens()?.accessToken ?? "",
+      accessTokenFactory: () => getAccessToken() ?? "",
     })
     .withAutomaticReconnect()
     .build();
