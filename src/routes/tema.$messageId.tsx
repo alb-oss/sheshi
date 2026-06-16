@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getThread, type MessageRow, type ReplyNode, type ThreadData } from "@/lib/sheshi";
 import { useRooms } from "@/hooks/use-rooms";
 import { ThreadSkeleton } from "@/components/Skeletons";
-import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
+import { ensureRealtimeStarted, invokeRealtime, onRealtimeReconnected } from "@/lib/realtime";
 
 // Server-render the thread so crawlers + link unfurls see the real discussion, and seed the query
 // cache from it (initialData) so the client renders identical markup — no hydration mismatch, no
@@ -239,6 +239,15 @@ function ThreadPage() {
       );
     };
 
+    // Re-sync the thread to server truth on reconnect and on tab foreground — both are moments a
+    // (mobile) client may have missed fire-and-forget deltas while the socket was down.
+    const offReconnected = onRealtimeReconnected(invalidateThread);
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible")
+        invalidateThread();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
+
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise
       .then((connection) => {
@@ -251,6 +260,9 @@ function ThreadPage() {
       .catch(() => {});
     return () => {
       disposed = true;
+      offReconnected();
+      if (typeof document !== "undefined")
+        document.removeEventListener("visibilitychange", onVisible);
       connectionPromise
         .then((connection) => {
           connection.off("message_created", onCreated);
