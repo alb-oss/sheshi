@@ -31,6 +31,7 @@ public class MessagesController(
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
     };
 
+    [EnableRateLimiting("reads")]
     [HttpGet("rooms/{roomId:guid}/messages")]
     public async Task<ActionResult<CursorPageDto<MessageDto>>> ListRoomMessages(
         Guid roomId,
@@ -42,10 +43,12 @@ public class MessagesController(
     }
 
     // Flat, chronological list of every image/video in the room — feeds the swipeable media gallery.
+    [EnableRateLimiting("reads")]
     [HttpGet("rooms/{roomId:guid}/media")]
     public async Task<ActionResult<IReadOnlyList<MediaDto>>> ListRoomMedia(Guid roomId, CancellationToken ct) =>
         Ok(await messageService.ListRoomMediaAsync(roomId, ct));
 
+    [EnableRateLimiting("reads")]
     [HttpGet("messages/{id:guid}")]
     public async Task<ActionResult<MessageDto>> GetMessage(Guid id, CancellationToken ct)
     {
@@ -56,6 +59,7 @@ public class MessagesController(
         return Ok(dto.Single());
     }
 
+    [EnableRateLimiting("reads")]
     [HttpGet("messages/{id:guid}/replies")]
     public async Task<ActionResult<CursorPageDto<MessageDto>>> ListReplies(
         Guid id,
@@ -66,6 +70,7 @@ public class MessagesController(
         return Ok(await messageService.ListRepliesAsync(id, User.GetUserId(), limit, cursor, ct));
     }
 
+    [EnableRateLimiting("reads")]
     [HttpGet("threads/{id:guid}")]
     public async Task<ActionResult<ThreadDto>> GetThread(Guid id, CancellationToken ct)
     {

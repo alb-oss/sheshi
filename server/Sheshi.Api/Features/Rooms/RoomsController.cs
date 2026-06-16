@@ -11,12 +11,14 @@ namespace Sheshi.Api.Features.Rooms;
 [Route("api/rooms")]
 public class RoomsController(RoomService rooms, ModerationActionLogger actionLogger, RealtimeNotifier realtime) : ControllerBase
 {
+    [EnableRateLimiting("reads")]
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<RoomDto>>> List(CancellationToken ct)
     {
         return Ok(await rooms.ListAsync(ct));
     }
 
+    [EnableRateLimiting("reads")]
     [HttpGet("{slug}")]
     public async Task<ActionResult<RoomDto>> GetBySlug(string slug, CancellationToken ct)
     {

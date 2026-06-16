@@ -95,6 +95,10 @@ builder.Services.AddSignalR().AddJsonProtocol(o =>
     o.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
     o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
 });
+// Backs the highlights ranking cache (the "hot" mode runs a correlated per-candidate subquery).
+// IMemoryCache is also pulled in transitively by AddControllers, but register it explicitly so the
+// dependency is visible at the point it is relied on.
+builder.Services.AddMemoryCache();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -110,6 +114,11 @@ builder.Services.AddRateLimiter(options =>
     AddFixedPolicy(options, builder.Configuration, "writes", "Writes", preferUser: true, defaultPermitLimit: 30, defaultWindowSeconds: 60);
     AddFixedPolicy(options, builder.Configuration, "reports", "Reports", preferUser: true, defaultPermitLimit: 10, defaultWindowSeconds: 300);
     AddFixedPolicy(options, builder.Configuration, "moderation", "Moderation", preferUser: true, defaultPermitLimit: 120, defaultWindowSeconds: 60);
+    // Anonymous reads (feed, thread, media, highlights, profiles, rooms) — partitioned by IP. These
+    // run uncached correlated-ranking and recursive-tree queries, so an unthrottled scraper could
+    // drive heavy DB load. preferUser:false keys on RemoteIpAddress (kept trustworthy by the
+    // ForwardedHeaders hardening), so logged-in and anonymous callers share the per-IP budget.
+    AddFixedPolicy(options, builder.Configuration, "reads", "Reads", preferUser: false, defaultPermitLimit: 100, defaultWindowSeconds: 60);
 });
 builder.Services.AddCors(options =>
 {

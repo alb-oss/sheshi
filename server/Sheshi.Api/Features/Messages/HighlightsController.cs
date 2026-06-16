@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Sheshi.Api.Auth;
 using Sheshi.Api.Data;
 
@@ -7,13 +9,24 @@ namespace Sheshi.Api.Features.Messages;
 
 [ApiController]
 [Route("api/highlights")]
-public class HighlightsController(AppDbContext db, MessageService messageService) : ControllerBase
+public class HighlightsController(AppDbContext db, MessageService messageService, IMemoryCache cache) : ControllerBase
 {
+    [EnableRateLimiting("reads")]
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<MessageDto>>> List([FromQuery] string mode = "hot", CancellationToken ct = default)
     {
         mode = mode.ToLowerInvariant();
         if (mode is not ("hot" or "top" or "replied")) return BadRequest(new { error = "INVALID_MODE" });
+
+        // The ranking query is the expensive, scraper-exposed part. Cache it for 30s — but ONLY for
+        // anonymous callers, because the cached DTOs carry my_vote=0. Authenticated requests compute
+        // fresh so a signed-in reader still sees their own vote on a highlighted post (the cache key
+        // is shared, so caching the authed result would leak/zero votes across users). Realtime pushes
+        // keep connected clients fresh within seconds; the 30s cache only blunts cold/SSR load bursts.
+        var callerId = User.GetUserId();
+        var cacheKey = $"highlights:{mode}";
+        if (callerId is null && cache.TryGetValue(cacheKey, out IReadOnlyList<MessageDto>? cached) && cached is not null)
+            return Ok(cached);
 
         var topLevel = db.Messages
             .AsNoTracking()
@@ -54,7 +67,7 @@ public class HighlightsController(AppDbContext db, MessageService messageService
         }
 
         var candidates = await db.Messages.AsNoTracking().Where(m => candidateIds.Contains(m.Id)).ToListAsync(ct);
-        var enriched = await messageService.EnrichAsync(candidates, User.GetUserId(), ct);
+        var enriched = await messageService.EnrichAsync(candidates, callerId, ct);
         var now = DateTimeOffset.UtcNow;
         var ranked = mode switch
         {
@@ -63,7 +76,13 @@ public class HighlightsController(AppDbContext db, MessageService messageService
             _ => enriched.OrderByDescending(m => m.ReplyCount).ThenByDescending(m => m.CreatedAt)
         };
 
-        return Ok(ranked.Take(10).ToList());
+        var result = (IReadOnlyList<MessageDto>)ranked.Take(10).ToList();
+        if (callerId is null)
+            cache.Set(cacheKey, result, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            });
+        return Ok(result);
     }
 
     // "Hot" = engagement-first with a delayed, gentle time decay (see
