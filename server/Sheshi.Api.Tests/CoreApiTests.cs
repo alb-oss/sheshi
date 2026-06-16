@@ -505,6 +505,47 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         after!.Items.Should().ContainSingle(m => m.Id == post.Id && m.Score == 0 && m.MyVote == 0);
     }
 
+    [Fact]
+    public async Task Descendant_count_is_capped_at_the_recursion_depth_bound()
+    {
+        var client = factory.CreateClient();
+        var author = await RegisterAsync(client, "deep-author");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        // Seed a 150-deep linear chain directly (bypassing the writes rate limit). The bounded CTE must
+        // report at most 100 descendants for the root, not the full 150 — proving a pathologically deep
+        // thread can't drive an unbounded recursive walk on every enrich.
+        var rootId = Guid.NewGuid();
+        await WithServicesAsync(async sp =>
+        {
+            var db = sp.GetRequiredService<AppDbContext>();
+            var now = DateTimeOffset.UtcNow;
+            db.Messages.Add(new Message
+            {
+                Id = rootId, RoomId = room.Id, AuthorId = author.User.Id, Body = "root", CreatedAt = now
+            });
+            var parentId = rootId;
+            for (var i = 0; i < 150; i++)
+            {
+                var childId = Guid.NewGuid();
+                db.Messages.Add(new Message
+                {
+                    Id = childId, RoomId = room.Id, AuthorId = author.User.Id, ParentId = parentId,
+                    Body = $"d{i}", CreatedAt = now.AddSeconds(i + 1)
+                });
+                parentId = childId;
+            }
+            await db.SaveChangesAsync();
+        });
+
+        // Read the root as a flat message (not the nested thread tree, which would separately blow
+        // System.Text.Json's depth limit on a 100-deep nest) — its reply_count comes straight from the
+        // bounded descendant-count CTE.
+        var root = await client.GetFromJsonAsync<MessageDto>($"/api/messages/{rootId}");
+        root!.ReplyCount.Should().Be(100,
+            "the recursive descendant count must be hard-capped at 100 levels, not the full 150-deep chain");
+    }
+
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
         var email = $"{label}-{Guid.NewGuid():N}@example.com";
