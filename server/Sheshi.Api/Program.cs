@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -110,7 +111,7 @@ builder.Services.AddRateLimiter(options =>
         await context.HttpContext.Response.WriteAsJsonAsync(new { error = "RATE_LIMITED" }, cancellationToken: ct);
     };
 
-    AddFixedPolicy(options, builder.Configuration, "auth", "Auth", preferUser: false, defaultPermitLimit: 200, defaultWindowSeconds: 60);
+    AddFixedPolicy(options, builder.Configuration, "auth", "Auth", preferUser: false, defaultPermitLimit: 15, defaultWindowSeconds: 60);
     AddFixedPolicy(options, builder.Configuration, "writes", "Writes", preferUser: true, defaultPermitLimit: 30, defaultWindowSeconds: 60);
     AddFixedPolicy(options, builder.Configuration, "reports", "Reports", preferUser: true, defaultPermitLimit: 10, defaultWindowSeconds: 300);
     AddFixedPolicy(options, builder.Configuration, "moderation", "Moderation", preferUser: true, defaultPermitLimit: 120, defaultWindowSeconds: 60);
@@ -120,6 +121,26 @@ builder.Services.AddRateLimiter(options =>
     // ForwardedHeaders hardening), so logged-in and anonymous callers share the per-IP budget.
     AddFixedPolicy(options, builder.Configuration, "reads", "Reads", preferUser: false, defaultPermitLimit: 100, defaultWindowSeconds: 60);
 });
+// Per-ACCOUNT limiter for credential endpoints, partitioned by normalized email — the IP-partitioned
+// "auth" policy can't stop one account being hammered from many IPs (and an IP can be spoofed if the
+// proxy trust boundary is wrong). The controller reads the email from the request body, so this can't
+// be a standard endpoint policy (those partition before model binding). DI disposes the singleton at
+// shutdown — do not wrap it in a using at registration.
+builder.Services.AddSingleton<PartitionedRateLimiter<string>>(_ =>
+    PartitionedRateLimiter.Create<string, string>(email =>
+    {
+        var limit = builder.Configuration.GetValue("RateLimits:AuthAccount:PermitLimit", 5);
+        var window = builder.Configuration.GetValue("RateLimits:AuthAccount:WindowSeconds", 60);
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"auth-account:{email}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = Math.Max(1, limit),
+                Window = TimeSpan.FromSeconds(Math.Max(1, window)),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    }));
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
@@ -137,8 +158,24 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedFor |
         ForwardedHeaders.XForwardedProto |
         ForwardedHeaders.XForwardedHost;
+    // Trust X-Forwarded-* ONLY from the real reverse-proxy hop. Previously both lists were cleared,
+    // which makes ASP.NET trust X-Forwarded-For from ANY source — letting a client spoof its IP and
+    // defeat the per-IP rate limits. Pin KnownIPNetworks to the proxy's network (the Docker bridge,
+    // 172.16.0.0/12 by default; override Proxy:TrustedCidr if the daemon uses a custom pool) and cap
+    // ForwardLimit=1 so only the single entry the proxy appended is consumed.
+    options.ForwardLimit = 1;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
+    // Comma-separated CIDR allow-list of trusted proxy networks (so e.g. loopback + the bridge can both
+    // be listed). Non-empty KnownIPNetworks flips the middleware into "verify the source" mode; leaving
+    // it empty (the old .Clear()) is the footgun that trusts X-Forwarded-For from anyone.
+    var cidrs = (builder.Configuration["Proxy:TrustedCidr"] ?? "172.16.0.0/12")
+        .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    foreach (var cidr in cidrs)
+    {
+        var parts = cidr.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse(parts[0]), int.Parse(parts[1])));
+    }
 });
 
 builder.Services.AddDbContext<AppDbContext>((sp, o) =>

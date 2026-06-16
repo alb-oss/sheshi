@@ -32,6 +32,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://0.0.0.0:8080
       Proxy__TrustForwardedHeaders: "true"
+      # Trust X-Forwarded-* only from the Caddy hop on the compose bridge network. Docker's default
+      # address pool is 172.16.0.0/12; if `docker network inspect` shows a different subnet, override.
+      Proxy__TrustedCidr: "172.16.0.0/12"
       ConnectionStrings__DefaultFile: /run/secrets/db_connection_string
       Jwt__SigningKeyFile: /run/secrets/jwt_signing_key
       Smtp__PasswordFile: /run/secrets/smtp_password
