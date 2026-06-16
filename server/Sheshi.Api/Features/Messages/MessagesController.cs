@@ -225,6 +225,9 @@ public class MessagesController(
         // never sees the live score change.
         var threadRootId = message.ParentId is null ? message.Id : await GetThreadRootIdAsync(message, ct);
         await realtime.VoteChangedAsync(id, message.RoomId, score, threadRootId, ct);
+        // Sync the caller's OWN vote to their other devices/tabs (color follows my_vote). Sent only to
+        // this user's connections — the public echo above never reveals who voted.
+        await realtime.MyVoteChangedAsync(user.Id, id, request.Value, ct);
         return NoContent();
     }
 
