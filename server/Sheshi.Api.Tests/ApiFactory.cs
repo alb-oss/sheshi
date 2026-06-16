@@ -30,10 +30,12 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["Storage:UploadPath"] = uploadPath,
                 ["Storage:PublicBaseUrl"] = "http://localhost:5080/uploads",
                 ["Storage:MaxBytes"] = "20971520",
-                // The "reads" limiter is partitioned by IP (preferUser:false) and every test client
-                // shares 127.0.0.1, so a realistic limit would bleed 429s across tests in a class.
-                // Raise it out of the way here; ReadRateLimitTests overrides it low to prove enforcement.
+                // The "reads" and "auth" limiters are partitioned by IP (preferUser:false) and every
+                // test client shares 127.0.0.1, so realistic limits would bleed 429s across tests in a
+                // class (the suite registers/logs in many users). Raise both out of the way here; the
+                // dedicated limiter tests override them low to prove enforcement.
                 ["RateLimits:Reads:PermitLimit"] = "100000",
+                ["RateLimits:Auth:PermitLimit"] = "100000",
             });
         });
     }
