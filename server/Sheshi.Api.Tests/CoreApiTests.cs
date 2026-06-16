@@ -446,6 +446,65 @@ public class CoreApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Fact]
+    public async Task Concurrent_votes_from_the_same_user_are_idempotent_not_500()
+    {
+        // Regression: a double-tap fired two simultaneous votes; both observed "no existing vote",
+        // both INSERTed, and the second violated the (MessageId, UserId) PK — an unhandled 23505 that
+        // surfaced as HTTP 500. The atomic ON CONFLICT upsert must collapse the race to two 204s and a
+        // single vote row.
+        var client = factory.CreateClient();
+        var alice = await RegisterAsync(client, "vote-race-alice");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        UseBearer(client, alice.AccessToken);
+        var post = await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "race" })).Content.ReadFromJsonAsync<MessageDto>();
+        post.Should().NotBeNull();
+
+        // Two clients carrying the SAME token, firing the same vote at once.
+        var c1 = factory.CreateClient();
+        UseBearer(c1, alice.AccessToken);
+        var c2 = factory.CreateClient();
+        UseBearer(c2, alice.AccessToken);
+        var results = await Task.WhenAll(
+            c1.PutAsJsonAsync($"/api/messages/{post!.Id}/vote", new { value = 1 }),
+            c2.PutAsJsonAsync($"/api/messages/{post.Id}/vote", new { value = 1 }));
+
+        results.Should().OnlyContain(r => r.StatusCode == HttpStatusCode.NoContent,
+            "concurrent same-user votes must both return 204, never 500");
+
+        var after = await client.GetFromJsonAsync<CursorPageDto<MessageDto>>($"/api/rooms/{room.Id}/messages");
+        after!.Items.Should().ContainSingle(m => m.Id == post.Id && m.Score == 1,
+            "exactly one vote row must exist after a concurrent double-tap");
+    }
+
+    [Fact]
+    public async Task Clearing_a_vote_is_idempotent()
+    {
+        var client = factory.CreateClient();
+        var author = await RegisterAsync(client, "clear-author");
+        var voter = await RegisterAsync(client, "clear-voter");
+        var room = await GetRoomAsync(client, "sheshi");
+
+        UseBearer(client, author.AccessToken);
+        var post = await (await client.PostAsJsonAsync("/api/messages",
+            new { room_id = room.Id, body = "clearable" })).Content.ReadFromJsonAsync<MessageDto>();
+        post.Should().NotBeNull();
+
+        UseBearer(client, voter.AccessToken);
+        (await client.PutAsJsonAsync($"/api/messages/{post!.Id}/vote", new { value = 1 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await client.PutAsJsonAsync($"/api/messages/{post.Id}/vote", new { value = 0 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        // Clearing again when no row exists must still be 204 (idempotent DELETE), not 500.
+        (await client.PutAsJsonAsync($"/api/messages/{post.Id}/vote", new { value = 0 }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var after = await client.GetFromJsonAsync<CursorPageDto<MessageDto>>($"/api/rooms/{room.Id}/messages");
+        after!.Items.Should().ContainSingle(m => m.Id == post.Id && m.Score == 0 && m.MyVote == 0);
+    }
+
     private async Task<AuthResponse> RegisterAsync(HttpClient client, string label)
     {
         var email = $"{label}-{Guid.NewGuid():N}@example.com";
