@@ -2,9 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Sheshi.Api.Data;
@@ -15,9 +18,40 @@ namespace Sheshi.Api.Auth;
 public class TokenService(
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
-    IOptions<JwtOptions> jwtOptions)
+    IOptions<JwtOptions> jwtOptions,
+    IWebHostEnvironment env)
 {
     private readonly JwtOptions _jwt = jwtOptions.Value;
+
+    // --- Refresh-token cookie (browser clients) ---------------------------------------------------
+    // The refresh token rides in an HttpOnly + SameSite=Lax cookie scoped to /api/auth so it is never
+    // readable by JS (an XSS can't lift it) and is only sent to the auth endpoints. Secure is on
+    // outside Development (Development uses the http TestServer / localhost). Mobile clients ignore the
+    // cookie and keep using the body token; the auth endpoints read the cookie first, body second.
+
+    public void SetRefreshCookie(HttpResponse response, string refreshToken) =>
+        response.Cookies.Append(_jwt.RefreshCookieName, refreshToken,
+            BuildCookieOptions(DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays)));
+
+    public void ClearRefreshCookie(HttpResponse response) =>
+        response.Cookies.Append(_jwt.RefreshCookieName, "", BuildCookieOptions(DateTimeOffset.UnixEpoch));
+
+    public string? ExtractRawRefreshToken(HttpRequest request, string? bodyToken)
+    {
+        var cookie = request.Cookies[_jwt.RefreshCookieName];
+        return !string.IsNullOrWhiteSpace(cookie) ? cookie : bodyToken;
+    }
+
+    private CookieOptions BuildCookieOptions(DateTimeOffset expires) => new()
+    {
+        HttpOnly = true,
+        Secure = !env.IsDevelopment(),
+        SameSite = SameSiteMode.Lax,
+        Path = "/api/auth",
+        Domain = string.IsNullOrWhiteSpace(_jwt.CookieDomain) ? null : _jwt.CookieDomain,
+        Expires = expires,
+        IsEssential = true,
+    };
 
     public async Task<AuthResponse> CreateAuthResponseAsync(ApplicationUser user, CancellationToken ct = default)
     {
