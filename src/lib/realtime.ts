@@ -7,6 +7,15 @@ let startPromise: Promise<HubConnection> | null = null;
 
 const CONNECT_WAIT_MS = 5_000;
 
+// The groups this client is currently subscribed to (JoinRoom/JoinThread/JoinModeration). A reconnect
+// is a brand-new server-side connection with NO group memberships, so we must re-join everything or
+// realtime goes silently dead (connected, but receiving nothing) until the next navigation.
+const activeGroups = new Map<string, { method: string; args: unknown[] }>();
+
+function groupKey(method: string, args: unknown[]) {
+  return args.length ? `${method}:${String(args[0])}` : method;
+}
+
 export function ensureRealtimeConnection() {
   if (connection) return connection;
 
@@ -17,6 +26,12 @@ export function ensureRealtimeConnection() {
     .withAutomaticReconnect()
     .build();
 
+  // Replay group memberships after an automatic reconnect (new connection id → empty groups).
+  connection.onreconnected(() => {
+    for (const { method, args } of activeGroups.values())
+      void connection?.invoke(method, ...args).catch(() => {});
+  });
+
   return connection;
 }
 
@@ -25,9 +40,12 @@ export async function ensureRealtimeStarted() {
   if (conn.state === HubConnectionState.Connected) return conn;
   if (conn.state === HubConnectionState.Disconnected) {
     if (!startPromise) {
-      startPromise = conn.start().then(() => conn).finally(() => {
-        startPromise = null;
-      });
+      startPromise = conn
+        .start()
+        .then(() => conn)
+        .finally(() => {
+          startPromise = null;
+        });
     }
     return startPromise;
   }
@@ -41,6 +59,11 @@ export async function invokeRealtime(methodName: string, ...args: unknown[]) {
     const conn = await ensureRealtimeStarted();
     if (conn.state !== HubConnectionState.Connected) return false;
     await conn.invoke(methodName, ...args);
+    // Track group membership so onreconnected can replay it. Leave* untracks its matching Join*.
+    if (methodName.startsWith("Join"))
+      activeGroups.set(groupKey(methodName, args), { method: methodName, args });
+    else if (methodName.startsWith("Leave"))
+      activeGroups.delete(groupKey("Join" + methodName.slice("Leave".length), args));
     return true;
   } catch {
     return false;
