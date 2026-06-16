@@ -171,6 +171,13 @@ public class MessageService(AppDbContext db)
     // (ParentId only), so a recursive CTE walks down from each root. Deleted nodes are counted —
     // the thread tree keeps them ("[deleted]") and the live feed never decrements on delete, so
     // counting them keeps the badge, the thread header, and realtime in agreement.
+    //
+    // The recursion is hard-capped at 100 levels (carried in a depth column) so a single
+    // pathologically deep chain can't make this walk — which runs on every enrich, on un-authenticated
+    // reads — unbounded. The cap matches the in-memory thread walker's maxDepth (MessagesController);
+    // counts on threads deeper than that are slightly under-reported, the same approximation the walker
+    // already makes. The depth bound is inlined as a literal (a compile-time constant); only `ids` is
+    // interpolated, which EF Core sends as a bind parameter.
     private async Task<Dictionary<Guid, int>> LoadDescendantCountsAsync(Guid[] ids, CancellationToken ct)
     {
         if (ids.Length == 0) return [];
@@ -178,13 +185,14 @@ public class MessageService(AppDbContext db)
         var rows = await db.Database
             .SqlQuery<DescendantCount>($@"
                 WITH RECURSIVE descendants AS (
-                    SELECT ""Id"" AS ""RootId"", ""Id"" AS node_id
+                    SELECT ""Id"" AS ""RootId"", ""Id"" AS node_id, 0 AS depth
                     FROM ""Messages""
                     WHERE ""Id"" = ANY({ids})
                     UNION ALL
-                    SELECT d.""RootId"", m.""Id""
+                    SELECT d.""RootId"", m.""Id"", d.depth + 1
                     FROM ""Messages"" m
                     JOIN descendants d ON m.""ParentId"" = d.node_id
+                    WHERE d.depth < 100
                 )
                 SELECT ""RootId"", (COUNT(*) - 1)::int AS ""Count""
                 FROM descendants
