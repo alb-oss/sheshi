@@ -192,20 +192,26 @@ public class MessagesController(
         var message = await db.Messages.AsNoTracking().SingleOrDefaultAsync(m => m.Id == id, ct);
         if (message is null) return NotFound();
 
-        var existing = await db.Votes.SingleOrDefaultAsync(v => v.MessageId == id && v.UserId == user.Id, ct);
+        // Atomic upsert/delete instead of read-then-write: a concurrent double-tap used to have both
+        // requests observe "no existing vote", both INSERT, and the second hit the composite PK
+        // (MessageId, UserId) — an unhandled 23505 surfaced as HTTP 500. ON CONFLICT collapses the race
+        // to a single round-trip (the second writer lands on DO UPDATE), and DELETE is idempotent.
+        // Value=0 is gated to DELETE above the INSERT so CK_Votes_Value (Value IN (-1,1)) is never hit.
         if (request.Value == 0)
         {
-            if (existing is not null) db.Votes.Remove(existing);
-        }
-        else if (existing is null)
-        {
-            db.Votes.Add(new Vote { MessageId = id, UserId = user.Id, Value = (short)request.Value });
+            await db.Database.ExecuteSqlAsync(
+                $@"DELETE FROM ""Votes"" WHERE ""MessageId"" = {id} AND ""UserId"" = {user.Id}", ct);
         }
         else
         {
-            existing.Value = (short)request.Value;
+            var value = (short)request.Value;
+            var now = DateTimeOffset.UtcNow;
+            await db.Database.ExecuteSqlAsync(
+                $@"INSERT INTO ""Votes"" (""MessageId"", ""UserId"", ""Value"", ""CreatedAt"")
+                   VALUES ({id}, {user.Id}, {value}, {now})
+                   ON CONFLICT (""MessageId"", ""UserId"")
+                   DO UPDATE SET ""Value"" = EXCLUDED.""Value""", ct);
         }
-        await db.SaveChangesAsync(ct);
 
         var score = await db.Votes.Where(v => v.MessageId == id).SumAsync(v => (int)v.Value, ct);
         // The thread detail page joins the THREAD group keyed by the thread root id. For a root post
