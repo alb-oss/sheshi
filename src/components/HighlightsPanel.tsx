@@ -3,6 +3,7 @@ import { useIsRestoring, useQuery, useQueryClient } from "@tanstack/react-query"
 import { sq } from "@/i18n/sq";
 import { listHighlights, type HighlightMode } from "@/lib/sheshi";
 import { ensureRealtimeStarted } from "@/lib/realtime";
+import { useRealtimeResync } from "@/hooks/use-realtime-resync";
 import { Link } from "@tanstack/react-router";
 import { Flame, ArrowUp, MessageSquare, ArrowUpRight } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -27,6 +28,10 @@ export function HighlightsPanel({
     staleTime: 30_000,
   });
   const loading = isPending || isRestoring;
+
+  // Re-converge to server truth after a reconnect or tab-foreground (the panel listens to the global
+  // highlights tick, which is fire-and-forget like every other realtime signal).
+  useRealtimeResync(() => void queryClient.invalidateQueries({ queryKey: ["highlights"] }));
 
   // Keep the panel live — a debounced cache invalidation on any realtime highlights activity
   // (the panel is joined to no room/thread group, so it listens for the global tick).
