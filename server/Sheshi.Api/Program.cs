@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
@@ -90,7 +91,16 @@ else
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<HighlightsTicker>();
 builder.Services.AddScoped<RealtimeNotifier>();
-builder.Services.AddSignalR().AddJsonProtocol(o =>
+builder.Services.AddSingleton<HubInvocationThrottleFilter>();
+builder.Services.AddSignalR(options =>
+{
+    // Hub methods only carry small Guid args; 4 KB is ~100x the real payload and caps a flood vector.
+    options.MaximumReceiveMessageSize = 4 * 1024;
+    // Must be >= 2x KeepAliveInterval (default 15s); drops dead/idle sockets.
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+    options.MaximumParallelInvocationsPerClient = 1;
+    options.AddFilter<HubInvocationThrottleFilter>();
+}).AddJsonProtocol(o =>
 {
     o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
     o.PayloadSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
@@ -347,7 +357,12 @@ app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<ChatHub>("/hub");
+app.MapHub<ChatHub>("/hub", o =>
+{
+    // Bound the per-connection transport buffers to match the 4 KB message cap above.
+    o.ApplicationMaxBufferSize = 4 * 1024;
+    o.TransportMaxBufferSize = 4 * 1024;
+});
 
 app.MapGet("/health/live", () => "live");
 app.MapGet("/health/ready", ReadinessChecks.CheckAsync);

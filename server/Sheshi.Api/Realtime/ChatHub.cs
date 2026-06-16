@@ -25,10 +25,14 @@ public class ChatHub(PresenceTracker presenceTracker) : Hub
         Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.Thread(messageId));
 
     // Live moderation queue — only moderators/admins may join (the JWT carries the role claims).
-    public Task JoinModeration() =>
-        Context.User?.IsInRole("moderator") == true || Context.User?.IsInRole("admin") == true
-            ? Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Moderators())
-            : Task.CompletedTask;
+    // Fail closed: a non-moderator caller gets an explicit HubException rather than a silent no-op the
+    // client can't distinguish from a successful subscribe.
+    public Task JoinModeration()
+    {
+        if (Context.User?.IsInRole("moderator") != true && Context.User?.IsInRole("admin") != true)
+            throw new HubException("FORBIDDEN");
+        return Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Moderators());
+    }
 
     public Task LeaveModeration() =>
         Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.Moderators());
