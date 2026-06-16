@@ -10,6 +10,12 @@ sheshi.live {
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		# Content-Security-Policy — shipped Report-Only first so it can't break the live SPA; watch the
+		# browser console for violations for a day, then rename the header to Content-Security-Policy to
+		# enforce. script/style allow 'unsafe-inline' for the inline theme bootstrap + Tailwind (the
+		# refresh token is now an HttpOnly cookie, so script-src strictness is defence-in-depth, not the
+		# primary XSS-token control). connect/img/media are pinned to the API, SignalR and the R2 bucket.
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://uploads.sheshi.live; media-src 'self' https://uploads.sheshi.live; font-src 'self' data:; connect-src 'self' https://api.sheshi.live wss://api.sheshi.live; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 	}
 	reverse_proxy web:3000
 }

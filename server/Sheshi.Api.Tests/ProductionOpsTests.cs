@@ -134,6 +134,11 @@ public class ProductionOpsTests
         caddy.Should().Contain("X-Content-Type-Options \"nosniff\"");
         caddy.Should().Contain("Referrer-Policy \"strict-origin-when-cross-origin\"");
         caddy.Should().Contain("Permissions-Policy \"geolocation=(), microphone=(), camera=()\"");
+        // CSP ships Report-Only first (observe, then flip to enforcing); assert it's present + scopes
+        // framing and base-uri.
+        caddy.Should().Contain("Content-Security-Policy-Report-Only");
+        caddy.Should().Contain("frame-ancestors 'none'");
+        caddy.Should().Contain("object-src 'none'");
     }
 
     [Fact]
