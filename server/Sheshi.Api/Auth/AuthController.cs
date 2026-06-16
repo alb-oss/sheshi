@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -17,7 +18,8 @@ public class AuthController(
     UserManager<ApplicationUser> userManager,
     TokenService tokenService,
     IEmailSender emailSender,
-    IConfiguration configuration) : ControllerBase
+    IConfiguration configuration,
+    PartitionedRateLimiter<string> accountLimiter) : ControllerBase
 {
     [EnableRateLimiting("auth")]
     [HttpPost("register")]
@@ -70,6 +72,12 @@ public class AuthController(
         var email = NormalizeEmail(request.Email);
         if (email is null) return Unauthorized();
 
+        // Per-account throttle: caps attempts against ONE email regardless of source IP, so credential
+        // stuffing can't bypass the per-IP "auth" limit by rotating IPs.
+        using var accountLease = accountLimiter.AttemptAcquire(email);
+        if (!accountLease.IsAcquired)
+            return StatusCode(StatusCodes.Status429TooManyRequests, new { error = "RATE_LIMITED" });
+
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
             return Unauthorized();
@@ -115,6 +123,11 @@ public class AuthController(
     {
         var email = NormalizeEmail(request.Email);
         if (email is null) return Ok();
+
+        // Per-account throttle so one address can't be reset-email-bombed across IPs. Over-limit returns
+        // the same Ok() as every other branch — never leak whether the account exists.
+        using var accountLease = accountLimiter.AttemptAcquire(email);
+        if (!accountLease.IsAcquired) return Ok();
 
         var user = await userManager.FindByEmailAsync(email);
         if (user is null) return Ok();
