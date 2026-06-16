@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
 import { ApiError, apiJson, apiNoContent, getApiBaseUrl } from "@/lib/api-client";
-import { setAuthTokens } from "@/hooks/use-auth";
+import { setAuthSession } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -59,7 +59,8 @@ function AuthPage() {
           ? { email, password, username: username.trim().toLowerCase() || undefined }
           : { email, password };
       const result = await apiJson<AuthResponse>(endpoint, { method: "POST", body });
-      await setAuthTokens({ accessToken: result.access_token, refreshToken: result.refresh_token });
+      // The server set the HttpOnly refresh cookie; we keep only the access token in memory.
+      await setAuthSession(result.access_token);
       navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
     } catch (error) {
       if (error instanceof ApiError) {

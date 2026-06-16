@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sq } from "@/i18n/sq";
-import { ApiError, apiJson, apiNoContent } from "@/lib/api-client";
-import { getStoredTokens } from "@/lib/token-store";
+import { ApiError, apiJson } from "@/lib/api-client";
 import { signOutLocal, useAuth, type ApiUser } from "@/hooks/use-auth";
 import { canAdmin, canModerate } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -91,14 +90,9 @@ function ProfilePage() {
   }
 
   async function signOut() {
-    const refreshToken = getStoredTokens()?.refreshToken;
-    try {
-      if (refreshToken)
-        await apiNoContent("/api/auth/logout", { method: "POST", body: { refresh_token: refreshToken } });
-    } catch {
-      // Local sign-out should still proceed if the server session is already gone.
-    }
-    signOutLocal();
+    // signOutLocal revokes the session + clears the HttpOnly cookie server-side, then drops local
+    // state — best-effort, so navigation proceeds regardless.
+    await signOutLocal();
     navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
   }
 

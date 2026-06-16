@@ -10,8 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { RestoreGate } from "@/components/RestoreGate";
 import { SidebarRoomsSkeleton } from "@/components/Skeletons";
 import { cn } from "@/lib/utils";
-import { apiJson, apiNoContent } from "@/lib/api-client";
-import { getStoredTokens } from "@/lib/token-store";
+import { apiJson } from "@/lib/api-client";
 import { ensureRealtimeStarted } from "@/lib/realtime";
 import { canModerate } from "@/lib/roles";
 
@@ -25,17 +24,9 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
   const isMod = canModerate(user);
 
   async function handleSignOut() {
-    const refreshToken = getStoredTokens()?.refreshToken;
-    try {
-      if (refreshToken)
-        await apiNoContent("/api/auth/logout", {
-          method: "POST",
-          body: { refresh_token: refreshToken },
-        });
-    } catch {
-      // proceed with local sign-out even if the server session is already gone
-    }
-    signOutLocal();
+    // signOutLocal revokes the session + clears the HttpOnly cookie server-side, then drops local
+    // state — best-effort, so navigation happens regardless.
+    await signOutLocal();
     navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
   }
 
