@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getRoomBySlug, listMessages, type CursorPage, type MessageRow } from "@/lib/sheshi";
 import { useRooms } from "@/hooks/use-rooms";
 import { MessageListSkeleton } from "@/components/Skeletons";
-import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
+import { ensureRealtimeStarted, invokeRealtime, onRealtimeReconnected } from "@/lib/realtime";
 
 export const Route = createFileRoute("/dhoma/$slug")({
   head: ({ params }) => ({
@@ -235,6 +235,15 @@ function RoomPage({ slug }: { slug: string }) {
       });
     };
 
+    // Re-sync to the server's truth on reconnect AND when the tab returns to the foreground — both are
+    // moments a (mobile) client may have missed fire-and-forget deltas while the socket was down.
+    const resync = () => void queryClient.invalidateQueries({ queryKey: ["messages", roomId] });
+    const offReconnected = onRealtimeReconnected(resync);
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") resync();
+    };
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
+
     const connectionPromise = ensureRealtimeStarted();
     connectionPromise
       .then((connection) => {
@@ -247,6 +256,9 @@ function RoomPage({ slug }: { slug: string }) {
       .catch(() => {});
     return () => {
       disposed = true;
+      offReconnected();
+      if (typeof document !== "undefined")
+        document.removeEventListener("visibilitychange", onVisible);
       connectionPromise
         .then((connection) => {
           connection.off("message_created", onCreated);

@@ -16,6 +16,19 @@ function groupKey(method: string, args: unknown[]) {
   return args.length ? `${method}:${String(args[0])}` : method;
 }
 
+// Listeners fired after a reconnect, once groups have been re-joined. Views use this to refetch their
+// source-of-truth queries: realtime deltas are fire-and-forget, so any event missed while the socket
+// was down (a backgrounded phone, a network blip) is gone — re-syncing on reconnect makes the client
+// re-converge instead of silently drifting from other devices.
+const reconnectedListeners = new Set<() => void>();
+
+export function onRealtimeReconnected(listener: () => void) {
+  reconnectedListeners.add(listener);
+  return () => {
+    reconnectedListeners.delete(listener);
+  };
+}
+
 export function ensureRealtimeConnection() {
   if (connection) return connection;
 
@@ -26,10 +39,12 @@ export function ensureRealtimeConnection() {
     .withAutomaticReconnect()
     .build();
 
-  // Replay group memberships after an automatic reconnect (new connection id → empty groups).
+  // Replay group memberships after an automatic reconnect (new connection id → empty groups), then
+  // tell views to re-sync so they catch up on any deltas missed while the socket was down.
   connection.onreconnected(() => {
     for (const { method, args } of activeGroups.values())
       void connection?.invoke(method, ...args).catch(() => {});
+    for (const listener of reconnectedListeners) listener();
   });
 
   return connection;
