@@ -50,7 +50,18 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   },
   ref,
 ) {
-  const [body, setBody] = useState("");
+  // Draft scratchpad: autosave the in-progress message to localStorage (keyed per room + reply target)
+  // and restore it on mount, so a refresh / crash / accidental navigation / backgrounded phone never
+  // loses what someone was writing. Cleared once the message is sent (the durable commit).
+  const draftKey = `sheshi:draft:${roomId}:${parentId ?? "root"}`;
+  const [body, setBody] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return window.localStorage.getItem(draftKey) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [image, setImage] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [video, setVideo] = useState<File | null>(null);
@@ -74,6 +85,19 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     const next = Math.min(el.scrollHeight, 200);
     el.style.height = next + "px";
   }, [body]);
+
+  // Debounced draft autosave (the scratchpad tier — overwrite-in-place, ~300ms).
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      try {
+        if (body.trim()) window.localStorage.setItem(draftKey, body);
+        else window.localStorage.removeItem(draftKey);
+      } catch {
+        // storage disabled — autosave is best-effort
+      }
+    }, 300);
+    return () => window.clearTimeout(id);
+  }, [body, draftKey]);
 
   useEffect(() => {
     if (!image) {
@@ -160,6 +184,13 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     try {
       await postMessage({ room_id: roomId, body: bodyToPost, parent_id: parentId, image, video });
       setBody("");
+      // The durable commit succeeded — discard the draft immediately (don't wait for the autosave
+      // debounce, or a refresh in the next 300ms would restore an already-sent message).
+      try {
+        window.localStorage.removeItem(draftKey);
+      } catch {
+        // storage disabled — nothing to clear
+      }
       clearAttachment();
       onClearReplyContext?.();
       onPosted?.();
