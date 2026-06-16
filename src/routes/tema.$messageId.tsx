@@ -398,6 +398,72 @@ function ThreadPage() {
   );
 }
 
+// Thread connector geometry (px). The spine runs down the left gutter of a comment's children; each
+// child turns off it with a rounded elbow that points at the child's avatar. Capped so deep threads
+// don't crush the column on mobile — beyond CONTINUE_DEPTH we link out to the comment's own page.
+const THREAD_INDENT = 22; // each nesting level indents its children this much
+const SPINE_X = 10; // x of the vertical spine within a child's gutter
+const ELBOW_Y = 21; // y where the elbow meets the child (≈ the avatar's centre)
+const ELBOW_H = 10; // curve radius / height
+const ELBOW_W = 12; // horizontal reach from the spine to the comment block
+const MAX_INDENT_DEPTH = 7;
+const CONTINUE_DEPTH = 8;
+
+type BranchProps = {
+  node: ReplyNode;
+  slug: string;
+  currentUserId: string | null;
+  collapsed: Set<string>;
+  onToggleCollapse: (id: string) => void;
+  onChanged: () => void;
+  onReply: (message: MessageRow) => void;
+};
+
+// Renders a comment's children indented under a single vertical spine, each connected by a curved
+// elbow. Stops indenting past MAX_INDENT_DEPTH so the column survives on mobile.
+function ThreadChildren({
+  replies,
+  depth,
+  ...rest
+}: Omit<BranchProps, "node"> & { replies: ReplyNode[]; depth: number }) {
+  const indent = depth <= MAX_INDENT_DEPTH ? THREAD_INDENT : 0;
+  return (
+    <div className="relative" style={{ paddingLeft: indent }}>
+      {replies.map((child, i) => {
+        const isLast = i === replies.length - 1;
+        return (
+          <div className="relative" key={child.message.id}>
+            {indent > 0 && (
+              <>
+                {/* Vertical spine: full height for a middle child (joins the next sibling); for the
+                    last child it stops at the elbow so the line ends cleanly at the final reply. */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute w-px bg-thread-line"
+                  style={{ left: SPINE_X, top: 0, height: isLast ? ELBOW_Y : "100%" }}
+                />
+                {/* Curved elbow turning off the spine toward this child's avatar. */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute border-b border-l border-thread-line"
+                  style={{
+                    left: SPINE_X,
+                    top: ELBOW_Y - ELBOW_H,
+                    width: ELBOW_W,
+                    height: ELBOW_H,
+                    borderBottomLeftRadius: ELBOW_H,
+                  }}
+                />
+              </>
+            )}
+            <ReplyBranch node={child} {...rest} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ReplyBranch({
   node,
   slug,
@@ -406,84 +472,61 @@ function ReplyBranch({
   onToggleCollapse,
   onChanged,
   onReply,
-}: {
-  node: ReplyNode;
-  slug: string;
-  currentUserId: string | null;
-  collapsed: Set<string>;
-  onToggleCollapse: (id: string) => void;
-  onChanged: () => void;
-  onReply: (message: MessageRow) => void;
-}) {
+}: BranchProps) {
   const isCollapsed = collapsed.has(node.message.id);
   const hiddenCount = countNodes(node.replies);
   const hasChildren = hiddenCount > 0;
-  // Reddit-style nesting: a SMALL fixed indent added per level, applied incrementally (each
-  // branch nudges its own children right — not a cumulative margin), and CAPPED so deep
-  // threads stop indenting instead of crushing the column on mobile. Children render outside
-  // the comment's left padding so only this small step compounds, never the padding.
-  const INDENT_STEP = 16;
-  const MAX_INDENT_DEPTH = 7;
-  const indentStep = node.depth > 1 && node.depth <= MAX_INDENT_DEPTH ? INDENT_STEP : 0;
-  // Beyond this depth we stop rendering the subtree inline and link out to that comment's own
-  // page (where its replies render fresh from depth 1) — Reddit's "continue this thread".
-  const CONTINUE_DEPTH = 8;
   const continueHere = hasChildren && node.depth >= CONTINUE_DEPTH;
+  const showChildren = !isCollapsed && hasChildren && !continueHere;
 
   return (
-    <div className="relative" style={{ marginLeft: indentStep }}>
-      {/* Thread guide line in the left gutter, spanning this comment and its children.
-          Collapsing is via the comment's [–]/[+] head toggle, not the line. */}
-      <div className="absolute bottom-0 left-1 top-0 w-px bg-thread-line" aria-hidden />
-      <div className="pl-3">
-        <MessageCard
-          message={node.message}
-          roomSlug={slug}
+    <div className="relative">
+      <MessageCard
+        message={node.message}
+        roomSlug={slug}
+        currentUserId={currentUserId}
+        asThreadLink={false}
+        onChanged={onChanged}
+        onReply={onReply}
+        compact
+        collapsible={hasChildren}
+        collapsed={isCollapsed}
+        onToggleCollapse={() => onToggleCollapse(node.message.id)}
+      />
+
+      {hasChildren && isCollapsed ? (
+        <button
+          type="button"
+          onClick={() => onToggleCollapse(node.message.id)}
+          className="mb-2 ml-3 inline-flex min-h-7 items-center gap-1.5 rounded-full border border-thread-line px-2.5 py-1 text-[11px] font-bold text-foreground/60 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+        >
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+          {sq.chat.replies(hiddenCount)}
+        </button>
+      ) : null}
+
+      {showChildren ? (
+        <ThreadChildren
+          replies={node.replies}
+          depth={node.depth + 1}
+          slug={slug}
           currentUserId={currentUserId}
-          asThreadLink={false}
+          collapsed={collapsed}
+          onToggleCollapse={onToggleCollapse}
           onChanged={onChanged}
           onReply={onReply}
-          compact
-          collapsible={hasChildren}
-          collapsed={isCollapsed}
-          onToggleCollapse={() => onToggleCollapse(node.message.id)}
         />
+      ) : null}
 
-        {hasChildren && isCollapsed ? (
-          <button
-            type="button"
-            onClick={() => onToggleCollapse(node.message.id)}
-            className="mb-2 ml-1 inline-flex min-h-7 items-center gap-1.5 rounded-full border border-thread-line px-2.5 py-1 text-[11px] font-bold text-foreground/60 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
-          >
-            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            {sq.chat.replies(hiddenCount)}
-          </button>
-        ) : null}
-      </div>
-
-      {!isCollapsed &&
-        (continueHere ? (
-          <Link
-            to="/tema/$messageId"
-            params={{ messageId: node.message.id }}
-            className="ml-3 mb-2 inline-flex items-center gap-1 pl-3 text-xs font-bold text-primary transition-colors hover:text-primary/80"
-          >
-            {sq.chat.continueThread} ({sq.chat.replies(hiddenCount)}) →
-          </Link>
-        ) : (
-          node.replies.map((child) => (
-            <ReplyBranch
-              key={child.message.id}
-              node={child}
-              slug={slug}
-              currentUserId={currentUserId}
-              collapsed={collapsed}
-              onToggleCollapse={onToggleCollapse}
-              onChanged={onChanged}
-              onReply={onReply}
-            />
-          ))
-        ))}
+      {continueHere && !isCollapsed ? (
+        <Link
+          to="/tema/$messageId"
+          params={{ messageId: node.message.id }}
+          className="mb-2 ml-3 inline-flex items-center gap-1 text-xs font-bold text-primary transition-colors hover:text-primary/80"
+        >
+          {sq.chat.continueThread} ({sq.chat.replies(hiddenCount)}) →
+        </Link>
+      ) : null}
     </div>
   );
 }
