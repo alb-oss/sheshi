@@ -1,44 +1,44 @@
-export type StoredTokens = {
-  accessToken: string;
-  refreshToken: string;
-};
+// The access token lives ONLY in memory (this module variable) — never in localStorage or
+// sessionStorage — so an XSS can't lift a durable credential. The long-lived refresh token lives in an
+// HttpOnly cookie the API sets (`sheshi_rt`); JS never sees it. A hard refresh clears this memory, and
+// the session is restored by a silent cookie-based refresh on the first authenticated call (see
+// api-client's 401 handling and use-auth's boot load).
 
-const STORAGE_KEY = "sheshi:tokens";
+let accessToken: string | null = null;
 const listeners = new Set<() => void>();
+
+const LEGACY_KEY = "sheshi:tokens";
+
+// One-time migration: drop any access/refresh token persisted by the old localStorage scheme so a
+// previously-stored 30-day refresh token can't linger in a JS-readable store.
+if (typeof window !== "undefined") {
+  try {
+    window.localStorage.removeItem(LEGACY_KEY);
+  } catch {
+    // localStorage unavailable (private mode / disabled) — nothing to clean up.
+  }
+}
 
 function emit() {
   for (const listener of listeners) listener();
 }
 
-export function getStoredTokens(): StoredTokens | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as Partial<StoredTokens>;
-    if (!parsed.accessToken || !parsed.refreshToken) return null;
-    return { accessToken: parsed.accessToken, refreshToken: parsed.refreshToken };
-  } catch {
-    return null;
-  }
+export function getAccessToken(): string | null {
+  return accessToken;
 }
 
-export function setStoredTokens(tokens: StoredTokens) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
+export function setAccessToken(token: string | null) {
+  accessToken = token;
   emit();
 }
 
-export function clearStoredTokens() {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
+export function clearAccessToken() {
+  accessToken = null;
   emit();
 }
 
 export function subscribeTokenStore(listener: () => void) {
   listeners.add(listener);
-  // Return a void-returning unsubscribe — Set.delete yields a boolean, which is not a valid
-  // React effect cleanup (Destructor must return void).
   return () => {
     listeners.delete(listener);
   };

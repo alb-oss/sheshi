@@ -1,4 +1,4 @@
-import { clearStoredTokens, getStoredTokens, setStoredTokens } from "@/lib/token-store";
+import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/token-store";
 
 export class ApiError extends Error {
   constructor(
@@ -25,27 +25,26 @@ export async function api(
 ) {
   const retryOnUnauthorized = options.retryOnUnauthorized ?? true;
   const headers = new Headers(options.headers);
-  const tokens = getStoredTokens();
-  if (tokens?.accessToken) headers.set("Authorization", `Bearer ${tokens.accessToken}`);
+  const accessToken = getAccessToken();
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
 
   const response = await fetch(getApiBaseUrl() + path, {
     ...options,
     headers,
+    // Send/receive the HttpOnly refresh cookie (sheshi_rt) — the only cookie, scoped to /api/auth.
+    // Needed so login/refresh Set-Cookie is honored and the cookie is sent on refresh.
+    credentials: "include",
   });
 
-  // 401 = expired/invalid token. 403 = authenticated but forbidden — which also happens when a
-  // role (e.g. moderator) was just granted and the current access token predates it. In both
-  // cases refresh once (the new access token is minted with the user's CURRENT db roles) and
-  // retry; a genuine 403 stays 403 on the retry (no loop).
-  if (
-    (response.status === 401 || response.status === 403) &&
-    retryOnUnauthorized &&
-    tokens?.refreshToken
-  ) {
-    const refreshed = await refreshTokens(tokens.refreshToken);
-    if (refreshed) {
+  // 401 = expired/missing access token (incl. a fresh page load before the in-memory token exists).
+  // 403 = authenticated but forbidden — also happens right after a role grant when the access token
+  // predates it. In both cases attempt ONE cookie-based refresh (the refresh token rides the HttpOnly
+  // cookie, not the body) and retry; a genuine 403, or no valid cookie, fails on the retry (no loop).
+  if ((response.status === 401 || response.status === 403) && retryOnUnauthorized) {
+    const refreshedToken = await refreshAccessToken();
+    if (refreshedToken) {
       const retryHeaders = new Headers(options.headers);
-      retryHeaders.set("Authorization", `Bearer ${refreshed.accessToken}`);
+      retryHeaders.set("Authorization", `Bearer ${refreshedToken}`);
       return api(path, { ...options, headers: retryHeaders, retryOnUnauthorized: false });
     }
   }
@@ -89,21 +88,37 @@ export async function apiForm<T>(
   return response.json() as Promise<T>;
 }
 
-async function refreshTokens(refreshToken: string) {
-  const response = await fetch(getApiBaseUrl() + "/api/auth/refresh", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-  if (!response.ok) {
-    clearStoredTokens();
-    return null;
-  }
+// Mint a fresh access token from the HttpOnly refresh cookie. No token in the body — the browser
+// sends `sheshi_rt` because of credentials:"include". Returns the new access token, or null (and clears
+// the in-memory token) when there's no valid cookie. Coalesced so a burst of 401s triggers one refresh.
+let refreshInFlight: Promise<string | null> | null = null;
 
-  const body = (await response.json()) as { access_token: string; refresh_token: string };
-  const tokens = { accessToken: body.access_token, refreshToken: body.refresh_token };
-  setStoredTokens(tokens);
-  return tokens;
+function refreshAccessToken(): Promise<string | null> {
+  refreshInFlight ??= (async () => {
+    try {
+      const response = await fetch(getApiBaseUrl() + "/api/auth/refresh", {
+        method: "POST",
+        credentials: "include",
+        // The refresh endpoint binds a JSON body; send an empty object so a cookie-only refresh isn't
+        // rejected with 415 (the token comes from the HttpOnly cookie, not the body).
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      if (!response.ok) {
+        clearAccessToken();
+        return null;
+      }
+      const body = (await response.json()) as { access_token: string };
+      setAccessToken(body.access_token);
+      return body.access_token;
+    } catch {
+      clearAccessToken();
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
 }
 
 async function toApiError(response: Response) {
