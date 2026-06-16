@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Sheshi.Api.Auth;
 using Sheshi.Api.Features.Messages;
 
@@ -10,6 +11,7 @@ public class UsersController(MessageService messageService) : ControllerBase
 {
     // A user's own posts/comments for their profile. Public (profiles are readable signed-out); the
     // caller's vote is folded in when authenticated. type=comments → replies, else posts.
+    [EnableRateLimiting("reads")]
     [HttpGet("{id:guid}/messages")]
     public async Task<ActionResult<CursorPageDto<MessageDto>>> Messages(
         Guid id,
