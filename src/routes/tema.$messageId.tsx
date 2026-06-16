@@ -129,7 +129,11 @@ function ThreadPage() {
   const isRestoring = useIsRestoring();
   const slug = root && !isRestoring ? (roomLookup.get(root.room_id) ?? "sheshi") : "sheshi";
   const replyTotal = useMemo(() => (thread ? countNodes(thread.replies) : 0), [thread]);
-  const joinedThreadId = root?.id ?? messageId;
+  // Realtime is scoped to the ROOM, not a per-thread group: vote/create/delete all broadcast to the
+  // room channel, and this view filters them to messages it actually shows. Per-thread groups were
+  // keyed by the permalink message id on the client but by the true thread-root id on the server
+  // broadcast, so a reply permalink (a subcomment's own page) never received its echoes.
+  const roomId = root?.room_id ?? null;
 
   // One composer for the whole thread, docked at the bottom. Clicking "Reply" on a comment
   // just points that one box at the comment (shown as a "replying to @user" chip) — no inline
@@ -196,22 +200,20 @@ function ThreadPage() {
     });
     const onCreated = (p: { message: MessageRow; root_id: string | null }) => {
       const msg = p.message;
-      if (!msg || msg.parent_id == null) return;
-      if (p.root_id && p.root_id !== joinedThreadId) return; // a reply in another thread
+      if (!msg || msg.parent_id == null) return; // only replies belong in a thread
       const prev = read();
       if (!prev) return;
       if (msg.id === prev.root.id || hasNode(prev.replies, msg.id)) return; // already have it
+      // Room-scoped events include replies from other threads — only act when the parent is one of the
+      // messages THIS view is showing (root or a loaded node); otherwise ignore it (no refetch storm).
+      const parentInView = msg.parent_id === prev.root.id || hasNode(prev.replies, msg.parent_id);
+      if (!parentInView) return;
       const el = scrollRef.current;
       const wasAtBottom = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 120 : true;
       if (msg.parent_id === prev.root.id) {
         write({ ...prev, replies: [...prev.replies, { message: msg, replies: [], depth: 1 }] });
       } else {
-        const r = insertUnderParent(prev.replies, msg.parent_id, msg);
-        if (!r.inserted) {
-          invalidateThread();
-          return;
-        } // parent not loaded → reconcile via refetch
-        write({ ...prev, replies: r.nodes });
+        write({ ...prev, replies: insertUnderParent(prev.replies, msg.parent_id, msg).nodes });
       }
       if (wasAtBottom) scrollToBottomRef.current = true;
     };
@@ -244,7 +246,7 @@ function ThreadPage() {
         connection.on("message_created", onCreated);
         connection.on("vote_changed", onVote);
         connection.on("message_deleted", onDeleted);
-        void invokeRealtime("JoinThread", joinedThreadId);
+        if (roomId) void invokeRealtime("JoinRoom", roomId);
       })
       .catch(() => {});
     return () => {
@@ -254,12 +256,12 @@ function ThreadPage() {
           connection.off("message_created", onCreated);
           connection.off("vote_changed", onVote);
           connection.off("message_deleted", onDeleted);
-          void invokeRealtime("LeaveThread", joinedThreadId);
+          if (roomId) void invokeRealtime("LeaveRoom", roomId);
         })
         .catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [joinedThreadId, messageId, userId]);
+  }, [roomId, messageId, userId]);
 
   const toggleCollapse = (id: string) => {
     setCollapsed((current) => {
