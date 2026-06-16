@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sq } from "@/i18n/sq";
 import { api, apiJson, apiNoContent } from "@/lib/api-client";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
+import { useRealtimeResync } from "@/hooks/use-realtime-resync";
 import { useAuth } from "@/hooks/use-auth";
 import { Roles, canAdmin, canModerate, hasRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -156,6 +157,10 @@ const emptyBox = "rounded-xl border border-border bg-card/60 p-6 text-center tex
 function useModerationLive(reload: () => void) {
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
+  // Re-converge the dashboard to server truth after a reconnect or tab-foreground — the mod_changed
+  // tick is fire-and-forget, so a moderator who was disconnected/backgrounded would otherwise see a
+  // stale queue until they navigated.
+  useRealtimeResync(() => reloadRef.current());
   useEffect(() => {
     let disposed = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
