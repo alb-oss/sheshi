@@ -90,6 +90,7 @@ else
 }
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<HighlightsTicker>();
+builder.Services.AddSingleton<VoteBroadcastCoalescer>();
 builder.Services.AddScoped<RealtimeNotifier>();
 builder.Services.AddSingleton<HubInvocationThrottleFilter>();
 builder.Services.AddSignalR(options =>

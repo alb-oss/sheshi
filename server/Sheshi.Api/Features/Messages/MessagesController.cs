@@ -22,6 +22,7 @@ public class MessagesController(
     IImageStorage imageStorage,
     IVideoStorage videoStorage,
     RealtimeNotifier realtime,
+    VoteBroadcastCoalescer voteCoalescer,
     ModerationActionLogger actionLogger,
     ModerationRuleEngine moderationRuleEngine,
     ILogger<MessagesController> logger) : ControllerBase
@@ -224,9 +225,12 @@ public class MessagesController(
         // — otherwise a vote on a root post broadcasts only to the room group and the open thread view
         // never sees the live score change.
         var threadRootId = message.ParentId is null ? message.Id : await GetThreadRootIdAsync(message, ct);
-        await realtime.VoteChangedAsync(id, message.RoomId, score, threadRootId, ct);
+        // Coalesced per message (≤1 score broadcast / 250ms) so a viral post can't fan O(votes) out to
+        // every viewer; the trailing flush re-reads the absolute score so the final number is exact.
+        voteCoalescer.Request(id, score, message.RoomId, threadRootId);
         // Sync the caller's OWN vote to their other devices/tabs (color follows my_vote). Sent only to
-        // this user's connections — the public echo above never reveals who voted.
+        // this user's connections — the public echo above never reveals who voted. Immediate (per-user,
+        // low volume), not coalesced.
         await realtime.MyVoteChangedAsync(user.Id, id, request.Value, ct);
         return NoContent();
     }
