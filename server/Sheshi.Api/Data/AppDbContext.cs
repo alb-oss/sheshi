@@ -14,6 +14,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ModerationAction> ModerationActions => Set<ModerationAction>();
     public DbSet<ModerationFlag> ModerationFlags => Set<ModerationFlag>();
+    public DbSet<Proposal> Proposals => Set<Proposal>();
+    public DbSet<ProposalVote> ProposalVotes => Set<ProposalVote>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -75,6 +77,34 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasIndex(f => new { f.MessageId, f.RuleKey }).IsUnique();
             e.HasIndex(f => new { f.RoomId, f.Status });
             e.HasIndex(f => new { f.AuthorId, f.Status });
+        });
+
+        b.Entity<Proposal>(e =>
+        {
+            e.Property(p => p.Title).HasMaxLength(200);
+            e.Property(p => p.Body).HasMaxLength(8000);
+            // Enums persisted as their member name (Postgres text); a check constraint pins the allowed
+            // set so a bad write fails closed at the DB, not just in app code.
+            e.Property(p => p.Category).HasConversion<string>().HasMaxLength(40);
+            e.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Proposals_Status", "\"Status\" IN ('Pending', 'Proposed', 'Approved', 'Rejected')");
+                t.HasCheckConstraint("CK_Proposals_Category", "\"Category\" IN ('Ligje', 'Shendetesi', 'Arsim', 'Zhvillim')");
+            });
+            e.HasOne(p => p.Author).WithMany().HasForeignKey(p => p.AuthorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(p => new { p.Status, p.Category });
+            e.HasIndex(p => p.CreatedAt).IsDescending();
+        });
+
+        b.Entity<ProposalVote>(e =>
+        {
+            e.HasKey(v => new { v.ProposalId, v.UserId });
+            e.Property(v => v.Value).HasDefaultValue((short)1);
+            e.ToTable(t => t.HasCheckConstraint("CK_ProposalVotes_Value", "\"Value\" IN (-1, 1)"));
+            e.HasOne(v => v.Proposal).WithMany().HasForeignKey(v => v.ProposalId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(v => v.User).WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(v => v.UserId);
         });
     }
 }
