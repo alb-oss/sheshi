@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { getThread } from "@/api";
+import { ApiError, getThread } from "@/api";
 import { PostCard } from "@/components/PostCard";
 import { DockedComposer } from "@/components/DockedComposer";
+import { ErrorState } from "@/components/ErrorState";
 import { FeedSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/useAuth";
 import { useDockOffset } from "@/useDockOffset";
@@ -29,12 +30,20 @@ export default function Thread() {
   const offset = useDockOffset();
   const [thread, setThread] = useState<ThreadData | null>(null);
   const [loading, setLoading] = useState(true);
+  // 3-way: ok (thread present) / notfound (real 404 → "Tema nuk u gjet") / error (5xx / network →
+  // retryable ErrorState). A blank thread is no longer conflated with a failed fetch.
+  const [status, setStatus] = useState<"ok" | "notfound" | "error">("ok");
   const [reply, setReply] = useState<{ id: string; label: string } | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
+    setLoading(true);
+    setStatus("ok");
     try {
       setThread(await getThread(id));
+    } catch (e) {
+      setThread(null);
+      setStatus(e instanceof ApiError && e.status === 404 ? "notfound" : "error");
     } finally {
       setLoading(false);
     }
@@ -45,6 +54,13 @@ export default function Thread() {
   }, [load]);
 
   if (loading) return <View style={styles.flex}><FeedSkeleton /></View>;
+  if (status === "error") {
+    return (
+      <View style={styles.flex}>
+        <ErrorState onRetry={() => void load()} />
+      </View>
+    );
+  }
   if (!thread) {
     return (
       <View style={styles.center}>

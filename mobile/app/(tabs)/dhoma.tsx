@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listRooms } from "@/api";
 import { PressableScale } from "@/components/PressableScale";
+import { ErrorState } from "@/components/ErrorState";
 import { RoomsSkeleton } from "@/components/Skeleton";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
@@ -16,22 +17,42 @@ export default function Dhoma() {
   const insets = useSafeAreaInsets();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
+  // Distinct from an empty list: the fetch rejected, so we offer a retry rather than nothing.
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
+    setLoading(true);
+    setError(false);
     listRooms()
-      .then((r) => alive && setRooms(r))
-      .catch(() => alive && setRooms([]))
+      .then((r) => {
+        if (!alive) return;
+        setRooms(r);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setRooms([]);
+        setError(true);
+      })
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   if (loading) {
     return (
       <View style={styles.flex}>
         <RoomsSkeleton />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.flex}>
+        <ErrorState onRetry={() => setReloadKey((k) => k + 1)} />
       </View>
     );
   }

@@ -16,14 +16,23 @@ export type MessageRow = {
   deleted_at: string | null;
   created_at: string;
   author?: Profile | null;
-  score?: number;
-  reply_count?: number;
-  my_vote?: number; // -1, 0, 1
+  // Server guarantees these via GetValueOrDefault, so they are always present (not optional).
+  score: number;
+  reply_count: number;
+  my_vote: number; // -1, 0, 1
 };
 
 export type ReplyNode = { message: MessageRow; replies: ReplyNode[]; depth: number };
 export type ThreadData = { root: MessageRow; replies: ReplyNode[] };
-export type Room = { id: string; slug: string; name: string; description: string | null };
+export type Room = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  // Server guarantees thread_count via GetValueOrDefault; latest_activity_at may be absent.
+  thread_count: number;
+  latest_activity_at?: string | null;
+};
 export type CursorPage<T> = { items: T[]; next_cursor: string | null };
 export type ApiUser = {
   id: string;

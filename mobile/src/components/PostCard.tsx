@@ -115,7 +115,7 @@ export function PostCard({
             ) : (
               <View style={styles.action}>
                 <Ionicons name="chatbubble-outline" size={14} color={theme.textMuted} />
-                <Text style={styles.actionText}>{message.reply_count ?? 0}</Text>
+                <Text style={styles.actionText}>{message.reply_count}</Text>
               </View>
             )}
             <Pressable hitSlop={6} onPress={onShare} style={styles.action} accessibilityLabel="Shpërnda">

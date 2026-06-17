@@ -6,14 +6,15 @@ import { setVote } from "@/api";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
 import type { MessageRow } from "@/types";
+import { formatScore, nextVote, optimisticScore, type VoteDir, type VoteValue } from "@/voteLogic";
 
 // Reddit-style up/score/down pill. Optimistic, with light haptics and a spring "pop" on the
 // tapped arrow — iPhone-like.
 export function VoteControl({ message, compact }: { message: MessageRow; compact?: boolean }) {
   const { theme } = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const [score, setScore] = useState(message.score ?? 0);
-  const [myVote, setMyVote] = useState(message.my_vote ?? 0);
+  const [score, setScore] = useState(message.score);
+  const [myVote, setMyVote] = useState<VoteValue>(message.my_vote as VoteValue);
   const [busy, setBusy] = useState(false);
   const upPop = useRef(new Animated.Value(1)).current;
   const downPop = useRef(new Animated.Value(1)).current;
@@ -23,13 +24,13 @@ export function VoteControl({ message, compact }: { message: MessageRow; compact
     Animated.spring(v, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 14 }).start();
   }
 
-  async function vote(dir: 1 | -1) {
+  async function vote(dir: VoteDir) {
     if (busy) return;
     const prevVote = myVote;
     const prevScore = score;
-    const next = (myVote === dir ? 0 : dir) as -1 | 0 | 1;
+    const next = nextVote(myVote, dir);
     setMyVote(next);
-    setScore(prevScore - prevVote + next);
+    setScore(optimisticScore(prevScore, prevVote, next));
     if (next !== 0) pop(dir === 1 ? upPop : downPop);
     setBusy(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -62,11 +63,6 @@ export function VoteControl({ message, compact }: { message: MessageRow; compact
       </Pressable>
     </View>
   );
-}
-
-function formatScore(n: number) {
-  if (Math.abs(n) >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
-  return String(n);
 }
 
 function makeStyles(t: Palette) {

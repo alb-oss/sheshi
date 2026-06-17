@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { getRoomBySlug, listMessages } from "@/api";
 import { PostCard } from "@/components/PostCard";
 import { DockedComposer } from "@/components/DockedComposer";
+import { ErrorState } from "@/components/ErrorState";
 import { FeedSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/useAuth";
 import { useDockOffset } from "@/useDockOffset";
@@ -33,6 +34,10 @@ export function RoomFeed({ slug }: { slug: string }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Distinct from an empty room: the room/messages fetch rejected (5xx / network), so we show a
+  // retry instead of a blank stream.
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const loadingMore = useRef(false);
 
   const reload = useCallback(async (roomId: string) => {
@@ -44,12 +49,15 @@ export function RoomFeed({ slug }: { slug: string }) {
   useEffect(() => {
     let alive = true;
     setLoading(true);
+    setError(false);
     (async () => {
       try {
         const r = await getRoomBySlug(slug);
         if (!alive) return;
         setRoom(r);
         if (r) await reload(r.id);
+      } catch {
+        if (alive) setError(true);
       } finally {
         if (alive) setLoading(false);
       }
@@ -57,7 +65,7 @@ export function RoomFeed({ slug }: { slug: string }) {
     return () => {
       alive = false;
     };
-  }, [slug, reload]);
+  }, [slug, reload, reloadKey]);
 
   const onRefresh = useCallback(async () => {
     if (!room) return;
@@ -92,6 +100,8 @@ export function RoomFeed({ slug }: { slug: string }) {
     >
       {loading ? (
         <FeedSkeleton />
+      ) : error ? (
+        <ErrorState onRetry={() => setReloadKey((k) => k + 1)} />
       ) : (
         <FlatList
           data={messages}

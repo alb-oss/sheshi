@@ -19,20 +19,31 @@ export default function Profili() {
   const [tab, setTab] = useState<"posts" | "comments">("posts");
   const [items, setItems] = useState<MessageRow[]>([]);
   const [listLoading, setListLoading] = useState(false);
+  // Distinct from an empty tab: the fetch rejected, so we offer an inline retry.
+  const [listError, setListError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const userId = user?.id;
 
   useEffect(() => {
     if (!userId) return;
     let alive = true;
     setListLoading(true);
+    setListError(false);
     listUserMessages(userId, tab)
-      .then((p) => alive && setItems(p.items))
-      .catch(() => alive && setItems([]))
+      .then((p) => {
+        if (!alive) return;
+        setItems(p.items);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setItems([]);
+        setListError(true);
+      })
       .finally(() => alive && setListLoading(false));
     return () => {
       alive = false;
     };
-  }, [userId, tab]);
+  }, [userId, tab, reloadKey]);
 
   if (ready && !user) {
     return (
@@ -94,6 +105,13 @@ export default function Profili() {
       <View style={styles.list}>
         {listLoading ? (
           <ActivityIndicator color={theme.textMuted} style={{ marginVertical: 20 }} />
+        ) : listError ? (
+          <View style={styles.listErrorWrap}>
+            <Text style={styles.listEmpty}>Diçka shkoi keq. Provo përsëri.</Text>
+            <Pressable onPress={() => setReloadKey((k) => k + 1)} style={styles.listRetry} accessibilityRole="button">
+              <Text style={styles.listRetryText}>Provo përsëri</Text>
+            </Pressable>
+          </View>
         ) : items.length === 0 ? (
           <Text style={styles.listEmpty}>{tab === "posts" ? "Asnjë postim ende." : "Asnjë përgjigje ende."}</Text>
         ) : (
@@ -174,6 +192,15 @@ function makeStyles(t: Palette) {
     },
     listItem: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.border },
     listEmpty: { color: t.textMuted, fontSize: 14, padding: 16 },
+    listErrorWrap: { alignItems: "center", paddingVertical: 16, gap: 4 },
+    listRetry: {
+      marginTop: 4,
+      backgroundColor: t.primary,
+      borderRadius: radius.pill,
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+    },
+    listRetryText: { color: t.onPrimary, fontWeight: "800", fontSize: 14 },
     signOut: {
       flexDirection: "row",
       alignItems: "center",
