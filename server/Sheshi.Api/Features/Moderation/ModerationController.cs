@@ -27,10 +27,9 @@ public class ModerationController(
     public async Task<ActionResult<IReadOnlyList<ModReportDto>>> Reports([FromQuery] ReportQuery query, CancellationToken ct = default)
     {
         if (!TryParseStatus(query.Status, out var parsed)) return BadRequest(new { error = "INVALID_STATUS" });
-        var roomIdRaw = query.RoomId ?? Request.Query["room_id"].FirstOrDefault();
-        var minSeverityRaw = query.MinSeverity ?? Request.Query["min_severity"].FirstOrDefault();
-        var repeatOffender = query.RepeatOffender ||
-                             (bool.TryParse(Request.Query["repeat_offender"].FirstOrDefault(), out var repeat) && repeat);
+        var roomIdRaw = query.RoomId;
+        var minSeverityRaw = query.MinSeverity;
+        var repeatOffender = query.RepeatOffender;
 
         var reportsQuery = db.Reports
             .AsNoTracking()
@@ -230,9 +229,9 @@ public class ModerationController(
     [HttpGet("actions")]
     public async Task<ActionResult<IReadOnlyList<ModActionDto>>> Actions([FromQuery] ActionQuery query, CancellationToken ct = default)
     {
-        var actionType = query.ActionType ?? Request.Query["action_type"].FirstOrDefault();
-        var targetType = query.TargetType ?? Request.Query["target_type"].FirstOrDefault();
-        var actorIdRaw = query.ActorId ?? Request.Query["actor_id"].FirstOrDefault();
+        var actionType = query.ActionType;
+        var targetType = query.TargetType;
+        var actorIdRaw = query.ActorId;
         var actionsQuery = db.ModerationActions
             .AsNoTracking()
             .AsQueryable();

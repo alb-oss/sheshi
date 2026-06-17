@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useId, useImperativeHandle, useRef, useState } from "react";
 import { CornerDownRight, ImagePlus, SendHorizontal, X } from "lucide-react";
 import { sq } from "@/i18n/sq";
-import { postMessage, SheshiError } from "@/lib/sheshi";
+import { postMessage, SheshiError, type SheshiErrorCode } from "@/lib/sheshi";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,17 @@ const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 const ATTACH_ACCEPT = "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime";
 const LEADING_REPLY_MENTIONS = /^(@[A-Za-z0-9._-]+\s*)+/;
+
+// Map a send failure to a user-facing toast. A flat table beats a deep ternary chain — easy to scan,
+// hard to mis-edit; any unmapped code falls back to the generic message.
+const COMPOSER_ERROR_MESSAGES: Partial<Record<SheshiErrorCode, string>> = {
+  TOO_LONG: "Tepër i gjatë (>2000)",
+  UNAUTH: sq.errors.auth,
+  RATE_LIMITED: sq.errors.rateLimited,
+  INVALID_IMAGE: sq.errors.imageInvalid,
+  INVALID_VIDEO: sq.errors.videoInvalid,
+  UPLOAD_FAILED: sq.errors.uploadFailed,
+};
 
 interface Props {
   roomId: string;
@@ -196,19 +207,8 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
       onPosted?.();
     } catch (err: unknown) {
       const msg =
-        err instanceof SheshiError && err.code === "TOO_LONG"
-          ? "Tepër i gjatë (>2000)"
-          : err instanceof SheshiError && err.code === "UNAUTH"
-            ? sq.errors.auth
-            : err instanceof SheshiError && err.code === "RATE_LIMITED"
-              ? sq.errors.rateLimited
-              : err instanceof SheshiError && err.code === "INVALID_IMAGE"
-                ? sq.errors.imageInvalid
-                : err instanceof SheshiError && err.code === "INVALID_VIDEO"
-                  ? sq.errors.videoInvalid
-                  : err instanceof SheshiError && err.code === "UPLOAD_FAILED"
-                    ? sq.errors.uploadFailed
-                    : sq.errors.generic;
+        (err instanceof SheshiError ? COMPOSER_ERROR_MESSAGES[err.code] : undefined) ??
+        sq.errors.generic;
       toast.error(msg);
     } finally {
       setPosting(false);
