@@ -213,6 +213,21 @@ builder.Services
 
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 jwt.SigningKey = builder.Configuration.GetRequiredSecretValue("Jwt:SigningKey");
+// Fail closed: refuse to boot a non-Development host with the dev placeholder signing key that
+// ships committed in appsettings.json. The canonical Hetzner deploy injects a real key via the
+// Jwt__SigningKeyFile Docker secret; launching the image outside that path (e.g. ASPNETCORE_ENVIRONMENT
+// flipped to Production without wiring the secret) would otherwise silently sign tokens with a
+// repo-known HMAC key, letting anyone mint admin JWTs. Development is unaffected (it expects this key).
+const string DevPlaceholderSigningKey = "local_dev_signing_key_change_me_min_32_bytes";
+if (!builder.Environment.IsDevelopment() &&
+    string.Equals(jwt.SigningKey, DevPlaceholderSigningKey, StringComparison.Ordinal))
+{
+    // Never log the key value itself — only the configuration keys an operator must set.
+    throw new InvalidOperationException(
+        "Refusing to start: the development placeholder Jwt:SigningKey is in use outside the " +
+        "Development environment. Set a strong, secret signing key via Jwt__SigningKeyFile " +
+        "(Docker secret) or Jwt:SigningKey before running in this environment.");
+}
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey));
 var auth = builder.Services
     .AddAuthentication(options =>

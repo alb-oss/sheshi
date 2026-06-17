@@ -94,6 +94,15 @@ public class TokenService(
         var user = await userManager.FindByIdAsync(token.UserId.ToString());
         if (user is null) return null;
 
+        // Fail closed on a banned owner (centralized ban enforcement): a banned user holding a
+        // still-valid refresh token must not be able to mint a fresh access token and keep acting.
+        // Revoke every session for the account and refuse — the access token expires on its own.
+        if (user.IsBanned)
+        {
+            await RevokeAllRefreshTokensAsync(user.Id, ct);
+            return null;
+        }
+
         return await CreateAuthResponseAsync(user, ct);
     }
 

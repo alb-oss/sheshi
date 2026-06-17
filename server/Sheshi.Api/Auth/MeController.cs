@@ -29,6 +29,9 @@ public class MeController(
     {
         var user = await GetCurrentUserAsync();
         if (user is null) return Unauthorized();
+        // A banned user is read-only — same gate as posting/voting/reporting (centralized ban
+        // enforcement): a banned account must not be able to mutate its profile (username/display name).
+        if (user.IsBanned) return Forbid();
 
         if (request.Username is not null)
         {

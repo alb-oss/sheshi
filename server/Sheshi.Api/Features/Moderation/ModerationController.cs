@@ -174,6 +174,7 @@ public class ModerationController(
     {
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user is null) return NotFound();
+        if (!await CanActOnTargetAsync(user)) return Forbid();
 
         user.BannedAt ??= DateTimeOffset.UtcNow;
         var result = await userManager.UpdateAsync(user);
@@ -190,6 +191,7 @@ public class ModerationController(
     {
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user is null) return NotFound();
+        if (!await CanActOnTargetAsync(user)) return Forbid();
 
         user.BannedAt = null;
         var result = await userManager.UpdateAsync(user);
@@ -351,6 +353,23 @@ public class ModerationController(
             ct: ct);
         await realtime.ModerationChangedAsync(ct);
         return NoContent();
+    }
+
+    // Ban/unban authorization hierarchy (fail-closed):
+    //  (a) no self-ban — a moderator/admin cannot ban or unban themselves;
+    //  (b) privileged targets (admin OR moderator role) may only be acted on by an admin.
+    // Regular-user bans by moderators stay allowed; admin actions against moderators stay allowed.
+    private async Task<bool> CanActOnTargetAsync(ApplicationUser target)
+    {
+        if (User.GetUserId() == target.Id) return false;
+
+        var actingUserIsAdmin = User.IsInRole(Roles.Admin);
+        if (actingUserIsAdmin) return true;
+
+        var targetIsPrivileged =
+            await userManager.IsInRoleAsync(target, Roles.Admin) ||
+            await userManager.IsInRoleAsync(target, Roles.Moderator);
+        return !targetIsPrivileged;
     }
 
     private async Task<List<ModReportDto>> BuildReportDtosAsync(IReadOnlyList<Report> reports, CancellationToken ct)

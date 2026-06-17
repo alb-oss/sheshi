@@ -19,7 +19,8 @@ public class AuthController(
     TokenService tokenService,
     IEmailSender emailSender,
     IConfiguration configuration,
-    PartitionedRateLimiter<string> accountLimiter) : ControllerBase
+    PartitionedRateLimiter<string> accountLimiter,
+    ILogger<AuthController> logger) : ControllerBase
 {
     [EnableRateLimiting("auth")]
     [HttpPost("register")]
@@ -159,19 +160,40 @@ public class AuthController(
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken ct)
     {
+        // Account-existence oracle defence: EVERY failure mode — malformed request, unknown email,
+        // invalid/expired token, AND a weak/rejected password — returns ONE identical generic response
+        // ({ error = "INVALID_RESET_REQUEST" }, HTTP 400). The detailed Identity error descriptions are
+        // logged server-side but NEVER returned, so a caller cannot distinguish "no such account" from
+        // "account exists but the token/password was bad". Only a genuine reset differs (204).
         var email = NormalizeEmail(request.Email);
         if (email is null || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.Password))
-            return BadRequest(new { error = "INVALID_RESET_REQUEST" });
+            return InvalidResetRequest();
 
         var user = await userManager.FindByEmailAsync(email);
-        if (user is null) return BadRequest(new { error = "INVALID_RESET_REQUEST" });
+        if (user is null)
+        {
+            logger.LogInformation("Password reset rejected: no account for the supplied email");
+            return InvalidResetRequest();
+        }
 
         var result = await userManager.ResetPasswordAsync(user, request.Token, request.Password);
-        if (!result.Succeeded) return BadRequest(new { errors = result.Errors.Select(e => e.Description).ToArray() });
+        if (!result.Succeeded)
+        {
+            logger.LogInformation(
+                "Password reset rejected for user {UserId}: {Errors}",
+                user.Id,
+                string.Join("; ", result.Errors.Select(e => $"{e.Code}: {e.Description}")));
+            return InvalidResetRequest();
+        }
 
         await tokenService.RevokeAllRefreshTokensAsync(user.Id, ct);
         return NoContent();
     }
+
+    // Single canonical reset-failure response — keeps shape + status identical across all failure
+    // branches so the endpoint can't be used as an account-existence oracle.
+    private BadRequestObjectResult InvalidResetRequest() =>
+        BadRequest(new { error = "INVALID_RESET_REQUEST" });
 
     [HttpGet("providers")]
     public ActionResult<string[]> Providers() => Ok(GetEnabledProviders().ToArray());

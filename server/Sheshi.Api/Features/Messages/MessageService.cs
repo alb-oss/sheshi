@@ -149,20 +149,30 @@ public class MessageService(AppDbContext db)
                 .Select(v => new { v.MessageId, Value = (int)v.Value })
                 .ToDictionaryAsync(x => x.MessageId, x => x.Value, ct);
 
-        return messages.Select(m => new MessageDto(
-            m.Id,
-            m.RoomId,
-            m.AuthorId,
-            m.ParentId,
-            m.Body,
-            m.ImageUrl,
-            m.VideoUrl,
-            m.DeletedAt,
-            m.CreatedAt,
-            authors.GetValueOrDefault(m.AuthorId),
-            scores.GetValueOrDefault(m.Id),
-            replyCounts.GetValueOrDefault(m.Id),
-            myVotes.GetValueOrDefault(m.Id))).ToList();
+        // Tombstone soft-deleted messages at the DTO boundary: a deleted row stays in the tree
+        // (so thread structure, reply_count, score, my_vote and the "[deleted]" UI are unchanged),
+        // but its user-authored content must NOT be served on any public read. EnrichAsync is the
+        // SINGLE MessageDto-construction site every read path funnels through (room feed, single
+        // message, replies, thread, highlights), so masking here covers them all. Fail-closed:
+        // DeletedAt != null ⇒ Body = "", ImageUrl/VideoUrl = null.
+        return messages.Select(m =>
+        {
+            var deleted = m.DeletedAt != null;
+            return new MessageDto(
+                m.Id,
+                m.RoomId,
+                m.AuthorId,
+                m.ParentId,
+                deleted ? "" : m.Body,
+                deleted ? null : m.ImageUrl,
+                deleted ? null : m.VideoUrl,
+                m.DeletedAt,
+                m.CreatedAt,
+                authors.GetValueOrDefault(m.AuthorId),
+                scores.GetValueOrDefault(m.Id),
+                replyCounts.GetValueOrDefault(m.Id),
+                myVotes.GetValueOrDefault(m.Id));
+        }).ToList();
     }
 
     private sealed record DescendantCount(Guid RootId, int Count);

@@ -266,6 +266,9 @@ public class MessagesController(
     {
         var user = await GetCurrentUserAsync();
         if (user is null) return Unauthorized();
+        // A banned user is read-only — same gate as posting/voting (centralized ban enforcement):
+        // reporting is a write that feeds the moderation queue, so a banned account must not drive it.
+        if (user.IsBanned) return Forbid();
         var message = await db.Messages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, ct);
         if (message is null) return NotFound();
         if ((request.Note?.Length ?? 0) > 500) return BadRequest(new { error = "NOTE_TOO_LONG" });
