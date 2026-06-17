@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { listHighlights } from "@/api";
 import { PressableScale } from "@/components/PressableScale";
+import { ErrorState } from "@/components/ErrorState";
 import { FeedSkeleton } from "@/components/Skeleton";
 import { radius, type Palette } from "@/theme";
 import { useTheme } from "@/useTheme";
@@ -23,18 +24,30 @@ export default function Fokus() {
   const [mode, setMode] = useState<(typeof MODES)[number]["key"]>("hot");
   const [items, setItems] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(true);
+  // Distinct from an empty feed: the fetch rejected (5xx / network), so we show a retry instead
+  // of "nothing in focus".
+  const [error, setError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
+    setError(false);
     listHighlights(mode)
-      .then((r) => alive && setItems(r))
-      .catch(() => alive && setItems([]))
+      .then((r) => {
+        if (!alive) return;
+        setItems(r);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setItems([]);
+        setError(true);
+      })
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [mode]);
+  }, [mode, reloadKey]);
 
   return (
     <View style={styles.flex}>
@@ -51,6 +64,8 @@ export default function Fokus() {
       </View>
       {loading ? (
         <FeedSkeleton />
+      ) : error ? (
+        <ErrorState onRetry={() => setReloadKey((k) => k + 1)} />
       ) : (
         <FlatList
           data={items}
@@ -73,11 +88,11 @@ export default function Fokus() {
                 <View style={styles.meta}>
                   <View style={styles.metaItem}>
                     <Ionicons name="caret-up" size={14} color={theme.primary} />
-                    <Text style={styles.metaStrong}>{item.score ?? 0}</Text>
+                    <Text style={styles.metaStrong}>{item.score}</Text>
                   </View>
                   <View style={styles.metaItem}>
                     <Ionicons name="chatbubble-outline" size={13} color={theme.textMuted} />
-                    <Text style={styles.metaMuted}>{item.reply_count ?? 0}</Text>
+                    <Text style={styles.metaMuted}>{item.reply_count}</Text>
                   </View>
                 </View>
               </View>
