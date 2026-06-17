@@ -113,64 +113,26 @@ function ProfilePage() {
         <h1 className="font-display text-2xl font-bold tracking-tight">{sq.nav.profile}</h1>
 
         {loading ? (
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/50 p-5">
-              <Skeleton className="h-16 w-16 shrink-0 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-3.5 w-24" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            </div>
-            <Skeleton className="h-44 rounded-2xl" />
-            <Skeleton className="h-12 rounded-2xl" />
-          </div>
+          <ProfileSkeleton />
         ) : !user ? (
-          <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6">
-            <p className="text-sm text-muted-foreground">{sq.chat.signInToPost}</p>
-            <Button asChild className="mt-4 rounded-full">
-              <Link to="/auth">{sq.auth.signIn}</Link>
-            </Button>
-          </div>
+          <SignedOutCard />
         ) : (
           <div className="mt-6 space-y-4">
-            {/* Identity card */}
-            <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/50 p-5">
-              <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-xl font-bold text-foreground/80">
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  initials || "??"
-                )}
-              </span>
-              <div className="min-w-0">
-                <div className="truncate text-lg font-bold">{name}</div>
-                <div className="truncate text-sm text-muted-foreground">@{user.username || "anonim"}</div>
-                <div className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-bold text-primary">
-                  <Award className="h-4 w-4" aria-hidden />
-                  {user.karma ?? 0} karma
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {canAdmin(user) ? (
-                    <RoleBadge icon={<ShieldCheck className="h-3 w-3" />} label="Admin" />
-                  ) : canModerate(user) ? (
-                    <RoleBadge icon={<ShieldCheck className="h-3 w-3" />} label="Moderator" />
-                  ) : (
-                    <RoleBadge icon={<Star className="h-3 w-3" />} label="Qytetar" muted />
-                  )}
-                  {user.is_banned ? <RoleBadge label="I bllokuar" danger /> : null}
-                </div>
-              </div>
-            </div>
+            <IdentityCard user={user} name={name} initials={initials} />
 
             {/* Account form */}
             <div className="space-y-4 rounded-2xl border border-border bg-card/30 p-5">
               <div>
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Email</Label>
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Email
+                </Label>
                 <div className="mt-1 text-sm">{user.email ?? "—"}</div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dn" className="text-xs uppercase tracking-widest text-muted-foreground">
+                <Label
+                  htmlFor="dn"
+                  className="text-xs uppercase tracking-widest text-muted-foreground"
+                >
                   Emri për shfaqje
                 </Label>
                 <Input
@@ -188,7 +150,10 @@ function ProfilePage() {
               </Button>
 
               <div className="space-y-2 border-t border-border pt-4">
-                <Label htmlFor="un" className="text-xs uppercase tracking-widest text-muted-foreground">
+                <Label
+                  htmlFor="un"
+                  className="text-xs uppercase tracking-widest text-muted-foreground"
+                >
                   Username
                 </Label>
                 <div className="flex gap-2">
@@ -218,45 +183,117 @@ function ProfilePage() {
                 <p className="text-[11px] text-muted-foreground">
                   3–20 shenja: a–z, 0–9, _. Përdor butonin për një emër anonim.
                 </p>
-                <Button onClick={saveUsername} disabled={savingUsername || !usernameDirty} className="rounded-full">
+                <Button
+                  onClick={saveUsername}
+                  disabled={savingUsername || !usernameDirty}
+                  className="rounded-full"
+                >
                   {savingUsername ? "Po ruhet…" : "Ruaj username"}
                 </Button>
               </div>
             </div>
 
-            <Link
-              to="/te-ruajtura"
-              className="flex items-center justify-between rounded-2xl border border-border bg-card/30 p-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary"
-            >
-              <span className="flex items-center gap-2">
-                <Bookmark className="h-4 w-4" /> {sq.nav.saved}
-              </span>
-              <span aria-hidden>→</span>
-            </Link>
-
-            {(canModerate(user)) && (
-              <Link
-                to="/moderim"
-                className="flex items-center justify-between rounded-2xl border border-border bg-card/30 p-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary"
-              >
-                <span className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4" /> Paneli i moderimit
-                </span>
-                <span aria-hidden>→</span>
-              </Link>
-            )}
-
-            <button
-              type="button"
-              onClick={signOut}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border p-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-            >
-              <LogOut className="h-4 w-4" /> {sq.auth.signOut}
-            </button>
+            <ProfileLinks user={user} onSignOut={signOut} />
           </div>
         )}
       </div>
     </AppShell>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/50 p-5">
+        <Skeleton className="h-16 w-16 shrink-0 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+      </div>
+      <Skeleton className="h-44 rounded-2xl" />
+      <Skeleton className="h-12 rounded-2xl" />
+    </div>
+  );
+}
+
+function SignedOutCard() {
+  return (
+    <div className="mt-6 rounded-2xl border border-border bg-card/40 p-6">
+      <p className="text-sm text-muted-foreground">{sq.chat.signInToPost}</p>
+      <Button asChild className="mt-4 rounded-full">
+        <Link to="/auth">{sq.auth.signIn}</Link>
+      </Button>
+    </div>
+  );
+}
+
+function IdentityCard({ user, name, initials }: { user: ApiUser; name: string; initials: string }) {
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/50 p-5">
+      <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-xl font-bold text-foreground/80">
+        {user.avatar_url ? (
+          <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+        ) : (
+          initials || "??"
+        )}
+      </span>
+      <div className="min-w-0">
+        <div className="truncate text-lg font-bold">{name}</div>
+        <div className="truncate text-sm text-muted-foreground">@{user.username || "anonim"}</div>
+        <div className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-bold text-primary">
+          <Award className="h-4 w-4" aria-hidden />
+          {user.karma ?? 0} karma
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {canAdmin(user) ? (
+            <RoleBadge icon={<ShieldCheck className="h-3 w-3" />} label="Admin" />
+          ) : canModerate(user) ? (
+            <RoleBadge icon={<ShieldCheck className="h-3 w-3" />} label="Moderator" />
+          ) : (
+            <RoleBadge icon={<Star className="h-3 w-3" />} label="Qytetar" muted />
+          )}
+          {user.is_banned ? <RoleBadge label="I bllokuar" danger /> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileLinks({ user, onSignOut }: { user: ApiUser; onSignOut: () => void }) {
+  return (
+    <>
+      <Link
+        to="/te-ruajtura"
+        className="flex items-center justify-between rounded-2xl border border-border bg-card/30 p-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary"
+      >
+        <span className="flex items-center gap-2">
+          <Bookmark className="h-4 w-4" /> {sq.nav.saved}
+        </span>
+        <span aria-hidden>→</span>
+      </Link>
+
+      {canModerate(user) && (
+        <Link
+          to="/moderim"
+          className="flex items-center justify-between rounded-2xl border border-border bg-card/30 p-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary"
+        >
+          <span className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4" /> Paneli i moderimit
+          </span>
+          <span aria-hidden>→</span>
+        </Link>
+      )}
+
+      <button
+        type="button"
+        onClick={onSignOut}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border p-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+      >
+        <LogOut className="h-4 w-4" /> {sq.auth.signOut}
+      </button>
+    </>
   );
 }
 

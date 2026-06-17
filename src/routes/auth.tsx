@@ -19,6 +19,61 @@ type AuthResponse = {
   refresh_token: string;
 };
 
+// Maps an email auth failure to its user-facing (Albanian) message: a taken-username 409, an
+// INVALID_USERNAME server code, the first server-supplied validation error, or the generic fallback.
+function emailAuthErrorMessage(error: ApiError): string {
+  if (error.status === 409) return "Ky username është i zënë.";
+  const code = (error.payload as { error?: string } | undefined)?.error;
+  if (code === "INVALID_USERNAME") return "Username i pavlefshëm (3–20 shenja: a–z, 0–9, _).";
+  return (error.payload as { errors?: string[] } | undefined)?.errors?.[0] ?? sq.errors.generic;
+}
+
+// Signup-only username field with an inline "suggest anonymous handle" shuffle button.
+function UsernameField({
+  username,
+  onChange,
+  onShuffle,
+  shuffling,
+}: {
+  username: string;
+  onChange: (value: string) => void;
+  onShuffle: () => void;
+  shuffling: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="un">Username</Label>
+      <div className="flex gap-2">
+        <Input
+          id="un"
+          value={username}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={20}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="zgjidh ose lëre bosh"
+          className="lowercase"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onShuffle}
+          disabled={shuffling}
+          title="Sugjero një username anonim"
+          aria-label="Sugjero një username anonim"
+          className="h-10 w-10 shrink-0 p-0"
+        >
+          <Shuffle className="h-4 w-4" />
+        </Button>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Opsionale — lëre bosh për një emër anonim.
+      </p>
+    </div>
+  );
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -64,14 +119,7 @@ function AuthPage() {
       navigate({ to: "/dhoma/$slug", params: { slug: "sheshi" } });
     } catch (error) {
       if (error instanceof ApiError) {
-        const code = (error.payload as { error?: string } | undefined)?.error;
-        toast.error(
-          error.status === 409
-            ? "Ky username është i zënë."
-            : code === "INVALID_USERNAME"
-              ? "Username i pavlefshëm (3–20 shenja: a–z, 0–9, _)."
-              : (error.payload as { errors?: string[] } | undefined)?.errors?.[0] ?? sq.errors.generic,
-        );
+        toast.error(emailAuthErrorMessage(error));
       } else {
         toast.error(error instanceof Error ? error.message : sq.errors.generic);
       }
@@ -102,8 +150,16 @@ function AuthPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center justify-center">
-            <img src="/sheshi-logo-light.png" alt={sq.appName} className="block dark:hidden h-10 w-auto" />
-            <img src="/sheshi-logo-dark.png" alt={sq.appName} className="hidden dark:block h-10 w-auto" />
+            <img
+              src="/sheshi-logo-light.png"
+              alt={sq.appName}
+              className="block dark:hidden h-10 w-auto"
+            />
+            <img
+              src="/sheshi-logo-dark.png"
+              alt={sq.appName}
+              className="hidden dark:block h-10 w-auto"
+            />
           </Link>
           <h1 className="mt-4 text-xl font-semibold">{sq.auth.title}</h1>
           <p className="text-sm text-muted-foreground mt-1">{sq.auth.subtitle}</p>
@@ -139,34 +195,12 @@ function AuthPage() {
             />
           </div>
           {mode === "signup" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="un">Username</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="un"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  maxLength={20}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  placeholder="zgjidh ose lëre bosh"
-                  className="lowercase"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={shuffleUsername}
-                  disabled={shuffling}
-                  title="Sugjero një username anonim"
-                  aria-label="Sugjero një username anonim"
-                  className="h-10 w-10 shrink-0 p-0"
-                >
-                  <Shuffle className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-[11px] text-muted-foreground">Opsionale — lëre bosh për një emër anonim.</p>
-            </div>
+            <UsernameField
+              username={username}
+              onChange={setUsername}
+              onShuffle={shuffleUsername}
+              shuffling={shuffling}
+            />
           )}
           <div className="space-y-1.5">
             <Label htmlFor="pw">{sq.auth.password}</Label>

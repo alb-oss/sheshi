@@ -14,6 +14,11 @@ const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime
 const ATTACH_ACCEPT = "image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime";
 const LEADING_REPLY_MENTIONS = /^(@[A-Za-z0-9._-]+\s*)+/;
 
+// Body length cap (mirrors the server's TOO_LONG threshold) and the point near the cap at which the
+// remaining-character countdown surfaces.
+const MAX_BODY_CHARS = 2000;
+const BODY_COUNTDOWN_THRESHOLD = 1800;
+
 // Map a send failure to a user-facing toast. A flat table beats a deep ternary chain — easy to scan,
 // hard to mis-edit; any unmapped code falls back to the generic message.
 const COMPOSER_ERROR_MESSAGES: Partial<Record<SheshiErrorCode, string>> = {
@@ -220,7 +225,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     void doSubmit();
   }
 
-  const over = body.length > 1800;
+  const over = body.length > BODY_COUNTDOWN_THRESHOLD;
   const canSend = (!!body.trim() || !!image || !!video) && !posting;
 
   return (
@@ -344,7 +349,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder={placeholder || sq.chat.placeholder}
-            maxLength={2000}
+            maxLength={MAX_BODY_CHARS}
             className="block w-full resize-none bg-transparent px-3.5 py-2.5 text-base leading-relaxed text-foreground outline-none placeholder:text-foreground/40 min-h-[44px] max-h-[200px] overflow-y-auto no-scrollbar sm:text-[15px]"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -358,7 +363,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
           />
           {over && (
             <span className="pointer-events-none absolute bottom-1.5 right-2.5 text-[10px] font-bold tabular-nums text-primary">
-              {2000 - body.length}
+              {MAX_BODY_CHARS - body.length}
             </span>
           )}
         </div>

@@ -23,7 +23,6 @@ let state: AuthState = { user: null, isReady: false };
 const serverState: AuthState = { user: null, isReady: false };
 const listeners = new Set<() => void>();
 let initialized = false;
-let loadingUser: Promise<void> | null = null;
 
 function setState(next: Partial<AuthState>) {
   state = { ...state, ...next };
@@ -46,7 +45,7 @@ async function loadUser() {
 function ensureAuthInitialized() {
   if (initialized || typeof window === "undefined") return;
   initialized = true;
-  loadingUser = loadUser();
+  loadUser();
 }
 
 function subscribe(listener: () => void) {
@@ -76,7 +75,7 @@ export function useAuth(): AuthState {
 // refresh cookie is already set by the server's response) and load the user.
 export async function setAuthSession(accessToken: string) {
   setAccessToken(accessToken);
-  await (loadingUser = loadUser());
+  await loadUser();
 }
 
 // Sign out: ask the server to revoke the session and clear the HttpOnly cookie, then drop in-memory
