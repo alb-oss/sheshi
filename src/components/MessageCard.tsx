@@ -54,7 +54,7 @@ interface Props {
 }
 
 const actionBtn =
-  "inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold text-foreground/55 transition-colors hover:bg-secondary hover:text-foreground";
+  "inline-flex h-7 items-center gap-1.5 rounded-md px-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground sm:px-2";
 
 export function MessageCard({
   message,
@@ -184,7 +184,8 @@ export function MessageCard({
   return (
     <article
       className={cn(
-        "group flex gap-2.5 rounded-xl px-3 py-2.5 transition-colors hover:bg-card/50 sm:px-4",
+        "group flex rounded-xl px-3 py-1.5 transition-colors hover:bg-card/50 sm:px-4 sm:py-2",
+        compact ? "gap-2" : "gap-2.5",
         opensThread && "cursor-pointer",
       )}
       onClick={
@@ -223,18 +224,19 @@ export function MessageCard({
               )}
             </button>
           )}
-          <span className="truncate font-bold">{name}</span>
-          <span className="text-foreground/30">·</span>
+          <span className="truncate font-semibold">{name}</span>
+          <span className="text-muted-foreground">·</span>
           {/* Relative time is "now"-based; when SSR'd it can tick over between server and client render,
               so let React keep the client value without a hydration warning. */}
-          <span className="shrink-0 text-foreground/40" suppressHydrationWarning>
+          <span className="shrink-0 text-muted-foreground" suppressHydrationWarning>
             {time}
           </span>
         </div>
 
         <div
           className={cn(
-            "mt-0.5 whitespace-pre-wrap break-words text-[15px] leading-relaxed",
+            "mt-0.5 whitespace-pre-wrap break-words leading-normal",
+            compact ? "text-sm" : "text-[15px]",
             isDeleted ? "italic text-foreground/40" : "text-foreground/90",
           )}
         >
@@ -293,7 +295,7 @@ export function MessageCard({
 
         {!isDeleted && (
           <div
-            className="mt-1.5 flex flex-wrap items-center gap-1"
+            className="mt-1 flex flex-wrap items-center gap-1"
             onClick={opensThread ? (e) => e.stopPropagation() : undefined}
           >
             <VoteControl message={message} currentUserId={currentUserId} compact={compact} />
@@ -318,7 +320,11 @@ export function MessageCard({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" aria-label="Më shumë" className={cn(actionBtn, "px-2")}>
+                <button
+                  type="button"
+                  aria-label="Më shumë"
+                  className={cn(actionBtn, "w-7 justify-center px-0 sm:px-0")}
+                >
                   <MoreHorizontal className="h-4 w-4" aria-hidden />
                 </button>
               </DropdownMenuTrigger>

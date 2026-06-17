@@ -101,17 +101,14 @@ export function VoteControl({
     void flush();
   }
 
-  const icon = compact ? "h-[18px] w-[18px]" : "h-5 w-5";
-  const btn = "inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors";
+  const icon = compact ? "h-4 w-4" : "h-[18px] w-[18px]";
+  const btn =
+    "inline-flex h-[22px] w-[22px] items-center justify-center rounded-md transition-colors";
 
+  // Reddit-style: flat and transparent at rest — no wrapper pill, no whole-control tint. Only the
+  // active arrow and the score take colour; a faint tinted bg appears on hover of a resting arrow.
   return (
-    <div
-      className={cn(
-        "inline-flex items-center gap-0.5 rounded-full bg-secondary/70 p-0.5 transition-colors",
-        myVote === 1 && "bg-upvote/12",
-        myVote === -1 && "bg-downvote/12",
-      )}
-    >
+    <div className="inline-flex items-center gap-0.5">
       <button
         type="button"
         onClick={() => click(1)}
@@ -119,7 +116,9 @@ export function VoteControl({
         aria-pressed={myVote === 1}
         className={cn(
           btn,
-          myVote === 1 ? "text-upvote" : "text-foreground/55 hover:bg-upvote/15 hover:text-upvote",
+          myVote === 1
+            ? "text-upvote"
+            : "text-muted-foreground hover:bg-upvote/10 hover:text-upvote",
         )}
       >
         <ArrowBigUp
@@ -131,8 +130,8 @@ export function VoteControl({
       </button>
       <span
         className={cn(
-          "min-w-6 text-center text-xs font-bold tabular-nums transition-colors",
-          myVote === 1 ? "text-upvote" : myVote === -1 ? "text-downvote" : "text-foreground/80",
+          "min-w-[1.25rem] text-center text-xs font-semibold tabular-nums transition-colors",
+          myVote === 1 ? "text-upvote" : myVote === -1 ? "text-downvote" : "text-muted-foreground",
         )}
       >
         {formatScore(score)}
@@ -146,7 +145,7 @@ export function VoteControl({
           btn,
           myVote === -1
             ? "text-downvote"
-            : "text-foreground/55 hover:bg-downvote/15 hover:text-downvote",
+            : "text-muted-foreground hover:bg-downvote/10 hover:text-downvote",
         )}
       >
         <ArrowBigDown

@@ -243,8 +243,8 @@
 .thread-branch {
   --thread-indent: 16px;
   --rail-x: 24px;
-  --rail-top: 38px;
-  --rail-elbow-y: 22px;
+  --rail-top: 34px; /* mobile row top-pad 6 (py-1.5) + 24px avatar + 4 */
+  --rail-elbow-y: 18px; /* mobile: 6 + 12 (24px avatar centre) */
   --rail-r: 0px;
   --rail-w: 0px;
   --rail: var(--thread-line);
@@ -253,8 +253,8 @@
   .thread-branch {
     --thread-indent: 32px;
     --rail-x: 30px;
-    --rail-top: 42px;
-    --rail-elbow-y: 24px;
+    --rail-top: 40px; /* desktop row top-pad 8 (sm:py-2) + 28px avatar + 4 */
+    --rail-elbow-y: 22px; /* desktop: 8 + 14 (28px avatar centre) */
     --rail-r: 18px;
     --rail-w: 18px;
   }
