@@ -108,6 +108,10 @@ function ThreadPage() {
   const hadDataRef = useRef(false);
   const composerRef = useRef<ComposerHandle | null>(null);
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  // Ids of replies that just arrived via realtime — they play the live-reveal animation once (the
+  // connector draws + content fades in). Only realtime arrivals are marked, so the initial SSR/loader
+  // render and refetches don't animate. Pruned shortly after so the set can't grow unbounded.
+  const [freshIds, setFreshIds] = useState<Set<string>>(() => new Set());
 
   const invalidateThread = () =>
     void queryClient.invalidateQueries({ queryKey: ["thread", messageId] });
@@ -219,6 +223,19 @@ function ThreadPage() {
       } else {
         write({ ...prev, replies: insertUnderParent(prev.replies, msg.parent_id, msg).nodes });
       }
+      // Flag for the one-shot reveal animation, then prune after it finishes. The CSS animation only
+      // plays when the class first appears (re-renders don't replay it), so removal is pure hygiene.
+      setFreshIds((prev2) => new Set(prev2).add(msg.id));
+      window.setTimeout(
+        () =>
+          setFreshIds((prev2) => {
+            if (!prev2.has(msg.id)) return prev2;
+            const next = new Set(prev2);
+            next.delete(msg.id);
+            return next;
+          }),
+        700,
+      );
       if (wasAtBottom) scrollToBottomRef.current = true;
     };
     const onVote = (p: { message_id: string; score: number }) => {
@@ -362,6 +379,7 @@ function ThreadPage() {
                     slug={slug}
                     currentUserId={userId}
                     collapsed={collapsed}
+                    freshIds={freshIds}
                     onToggleCollapse={toggleCollapse}
                     onChanged={invalidateThread}
                     onReply={handleReply}
@@ -414,6 +432,7 @@ type BranchProps = {
   slug: string;
   currentUserId: string | null;
   collapsed: Set<string>;
+  freshIds: Set<string>;
   onToggleCollapse: (id: string) => void;
   onChanged: () => void;
   onReply: (message: MessageRow) => void;
@@ -424,6 +443,7 @@ type BranchProps = {
 function ThreadChildren({
   replies,
   depth,
+  freshIds,
   ...rest
 }: Omit<BranchProps, "node"> & { replies: ReplyNode[]; depth: number }) {
   const indent = depth <= MAX_INDENT_DEPTH ? THREAD_INDENT : 0;
@@ -431,6 +451,9 @@ function ThreadChildren({
     <div className="relative" style={{ paddingLeft: indent }}>
       {replies.map((child, i) => {
         const isLast = i === replies.length - 1;
+        // A realtime arrival is always appended as the last child, so its short spine draws down and
+        // the elbow unveils toward the avatar — see the animate-* utilities in styles.css.
+        const isFresh = freshIds.has(child.message.id);
         return (
           <div className="relative" key={child.message.id}>
             {indent > 0 && (
@@ -439,13 +462,13 @@ function ThreadChildren({
                     last child it stops at the elbow so the line ends cleanly at the final reply. */}
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute w-px bg-thread-line"
+                  className={`pointer-events-none absolute w-px bg-thread-line${isFresh ? " animate-spine-draw" : ""}`}
                   style={{ left: SPINE_X, top: 0, height: isLast ? ELBOW_Y : "100%" }}
                 />
                 {/* Curved elbow turning off the spine toward this child's avatar. */}
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute border-b border-l border-thread-line"
+                  className={`pointer-events-none absolute border-b border-l border-thread-line${isFresh ? " animate-elbow-draw" : ""}`}
                   style={{
                     left: SPINE_X,
                     top: ELBOW_Y - ELBOW_H,
@@ -456,7 +479,7 @@ function ThreadChildren({
                 />
               </>
             )}
-            <ReplyBranch node={child} {...rest} />
+            <ReplyBranch node={child} freshIds={freshIds} {...rest} />
           </div>
         );
       })}
@@ -469,6 +492,7 @@ function ReplyBranch({
   slug,
   currentUserId,
   collapsed,
+  freshIds,
   onToggleCollapse,
   onChanged,
   onReply,
@@ -478,9 +502,12 @@ function ReplyBranch({
   const hasChildren = hiddenCount > 0;
   const continueHere = hasChildren && node.depth >= CONTINUE_DEPTH;
   const showChildren = !isCollapsed && hasChildren && !continueHere;
+  // Content reveal for a realtime arrival (top-level replies have no connector, so this is the whole
+  // animation for them; nested replies get it in concert with the spine/elbow draw).
+  const isFresh = freshIds.has(node.message.id);
 
   return (
-    <div className="relative">
+    <div className={`relative${isFresh ? " animate-reply-in" : ""}`}>
       <MessageCard
         message={node.message}
         roomSlug={slug}
@@ -512,6 +539,7 @@ function ReplyBranch({
           slug={slug}
           currentUserId={currentUserId}
           collapsed={collapsed}
+          freshIds={freshIds}
           onToggleCollapse={onToggleCollapse}
           onChanged={onChanged}
           onReply={onReply}

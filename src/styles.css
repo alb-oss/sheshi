@@ -179,3 +179,38 @@
 @utility animate-pop {
   animation: sheshi-pop 0.32s var(--ease-out-quint);
 }
+
+/* Live-reply reveal. A reply that lands via realtime announces itself: the connector draws in
+   (spine grows down, then the elbow unveils toward the avatar), and the content fades/slides a beat
+   later — so a new comment reads as "just landed" instead of blinking into place. Applied only to
+   realtime-arrived ids in tema.$messageId.tsx; fully disabled under reduced-motion below. */
+@keyframes sheshi-reply-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@utility animate-reply-in {
+  animation: sheshi-reply-in 0.3s var(--ease-out-quint) 0.1s both;
+}
+@keyframes sheshi-spine-draw {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@utility animate-spine-draw {
+  transform-origin: top;
+  animation: sheshi-spine-draw 0.22s var(--ease-out-quint) both;
+}
+/* Clip (not scale) so the elbow's rounded corner unveils undistorted, left→right off the spine. */
+@keyframes sheshi-elbow-draw {
+  from { clip-path: inset(0 100% 0 0); opacity: 0.3; }
+  to { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+@utility animate-elbow-draw {
+  animation: sheshi-elbow-draw 0.22s var(--ease-out-quint) 0.12s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-reply-in,
+  .animate-spine-draw,
+  .animate-elbow-draw {
+    animation: none;
+  }
+}
