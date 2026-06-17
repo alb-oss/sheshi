@@ -987,52 +987,63 @@ function UsersPanel({ isAdmin }: { isAdmin: boolean }) {
         <div className={emptyBox}>Nuk ka përdorues për këtë kërkim.</div>
       ) : (
         <div className="space-y-2">
-          {users.map((u) => {
-            const isModerator = hasRole(u, Roles.Moderator);
-            return (
-              <div
-                key={u.id}
-                className={cn(rowCard, "flex flex-wrap items-center justify-between gap-3")}
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-bold">
-                    {u.display_name || u.username || u.email}
-                  </div>
-                  <div className="text-xs text-foreground/45">{u.email}</div>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    <Chip>{u.is_banned ? "I bllokuar" : "Aktiv"}</Chip>
-                    {u.roles.length ? (
-                      u.roles.map((r) => <Chip key={r}>{r}</Chip>)
-                    ) : (
-                      <Chip>qytetar</Chip>
-                    )}
-                  </div>
-                </div>
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full rounded-full sm:w-auto"
-                    onClick={() => post(`/api/mod/users/${u.id}/${u.is_banned ? "unban" : "ban"}`)}
-                  >
-                    {u.is_banned ? "Zhblloko" : "Blloko"}
-                  </Button>
-                  {isAdmin ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full rounded-full sm:w-auto"
-                      onClick={() => updateModerator(u.id, !isModerator)}
-                    >
-                      {isModerator ? "Hiq moderator" : "Bëj moderator"}
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
+          {users.map((u) => (
+            <UserRow
+              key={u.id}
+              user={u}
+              isAdmin={isAdmin}
+              onToggleBan={post}
+              onToggleModerator={updateModerator}
+            />
+          ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function UserRow({
+  user: u,
+  isAdmin,
+  onToggleBan,
+  onToggleModerator,
+}: {
+  user: ModUser;
+  isAdmin: boolean;
+  onToggleBan: (path: string) => void;
+  onToggleModerator: (id: string, grant: boolean) => void;
+}) {
+  const isModerator = hasRole(u, Roles.Moderator);
+  return (
+    <div className={cn(rowCard, "flex flex-wrap items-center justify-between gap-3")}>
+      <div className="min-w-0">
+        <div className="truncate text-sm font-bold">{u.display_name || u.username || u.email}</div>
+        <div className="text-xs text-foreground/45">{u.email}</div>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          <Chip>{u.is_banned ? "I bllokuar" : "Aktiv"}</Chip>
+          {u.roles.length ? u.roles.map((r) => <Chip key={r}>{r}</Chip>) : <Chip>qytetar</Chip>}
+        </div>
+      </div>
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full rounded-full sm:w-auto"
+          onClick={() => onToggleBan(`/api/mod/users/${u.id}/${u.is_banned ? "unban" : "ban"}`)}
+        >
+          {u.is_banned ? "Zhblloko" : "Blloko"}
+        </Button>
+        {isAdmin ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full rounded-full sm:w-auto"
+            onClick={() => onToggleModerator(u.id, !isModerator)}
+          >
+            {isModerator ? "Hiq moderator" : "Bëj moderator"}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

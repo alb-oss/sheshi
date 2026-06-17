@@ -158,81 +158,131 @@ function HomePage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 sm:px-6">
-          {loading ? (
-            <RoomListSkeleton />
-          ) : sortedRooms.length === 0 ? (
-            <div className="py-16 text-center">
-              <div className="text-xs uppercase tracking-widest font-bold text-foreground/40">
-                {sq.rooms.empty}
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              {sortedRooms.map((room) => (
-                <RoomCard key={room.id} room={room} activeCount={presence[room.id] ?? 0} />
-              ))}
-            </div>
-          )}
-        </div>
+        <RoomsList loading={loading} rooms={sortedRooms} presence={presence} />
       </div>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="rounded-sm border-border bg-background sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Krijo dhomë</DialogTitle>
-            <DialogDescription>
-              Dhomat janë publike dhe shfaqen menjëherë në faqen kryesore.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={onCreateRoom} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-foreground/55">
-                Emri
-              </label>
-              <Input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="#transporti"
-                maxLength={60}
-                className="rounded-sm"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-foreground/55">
-                Përshkrimi
-              </label>
-              <Textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Për çfarë diskutohet këtu?"
-                maxLength={180}
-                className="min-h-24 rounded-sm"
-              />
-            </div>
-            {createError ? <p className="text-sm font-medium text-primary">{createError}</p> : null}
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateOpen(false)}
-                className="rounded-sm"
-              >
-                Anulo
-              </Button>
-              <Button
-                type="submit"
-                disabled={!name.trim() || creating}
-                className="rounded-sm font-bold uppercase tracking-widest"
-              >
-                {creating ? "Po krijohet…" : "Krijo"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateRoomDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        name={name}
+        setName={setName}
+        description={description}
+        setDescription={setDescription}
+        creating={creating}
+        createError={createError}
+        onSubmit={onCreateRoom}
+      />
     </AppShell>
+  );
+}
+
+function RoomsList({
+  loading,
+  rooms,
+  presence,
+}: {
+  loading: boolean;
+  rooms: Room[];
+  presence: Record<string, number>;
+}) {
+  return (
+    <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-4 sm:px-6">
+      {loading ? (
+        <RoomListSkeleton />
+      ) : rooms.length === 0 ? (
+        <div className="py-16 text-center">
+          <div className="text-xs uppercase tracking-widest font-bold text-foreground/40">
+            {sq.rooms.empty}
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {rooms.map((room) => (
+            <RoomCard key={room.id} room={room} activeCount={presence[room.id] ?? 0} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CreateRoomDialog({
+  open,
+  onOpenChange,
+  name,
+  setName,
+  description,
+  setDescription,
+  creating,
+  createError,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  name: string;
+  setName: (value: string) => void;
+  description: string;
+  setDescription: (value: string) => void;
+  creating: boolean;
+  createError: string | null;
+  onSubmit: (event: React.FormEvent) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="rounded-sm border-border bg-background sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Krijo dhomë</DialogTitle>
+          <DialogDescription>
+            Dhomat janë publike dhe shfaqen menjëherë në faqen kryesore.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-foreground/55">
+              Emri
+            </label>
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="#transporti"
+              maxLength={60}
+              className="rounded-sm"
+              autoFocus
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-foreground/55">
+              Përshkrimi
+            </label>
+            <Textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Për çfarë diskutohet këtu?"
+              maxLength={180}
+              className="min-h-24 rounded-sm"
+            />
+          </div>
+          {createError ? <p className="text-sm font-medium text-primary">{createError}</p> : null}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="rounded-sm"
+            >
+              Anulo
+            </Button>
+            <Button
+              type="submit"
+              disabled={!name.trim() || creating}
+              className="rounded-sm font-bold uppercase tracking-widest"
+            >
+              {creating ? "Po krijohet…" : "Krijo"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

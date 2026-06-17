@@ -54,7 +54,7 @@ export function ReportDialog({ open, onOpenChange, messageId }: Props) {
           ? sq.errors.auth
           : error instanceof SheshiError && error.code === "RATE_LIMITED"
             ? sq.errors.rateLimited
-          : sq.errors.generic,
+            : sq.errors.generic,
       );
     } finally {
       setSubmitting(false);

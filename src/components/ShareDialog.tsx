@@ -55,11 +55,31 @@ export function ShareDialog({
   const fullText = encodeURIComponent(`${target.text}\n${target.url}`);
 
   const options: { label: string; icon: React.ReactNode; href: string }[] = [
-    { label: "WhatsApp", icon: <MessageCircle className={ICON_CLASS} />, href: `https://wa.me/?text=${fullText}` },
-    { label: "Telegram", icon: <Send className={ICON_CLASS} />, href: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}` },
-    { label: "X", icon: <XIcon className={ICON_CLASS} />, href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}` },
-    { label: "Facebook", icon: <FacebookIcon className={ICON_CLASS} />, href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}` },
-    { label: "Email", icon: <Mail className={ICON_CLASS} />, href: `mailto:?subject=${encodeURIComponent(target.title)}&body=${fullText}` },
+    {
+      label: "WhatsApp",
+      icon: <MessageCircle className={ICON_CLASS} />,
+      href: `https://wa.me/?text=${fullText}`,
+    },
+    {
+      label: "Telegram",
+      icon: <Send className={ICON_CLASS} />,
+      href: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+    },
+    {
+      label: "X",
+      icon: <XIcon className={ICON_CLASS} />,
+      href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`,
+    },
+    {
+      label: "Facebook",
+      icon: <FacebookIcon className={ICON_CLASS} />,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    },
+    {
+      label: "Email",
+      icon: <Mail className={ICON_CLASS} />,
+      href: `mailto:?subject=${encodeURIComponent(target.title)}&body=${fullText}`,
+    },
   ];
 
   const optionClass =

@@ -186,6 +186,9 @@ export async function getThread(messageId: string): Promise<ThreadData | null> {
   }
 }
 
+// Max message body length, mirroring the server-side limit; over this the API returns TOO_LONG.
+const MAX_BODY_LENGTH = 2000;
+
 export async function postMessage(input: {
   room_id: string;
   body: string;
@@ -195,7 +198,7 @@ export async function postMessage(input: {
 }): Promise<MessageRow> {
   const body = input.body.trim();
   if (!body && !input.image && !input.video) throw new SheshiError("EMPTY");
-  if (body.length > 2000) throw new SheshiError("TOO_LONG");
+  if (body.length > MAX_BODY_LENGTH) throw new SheshiError("TOO_LONG");
 
   try {
     if (input.image || input.video) {

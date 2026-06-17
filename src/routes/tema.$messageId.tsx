@@ -82,6 +82,18 @@ function insertUnderParent(
   return { nodes: out, inserted };
 }
 
+// Tombstone a message in place: keep its node/position but strip the content (the realtime
+// message_deleted patch and a moderator delete both render the "deleted" placeholder this way).
+function blankMessage(m: MessageRow): MessageRow {
+  return {
+    ...m,
+    deleted_at: new Date().toISOString(),
+    body: "",
+    image_url: null,
+    video_url: null,
+  };
+}
+
 function ThreadPage() {
   const { messageId } = Route.useParams();
   const { thread: loaderThread } = Route.useLoaderData();
@@ -199,13 +211,6 @@ function ThreadPage() {
     const write = (next: ThreadData) => queryClient.setQueryData<ThreadData | null>(key, next);
 
     // Super-realtime: patch the cached thread tree in place from typed events — no full refetch.
-    const blank = (m: MessageRow): MessageRow => ({
-      ...m,
-      deleted_at: new Date().toISOString(),
-      body: "",
-      image_url: null,
-      video_url: null,
-    });
     const onCreated = (p: { message: MessageRow; root_id: string | null }) => {
       const msg = p.message;
       if (!msg || msg.parent_id == null) return; // only replies belong in a thread
@@ -255,8 +260,8 @@ function ThreadPage() {
       if (!prev) return;
       write(
         prev.root.id === p.id
-          ? { ...prev, root: blank(prev.root) }
-          : { ...prev, replies: updateNode(prev.replies, p.id, blank) },
+          ? { ...prev, root: blankMessage(prev.root) }
+          : { ...prev, replies: updateNode(prev.replies, p.id, blankMessage) },
       );
     };
     // The caller's OWN vote, pushed only to their connections — syncs the vote colour (my_vote) across
@@ -312,37 +317,13 @@ function ThreadPage() {
   return (
     <AppShell right={<HighlightsPanel currentUserId={userId} roomSlugLookup={roomLookup} />}>
       <div className="flex h-full flex-col">
-        <div className="h-12 border-b border-border px-6 flex items-center gap-3 shrink-0">
-          <Link
-            to="/dhoma/$slug"
-            params={{ slug }}
-            className="inline-flex h-8 items-center gap-1 rounded-sm text-xs font-bold uppercase tracking-widest text-foreground/50 hover:text-foreground"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" /> #{slug}
-          </Link>
-          <span className="text-foreground/20" aria-hidden>
-            /
-          </span>
-          <h2 className="font-display text-sm font-bold uppercase tracking-tight">
-            {sq.chat.thread}
-          </h2>
-        </div>
+        <ThreadHeaderBar slug={slug} />
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar">
           {loading ? (
             <ThreadSkeleton />
           ) : !root ? (
-            <div className="p-10 text-center">
-              <div className="text-xs uppercase tracking-widest font-bold text-foreground/40 mb-2">
-                Tema nuk u gjet
-              </div>
-              <Link
-                to="/"
-                className="text-sm font-bold uppercase tracking-widest text-primary hover:text-primary/80"
-              >
-                Kthehu te dhomat
-              </Link>
-            </div>
+            <ThreadNotFound />
           ) : (
             <>
               {/* This page renders ANY message as a thread root; when that message is itself a
@@ -413,6 +394,44 @@ function ThreadPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+// Top bar: back-link to the room (slug resolved by the caller — see the restore note there) and the
+// "Thread" label. Static markup, so it stays identical across SSR and the first client render.
+function ThreadHeaderBar({ slug }: { slug: string }) {
+  return (
+    <div className="h-12 border-b border-border px-6 flex items-center gap-3 shrink-0">
+      <Link
+        to="/dhoma/$slug"
+        params={{ slug }}
+        className="inline-flex h-8 items-center gap-1 rounded-sm text-xs font-bold uppercase tracking-widest text-foreground/50 hover:text-foreground"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" /> #{slug}
+      </Link>
+      <span className="text-foreground/20" aria-hidden>
+        /
+      </span>
+      <h2 className="font-display text-sm font-bold uppercase tracking-tight">{sq.chat.thread}</h2>
+    </div>
+  );
+}
+
+// Shown when the permalinked message doesn't resolve (deleted/never existed) — a dead-end with a way
+// back to the room list.
+function ThreadNotFound() {
+  return (
+    <div className="p-10 text-center">
+      <div className="text-xs uppercase tracking-widest font-bold text-foreground/40 mb-2">
+        Tema nuk u gjet
+      </div>
+      <Link
+        to="/"
+        className="text-sm font-bold uppercase tracking-widest text-primary hover:text-primary/80"
+      >
+        Kthehu te dhomat
+      </Link>
+    </div>
   );
 }
 
