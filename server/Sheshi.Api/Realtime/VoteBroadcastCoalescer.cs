@@ -52,6 +52,13 @@ public sealed class VoteBroadcastCoalescer(
             {
                 p.LastSent = now;
                 _ = SendAsync(messageId, score, roomId, threadRootId); // leading edge: caller's score
+                // A bare leading edge schedules no flush, so without this the entry would live forever for
+                // a message that's never voted on again — an unbounded leak of one Pending per such message.
+                // Arm a one-shot sweep ~Interval out that removes the entry ONLY if no trailing flush has
+                // since superseded it (a follow-up vote within Interval sets Trailing + its own timer and
+                // owns removal via Flush; we must not race it or remove an entry with a pending flush).
+                p.Timer?.Dispose();
+                p.Timer = new Timer(_ => SweepLeadingEdge(messageId), null, Interval, Timeout.InfiniteTimeSpan);
             }
             else if (!p.Trailing)
             {
@@ -60,6 +67,26 @@ public sealed class VoteBroadcastCoalescer(
                 p.Timer = new Timer(_ => Flush(messageId), null, Interval - (now - p.LastSent), Timeout.InfiniteTimeSpan);
             }
         }
+    }
+
+    // Cleanup for a leading-edge-only entry: drop it unless a trailing flush is now pending (in which case
+    // that flush owns removal). No broadcast — the leading edge already sent the caller's fresh score.
+    private void SweepLeadingEdge(Guid messageId)
+    {
+        lock (_gate)
+        {
+            if (!_byMessage.TryGetValue(messageId, out var p)) return;
+            if (p.Trailing) return; // a follow-up vote took over; its Flush timer will remove the entry
+            p.Timer?.Dispose();
+            _byMessage.Remove(messageId);
+        }
+    }
+
+    // Test seam: current count of tracked messages, read under the lock. A healthy coalescer drains to 0
+    // once all burst windows (leading-edge sweeps + trailing flushes) elapse.
+    internal int PendingCount
+    {
+        get { lock (_gate) return _byMessage.Count; }
     }
 
     private void Flush(Guid messageId)

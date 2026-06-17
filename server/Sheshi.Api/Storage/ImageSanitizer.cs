@@ -26,16 +26,17 @@ public class ImageSanitizer
             if (detected is null || !MatchesContentType(detected, contentType))
                 throw new ImageStorageException("INVALID_IMAGE");
 
+            // Reject oversized images from metadata BEFORE the full decode. Image.Identify reads only
+            // the header (width/height) without allocating the pixel buffer, so a decompression-bomb
+            // image (tiny on disk, enormous decoded) is rejected without ever materialising it. If the
+            // header does not yield usable dimensions we fall through to the post-decode check below so
+            // valid uploads are never regressed.
+            var info = Image.Identify(bytes);
+            if (info is not null && info.Width > 0 && info.Height > 0)
+                EnsureWithinDimensionLimits(info.Width, info.Height);
+
             using var image = Image.Load(bytes);
-            var pixels = (long)image.Width * image.Height;
-            if (image.Width <= 0 ||
-                image.Height <= 0 ||
-                image.Width > _imageSafety.MaxWidth ||
-                image.Height > _imageSafety.MaxHeight ||
-                pixels > _imageSafety.MaxPixels)
-            {
-                throw new ImageStorageException("IMAGE_DIMENSIONS_TOO_LARGE");
-            }
+            EnsureWithinDimensionLimits(image.Width, image.Height);
 
             StripMetadata(image);
 
@@ -63,6 +64,19 @@ public class ImageSanitizer
         catch (Exception ex) when (ex is InvalidImageContentException or UnknownImageFormatException or NotSupportedException)
         {
             throw new ImageStorageException("INVALID_IMAGE");
+        }
+    }
+
+    private void EnsureWithinDimensionLimits(int width, int height)
+    {
+        var pixels = (long)width * height;
+        if (width <= 0 ||
+            height <= 0 ||
+            width > _imageSafety.MaxWidth ||
+            height > _imageSafety.MaxHeight ||
+            pixels > _imageSafety.MaxPixels)
+        {
+            throw new ImageStorageException("IMAGE_DIMENSIONS_TOO_LARGE");
         }
     }
 
