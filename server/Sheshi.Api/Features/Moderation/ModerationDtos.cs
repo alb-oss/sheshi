@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
 using Sheshi.Api.Domain;
 
@@ -33,11 +34,13 @@ public record ReportQuery
 {
     public string Status { get; init; } = "open";
     public string? Reason { get; init; }
-    [property: JsonPropertyName("room_id")]
+    // [FromQuery(Name=...)] is what binds a snake_case query key to the property — JsonPropertyName is a
+    // System.Text.Json attribute and has NO effect on ASP.NET query-string model binding.
+    [FromQuery(Name = "room_id")]
     public string? RoomId { get; init; }
-    [property: JsonPropertyName("min_severity")]
+    [FromQuery(Name = "min_severity")]
     public string? MinSeverity { get; init; }
-    [property: JsonPropertyName("repeat_offender")]
+    [FromQuery(Name = "repeat_offender")]
     public bool RepeatOffender { get; init; }
     public string Sort { get; init; } = "oldest";
     public int Limit { get; init; } = 50;
@@ -68,11 +71,11 @@ public record ModActorDto(Guid Id, string? Username, string? DisplayName);
 
 public record ActionQuery
 {
-    [property: JsonPropertyName("action_type")]
+    [FromQuery(Name = "action_type")]
     public string? ActionType { get; init; }
-    [property: JsonPropertyName("target_type")]
+    [FromQuery(Name = "target_type")]
     public string? TargetType { get; init; }
-    [property: JsonPropertyName("actor_id")]
+    [FromQuery(Name = "actor_id")]
     public string? ActorId { get; init; }
     public int Limit { get; init; } = 100;
 }

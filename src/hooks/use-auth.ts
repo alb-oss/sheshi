@@ -72,15 +72,6 @@ export function useAuth(): AuthState {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-export function initializeAuthAndGetSnapshot(): AuthState {
-  ensureAuthInitialized();
-  return state;
-}
-
-export function peekAuthSnapshot(): AuthState {
-  return state;
-}
-
 // Establish a session after login / register / OAuth: stash the access token in memory (the HttpOnly
 // refresh cookie is already set by the server's response) and load the user.
 export async function setAuthSession(accessToken: string) {

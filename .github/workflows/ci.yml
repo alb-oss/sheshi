@@ -25,6 +25,7 @@ jobs:
           global-json-file: global.json
 
       - run: npm ci
+      - run: npm run frontend:test
       - run: npm run frontend:build
       - run: dotnet restore server/Sheshi.sln
       - run: dotnet build server/Sheshi.sln --configuration Release --no-restore
