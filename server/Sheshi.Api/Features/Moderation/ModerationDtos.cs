@@ -1,19 +1,25 @@
 using System.Text.Json.Serialization;
+using Sheshi.Api.Domain;
 
 namespace Sheshi.Api.Features.Moderation;
 
+// Closed-set fields are typed as their domain enums (not loose strings): the global
+// JsonStringEnumConverter(SnakeCaseLower) in Program.cs serialises them to the same lowercase wire
+// tokens the hand-rolled ".ToString().ToLowerInvariant()" produced, so the contract is unchanged while
+// the server now refuses to emit a value outside the enum. Open-text fields (RuleKey, Evidence,
+// ActionType, TargetType) stay string by design.
 public record ModReportDto(
     Guid Id,
     Guid MessageId,
     Guid ReporterId,
-    string Reason,
+    ReportReason Reason,
     string? Note,
-    string Status,
+    ReportStatus Status,
     string MessageBody,
     Guid MessageAuthorId,
     Guid RoomId,
     string RoomSlug,
-    string Severity,
+    ModerationSeverity Severity,
     DateTimeOffset CreatedAt,
     double AgeHours,
     int AuthorReportCount,
@@ -77,11 +83,11 @@ public record ModFlagDto(
     Guid RoomId,
     Guid AuthorId,
     string RuleKey,
-    string Category,
-    string Severity,
+    ModerationCategory Category,
+    ModerationSeverity Severity,
     double Score,
     string Evidence,
-    string Status,
+    ModerationFlagStatus Status,
     DateTimeOffset CreatedAt,
     string MessageBody,
     bool MessageDeleted,

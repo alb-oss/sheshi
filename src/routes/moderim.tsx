@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sq } from "@/i18n/sq";
 import { api, apiJson, apiNoContent } from "@/lib/api-client";
+import type {
+  ModerationCategory,
+  ModerationFlagStatus,
+  ModerationSeverity,
+  ReportReason,
+  ReportStatus,
+} from "@/lib/sheshi";
 import { ensureRealtimeStarted, invokeRealtime } from "@/lib/realtime";
 import { useRealtimeResync } from "@/hooks/use-realtime-resync";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,14 +30,14 @@ type ModReport = {
   id: string;
   message_id: string;
   reporter_id: string;
-  reason: string;
+  reason: ReportReason;
   note: string | null;
-  status: string;
+  status: ReportStatus;
   message_body: string;
   message_author_id: string;
   room_id: string;
   room_slug: string;
-  severity: string;
+  severity: ModerationSeverity;
   created_at: string;
   age_hours: number;
   author_report_count: number;
@@ -70,11 +77,11 @@ type ModFlag = {
   room_id: string;
   author_id: string;
   rule_key: string;
-  category: string;
-  severity: string;
+  category: ModerationCategory;
+  severity: ModerationSeverity;
   score: number;
   evidence: string;
-  status: string;
+  status: ModerationFlagStatus;
   created_at: string;
   message_body: string;
   message_deleted: boolean;
@@ -149,8 +156,10 @@ const flagCategories = [
   { value: "other", label: "Tjetër" },
 ];
 
-const rowCard = "rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/15";
-const emptyBox = "rounded-xl border border-border bg-card/60 p-6 text-center text-sm text-foreground/45";
+const rowCard =
+  "rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/15";
+const emptyBox =
+  "rounded-xl border border-border bg-card/60 p-6 text-center text-sm text-foreground/45";
 
 // Live moderation queue: join the moderator SignalR group and debounce-refetch on any
 // report/flag/action change (mod_changed). Used by every panel so the dashboard stays current.
@@ -244,17 +253,37 @@ function ModerimPage() {
         </div>
         <Tabs defaultValue="reports" className="mt-6">
           <TabsList className="grid h-auto w-full grid-cols-3 gap-1 sm:inline-flex sm:w-auto">
-            <TabsTrigger value="metrics" className="h-9">Metrika</TabsTrigger>
-            <TabsTrigger value="reports" className="h-9">Raporte</TabsTrigger>
-            <TabsTrigger value="flags" className="h-9">Flamuj</TabsTrigger>
-            <TabsTrigger value="users" className="h-9">Përdorues</TabsTrigger>
-            <TabsTrigger value="actions" className="h-9">Log</TabsTrigger>
+            <TabsTrigger value="metrics" className="h-9">
+              Metrika
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="h-9">
+              Raporte
+            </TabsTrigger>
+            <TabsTrigger value="flags" className="h-9">
+              Flamuj
+            </TabsTrigger>
+            <TabsTrigger value="users" className="h-9">
+              Përdorues
+            </TabsTrigger>
+            <TabsTrigger value="actions" className="h-9">
+              Log
+            </TabsTrigger>
           </TabsList>
-          <TabsContent value="metrics" className="mt-4"><MetricsPanel /></TabsContent>
-          <TabsContent value="reports" className="mt-4"><ReportsPanel /></TabsContent>
-          <TabsContent value="flags" className="mt-4"><FlagsPanel /></TabsContent>
-          <TabsContent value="users" className="mt-4"><UsersPanel isAdmin={isAdmin} /></TabsContent>
-          <TabsContent value="actions" className="mt-4"><ActionsPanel /></TabsContent>
+          <TabsContent value="metrics" className="mt-4">
+            <MetricsPanel />
+          </TabsContent>
+          <TabsContent value="reports" className="mt-4">
+            <ReportsPanel />
+          </TabsContent>
+          <TabsContent value="flags" className="mt-4">
+            <FlagsPanel />
+          </TabsContent>
+          <TabsContent value="users" className="mt-4">
+            <UsersPanel isAdmin={isAdmin} />
+          </TabsContent>
+          <TabsContent value="actions" className="mt-4">
+            <ActionsPanel />
+          </TabsContent>
         </Tabs>
       </div>
     </AppShell>
@@ -308,7 +337,10 @@ function EnforcementActions({
       <Link
         to="/tema/$messageId"
         params={{ messageId }}
-        className={cn(btn, "border border-border text-foreground/70 hover:border-primary/40 hover:text-primary")}
+        className={cn(
+          btn,
+          "border border-border text-foreground/70 hover:border-primary/40 hover:text-primary",
+        )}
       >
         <ExternalLink className="h-3.5 w-3.5" /> Shiko
       </Link>
@@ -316,7 +348,10 @@ function EnforcementActions({
         <button
           type="button"
           onClick={() => onDelete(messageId)}
-          className={cn(btn, "border border-border text-foreground/70 hover:border-primary/40 hover:text-primary")}
+          className={cn(
+            btn,
+            "border border-border text-foreground/70 hover:border-primary/40 hover:text-primary",
+          )}
         >
           <Trash2 className="h-3.5 w-3.5" /> Fshij mesazhin
         </button>
@@ -329,7 +364,10 @@ function EnforcementActions({
         <button
           type="button"
           onClick={() => onBan(authorId)}
-          className={cn(btn, "border border-border text-foreground/70 hover:border-primary/50 hover:bg-primary/10 hover:text-primary")}
+          className={cn(
+            btn,
+            "border border-border text-foreground/70 hover:border-primary/50 hover:bg-primary/10 hover:text-primary",
+          )}
         >
           <UserX className="h-3.5 w-3.5" /> Blloko autorin
         </button>
@@ -369,7 +407,9 @@ function MetricsPanel() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
           <div key={card.label} className="rounded-xl border border-border bg-card p-4">
-            <div className="text-xs font-bold uppercase tracking-widest text-foreground/45">{card.label}</div>
+            <div className="text-xs font-bold uppercase tracking-widest text-foreground/45">
+              {card.label}
+            </div>
             <div className="mt-2 text-2xl font-bold tabular-nums">{card.value}</div>
           </div>
         ))}
@@ -438,7 +478,7 @@ function actorLabel(actor: ModActor | null | undefined, fallbackId: string) {
   return actor?.display_name || actor?.username || fallbackId.slice(0, 8);
 }
 
-function SeverityChip({ severity }: { severity: string }) {
+function SeverityChip({ severity }: { severity: ModerationSeverity }) {
   const cls =
     severity === "critical"
       ? "bg-primary/20 text-primary"
@@ -448,7 +488,12 @@ function SeverityChip({ severity }: { severity: string }) {
           ? "bg-[color:var(--downvote)]/15 text-[color:var(--downvote)]"
           : "bg-secondary text-foreground/55";
   return (
-    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest", cls)}>
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest",
+        cls,
+      )}
+    >
       {severity}
     </span>
   );
@@ -530,7 +575,15 @@ function FilterSelect({
   );
 }
 
-function ModerationShellState({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
+function ModerationShellState({
+  title,
+  body,
+  children,
+}: {
+  title: string;
+  body: string;
+  children?: ReactNode;
+}) {
   return (
     <div className="mx-auto flex h-full w-full max-w-xl items-center px-4 py-10">
       <div className="w-full rounded-2xl border border-border bg-card/50 p-6">
@@ -583,7 +636,9 @@ function FlagsPanel() {
             className="h-9 rounded-lg border border-border bg-secondary px-3 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-ring"
           >
             {flagCategories.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
         </label>
@@ -596,16 +651,25 @@ function FlagsPanel() {
         flags.map((flag) => (
           <div key={flag.id} className={rowCard}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-primary">{flag.rule_key}</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">
+                {flag.rule_key}
+              </span>
               <SeverityChip severity={flag.severity} />
               <Chip>#{flag.room_slug}</Chip>
               {flag.author_banned ? <BannedBadge /> : null}
               <span className="text-xs text-foreground/45">{flag.evidence}</span>
             </div>
-            <p className={cn("mt-2 whitespace-pre-wrap break-words text-sm", flag.message_deleted ? "italic text-foreground/40" : "text-foreground/90")}>
+            <p
+              className={cn(
+                "mt-2 whitespace-pre-wrap break-words text-sm",
+                flag.message_deleted ? "italic text-foreground/40" : "text-foreground/90",
+              )}
+            >
               {flag.message_deleted ? sq.chat.deleted : flag.message_body || "—"}
             </p>
-            <div className="mt-2 text-xs text-foreground/45">Autor: {actorLabel(flag.author, flag.author_id)}</div>
+            <div className="mt-2 text-xs text-foreground/45">
+              Autor: {actorLabel(flag.author, flag.author_id)}
+            </div>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <EnforcementActions
                 messageId={flag.message_id}
@@ -617,8 +681,21 @@ function FlagsPanel() {
               />
               {flag.status === "open" && (
                 <div className="flex gap-2">
-                  <Button size="sm" className="rounded-full" onClick={() => updateFlagStatus(flag.id, "resolve")}>Zgjidh</Button>
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => updateFlagStatus(flag.id, "dismiss")}>Hidh poshtë</Button>
+                  <Button
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => updateFlagStatus(flag.id, "resolve")}
+                  >
+                    Zgjidh
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => updateFlagStatus(flag.id, "dismiss")}
+                  >
+                    Hidh poshtë
+                  </Button>
                 </div>
               )}
             </div>
@@ -670,7 +747,12 @@ function ReportsPanel() {
         <Segmented value={status} onChange={setStatusFilter} options={reportStatuses} />
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <FilterSelect label="Arsye" value={reason} onChange={setReason} options={reportReasons} />
-          <FilterSelect label="Ashpërsi" value={severity} onChange={setSeverity} options={severityOptions} />
+          <FilterSelect
+            label="Ashpërsi"
+            value={severity}
+            onChange={setSeverity}
+            options={severityOptions}
+          />
           <FilterSelect label="Rendit" value={sort} onChange={setSort} options={reportSorts} />
           <label className="flex h-9 items-center gap-2 self-end rounded-lg border border-border bg-secondary px-3 text-sm text-foreground/55">
             <input
@@ -687,21 +769,28 @@ function ReportsPanel() {
         <SkeletonRows />
       ) : reports.length === 0 ? (
         <div className={emptyBox}>
-          Nuk ka raporte për këta filtra. Raportet krijohen kur një përdorues raporton mesazhin e dikujt tjetër.
+          Nuk ka raporte për këta filtra. Raportet krijohen kur një përdorues raporton mesazhin e
+          dikujt tjetër.
         </div>
       ) : (
         reports.map((report) => (
           <div key={report.id} className={rowCard}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-primary">{report.reason}</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">
+                {report.reason}
+              </span>
               <SeverityChip severity={report.severity} />
               <Chip>#{report.room_slug}</Chip>
               {report.message_author_banned ? <BannedBadge /> : null}
               <span className="text-xs text-foreground/45">{formatAge(report.age_hours)}</span>
             </div>
-            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground/90">{report.message_body}</p>
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground/90">
+              {report.message_body}
+            </p>
             {report.note ? (
-              <p className="mt-2 rounded-lg border border-border bg-background/50 p-2 text-xs text-foreground/55">{report.note}</p>
+              <p className="mt-2 rounded-lg border border-border bg-background/50 p-2 text-xs text-foreground/55">
+                {report.note}
+              </p>
             ) : null}
             <div className="mt-3 flex flex-wrap gap-2 text-xs text-foreground/45">
               <span>Autor: {actorLabel(report.author, report.message_author_id)}</span>
@@ -719,8 +808,21 @@ function ReportsPanel() {
               />
               {report.status === "open" && (
                 <div className="flex gap-2">
-                  <Button size="sm" className="rounded-full" onClick={() => updateReportStatus(report.id, "resolve")}>Zgjidh</Button>
-                  <Button size="sm" variant="outline" className="rounded-full" onClick={() => updateReportStatus(report.id, "dismiss")}>Hidh poshtë</Button>
+                  <Button
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => updateReportStatus(report.id, "resolve")}
+                  >
+                    Zgjidh
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => updateReportStatus(report.id, "dismiss")}
+                  >
+                    Hidh poshtë
+                  </Button>
                 </div>
               )}
             </div>
@@ -754,7 +856,12 @@ function ActionsPanel() {
   return (
     <div className="space-y-3">
       <div className="grid gap-2 border-b border-border pb-3 sm:grid-cols-2 lg:grid-cols-3">
-        <FilterSelect label="Veprim" value={actionType} onChange={setActionType} options={actionTypes} />
+        <FilterSelect
+          label="Veprim"
+          value={actionType}
+          onChange={setActionType}
+          options={actionTypes}
+        />
         <FilterSelect
           label="Objekt"
           value={targetType}
@@ -769,7 +876,9 @@ function ActionsPanel() {
             { value: "room", label: "Dhomë" },
           ]}
         />
-        <Button variant="outline" onClick={load} className="h-9 self-end rounded-full">Rifresko</Button>
+        <Button variant="outline" onClick={load} className="h-9 self-end rounded-full">
+          Rifresko
+        </Button>
       </div>
       {isLoading ? (
         <SkeletonRows />
@@ -779,18 +888,26 @@ function ActionsPanel() {
         actions.map((action) => (
           <div key={action.id} className={rowCard}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-primary">{formatActionType(action.action_type)}</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">
+                {formatActionType(action.action_type)}
+              </span>
               <Chip>{action.target_type}</Chip>
-              <span className="text-xs text-foreground/45">{new Date(action.created_at).toLocaleString()}</span>
+              <span className="text-xs text-foreground/45">
+                {new Date(action.created_at).toLocaleString()}
+              </span>
             </div>
             <div className="mt-2 text-sm">
               {actorLabel(action.actor, action.actor_id)} → {action.target_id.slice(0, 8)}
             </div>
-            {action.reason ? <p className="mt-2 text-xs text-foreground/45">{action.reason}</p> : null}
+            {action.reason ? (
+              <p className="mt-2 text-xs text-foreground/45">{action.reason}</p>
+            ) : null}
             {Object.entries(action.metadata).length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-2 text-xs text-foreground/45">
                 {Object.entries(action.metadata).map(([key, value]) => (
-                  <span key={key} className="rounded-full border border-border px-2 py-1">{key}: {value}</span>
+                  <span key={key} className="rounded-full border border-border px-2 py-1">
+                    {key}: {value}
+                  </span>
                 ))}
               </div>
             ) : null}
@@ -835,7 +952,10 @@ function UsersPanel({ isAdmin }: { isAdmin: boolean }) {
 
   async function updateModerator(id: string, grant: boolean) {
     try {
-      await apiNoContent(`/api/mod/users/${id}/roles`, { method: "POST", body: { role: Roles.Moderator, grant } });
+      await apiNoContent(`/api/mod/users/${id}/roles`, {
+        method: "POST",
+        body: { role: Roles.Moderator, grant },
+      });
       search();
     } catch {
       toast.error(sq.errors.generic);
@@ -852,7 +972,9 @@ function UsersPanel({ isAdmin }: { isAdmin: boolean }) {
           placeholder="Email ose username"
           className="rounded-xl"
         />
-        <Button onClick={search} className="rounded-full sm:w-auto">Kërko</Button>
+        <Button onClick={search} className="rounded-full sm:w-auto">
+          Kërko
+        </Button>
       </div>
       {isAdmin ? (
         <p className="text-xs text-foreground/45">
@@ -868,13 +990,22 @@ function UsersPanel({ isAdmin }: { isAdmin: boolean }) {
           {users.map((u) => {
             const isModerator = hasRole(u, Roles.Moderator);
             return (
-              <div key={u.id} className={cn(rowCard, "flex flex-wrap items-center justify-between gap-3")}>
+              <div
+                key={u.id}
+                className={cn(rowCard, "flex flex-wrap items-center justify-between gap-3")}
+              >
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-bold">{u.display_name || u.username || u.email}</div>
+                  <div className="truncate text-sm font-bold">
+                    {u.display_name || u.username || u.email}
+                  </div>
                   <div className="text-xs text-foreground/45">{u.email}</div>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     <Chip>{u.is_banned ? "I bllokuar" : "Aktiv"}</Chip>
-                    {u.roles.length ? u.roles.map((r) => <Chip key={r}>{r}</Chip>) : <Chip>qytetar</Chip>}
+                    {u.roles.length ? (
+                      u.roles.map((r) => <Chip key={r}>{r}</Chip>)
+                    ) : (
+                      <Chip>qytetar</Chip>
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">

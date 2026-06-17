@@ -54,7 +54,8 @@ export interface Room {
   slug: string;
   name: string;
   description: string | null;
-  thread_count?: number;
+  // Server-guaranteed (RoomDto.ThreadCount is non-null int); only latest_activity_at is genuinely nullable.
+  thread_count: number;
   latest_activity_at?: string | null;
 }
 
@@ -76,9 +77,11 @@ export interface MessageRow {
   deleted_at: string | null;
   created_at: string;
   author?: Profile | null;
-  score?: number;
-  reply_count?: number;
-  my_vote?: number; // -1, 0, or 1
+  // Server-guaranteed non-null (MessageDto.Score/ReplyCount/MyVote use GetValueOrDefault → always an
+  // int on the wire, including realtime broadcasts where my_vote is 0). Only `author` is nullable.
+  score: number;
+  reply_count: number;
+  my_vote: number; // -1, 0, or 1
 }
 
 export interface ReplyNode {
@@ -234,7 +237,13 @@ export function softDeleteMessage(id: string): Promise<void> {
   return apiNoContent(`/api/messages/${id}`, { method: "DELETE" });
 }
 
+// Closed-set moderation values. These MIRROR the C# domain enums (Domain/Enums.cs), which the API
+// serialises as snake_case-lower tokens via the global JsonStringEnumConverter — keep them in sync.
 export type ReportReason = "spam" | "hate" | "doxxing" | "violence" | "other";
+export type ReportStatus = "open" | "resolved" | "dismissed";
+export type ModerationSeverity = "low" | "medium" | "high" | "critical";
+export type ModerationCategory = "spam" | "hate" | "doxxing" | "violence" | "harassment" | "other";
+export type ModerationFlagStatus = "open" | "resolved" | "dismissed";
 export async function submitReport(input: {
   message_id: string;
   reason: ReportReason;
