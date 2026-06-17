@@ -462,7 +462,12 @@ function ThreadChildren({
                 <span
                   aria-hidden
                   className={`thread-rail${isFresh ? " animate-spine-draw" : ""}`}
-                  style={{ height: isLast ? "var(--rail-elbow-y)" : "100%" }}
+                  // Last child: stop the rail exactly where the curve begins (elbow-y − radius) so it
+                  // flows straight-into-curve with no dangling stub below the arc. Middle child: full
+                  // height to join the next sibling. (Mobile radius is 0, so this is just elbow-y.)
+                  style={{
+                    height: isLast ? "calc(var(--rail-elbow-y) - var(--rail-r))" : "100%",
+                  }}
                 />
                 <span
                   aria-hidden
