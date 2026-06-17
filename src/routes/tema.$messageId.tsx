@@ -416,14 +416,12 @@ function ThreadPage() {
   );
 }
 
-// Thread connector geometry (px). The spine runs down the left gutter of a comment's children; each
-// child turns off it with a rounded elbow that points at the child's avatar. Capped so deep threads
-// don't crush the column on mobile — beyond CONTINUE_DEPTH we link out to the comment's own page.
-const THREAD_INDENT = 22; // each nesting level indents its children this much
-const SPINE_X = 10; // x of the vertical spine within a child's gutter
-const ELBOW_Y = 21; // y where the elbow meets the child (≈ the avatar's centre)
-const ELBOW_H = 10; // curve radius / height
-const ELBOW_W = 12; // horizontal reach from the spine to the comment block
+// Reddit-style comment rail. The connector geometry (indent, rail x, curve radius, colours, the
+// mobile straight-rail vs desktop curved-elbow split) lives in styles.css as CSS custom properties on
+// `.thread-branch`, driven by a single `@media (min-width: 640px)` override — so the markup here is
+// viewport-independent and SSR == hydration. This file just places the elements (stem, per-child rail,
+// elbow) and the depth caps. Beyond MAX_INDENT_DEPTH we stop indenting and drop the connector; beyond
+// CONTINUE_DEPTH we link out to the comment's own page so deep threads never crush the column.
 const MAX_INDENT_DEPTH = 7;
 const CONTINUE_DEPTH = 8;
 
@@ -438,44 +436,37 @@ type BranchProps = {
   onReply: (message: MessageRow) => void;
 };
 
-// Renders a comment's children indented under a single vertical spine, each connected by a curved
-// elbow. Stops indenting past MAX_INDENT_DEPTH so the column survives on mobile.
+// Renders a comment's children under the rail. Each child gets a vertical rail segment (anchored at
+// the PARENT avatar centre via the CSS calc, so it lines up with the parent's stem) and — on desktop
+// only — a quarter-circle elbow into its avatar. The last child caps its rail at the avatar centre
+// (no overshoot); a middle child runs it full height to join the next sibling. Past MAX_INDENT_DEPTH
+// we flatten (no indent) and drop the connector — those rows link out to their own page anyway.
 function ThreadChildren({
   replies,
   depth,
   freshIds,
   ...rest
 }: Omit<BranchProps, "node"> & { replies: ReplyNode[]; depth: number }) {
-  const indent = depth <= MAX_INDENT_DEPTH ? THREAD_INDENT : 0;
+  const flattened = depth > MAX_INDENT_DEPTH;
   return (
-    <div className="relative" style={{ paddingLeft: indent }}>
+    <div className={`thread-children${flattened ? " thread-children--flat" : ""}`}>
       {replies.map((child, i) => {
         const isLast = i === replies.length - 1;
-        // A realtime arrival is always appended as the last child, so its short spine draws down and
+        // A realtime arrival is always appended as the last child, so its short rail draws down and
         // the elbow unveils toward the avatar — see the animate-* utilities in styles.css.
         const isFresh = freshIds.has(child.message.id);
         return (
           <div className="relative" key={child.message.id}>
-            {indent > 0 && (
+            {!flattened && (
               <>
-                {/* Vertical spine: full height for a middle child (joins the next sibling); for the
-                    last child it stops at the elbow so the line ends cleanly at the final reply. */}
                 <span
                   aria-hidden
-                  className={`pointer-events-none absolute w-px bg-thread-line${isFresh ? " animate-spine-draw" : ""}`}
-                  style={{ left: SPINE_X, top: 0, height: isLast ? ELBOW_Y : "100%" }}
+                  className={`thread-rail${isFresh ? " animate-spine-draw" : ""}`}
+                  style={{ height: isLast ? "var(--rail-elbow-y)" : "100%" }}
                 />
-                {/* Curved elbow turning off the spine toward this child's avatar. */}
                 <span
                   aria-hidden
-                  className={`pointer-events-none absolute border-b border-l border-thread-line${isFresh ? " animate-elbow-draw" : ""}`}
-                  style={{
-                    left: SPINE_X,
-                    top: ELBOW_Y - ELBOW_H,
-                    width: ELBOW_W,
-                    height: ELBOW_H,
-                    borderBottomLeftRadius: ELBOW_H,
-                  }}
+                  className={`thread-elbow${isFresh ? " animate-elbow-draw" : ""}`}
                 />
               </>
             )}
@@ -507,25 +498,43 @@ function ReplyBranch({
   const isFresh = freshIds.has(node.message.id);
 
   return (
-    <div className={`relative${isFresh ? " animate-reply-in" : ""}`}>
-      <MessageCard
-        message={node.message}
-        roomSlug={slug}
-        currentUserId={currentUserId}
-        asThreadLink={false}
-        onChanged={onChanged}
-        onReply={onReply}
-        compact
-        collapsible={hasChildren}
-        collapsed={isCollapsed}
-        onToggleCollapse={() => onToggleCollapse(node.message.id)}
-      />
+    <div className={`thread-branch relative${isFresh ? " animate-reply-in" : ""}`}>
+      <div className="thread-branch-content relative">
+        <MessageCard
+          message={node.message}
+          roomSlug={slug}
+          currentUserId={currentUserId}
+          asThreadLink={false}
+          onChanged={onChanged}
+          onReply={onReply}
+          compact
+          collapsible={hasChildren}
+          collapsed={isCollapsed}
+          onToggleCollapse={() => onToggleCollapse(node.message.id)}
+        />
+        {showChildren ? (
+          <>
+            {/* Stem: the rail growing out from under THIS comment's avatar, running alongside its
+                content down to where its replies begin (Reddit's signature continuous line). */}
+            <span aria-hidden className="thread-stem" />
+            {/* The rail doubles as a click target that collapses this comment's subtree; hovering it
+                highlights the whole rail. Keyboard collapse stays on MessageCard's chevron. */}
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label={sq.chat.hideReplies}
+              onClick={() => onToggleCollapse(node.message.id)}
+              className="thread-rail-hit"
+            />
+          </>
+        ) : null}
+      </div>
 
       {hasChildren && isCollapsed ? (
         <button
           type="button"
           onClick={() => onToggleCollapse(node.message.id)}
-          className="mb-2 ml-3 inline-flex min-h-7 items-center gap-1.5 rounded-full border border-thread-line px-2.5 py-1 text-[11px] font-bold text-foreground/60 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+          className="mb-2 ml-3 inline-flex min-h-10 items-center gap-1.5 rounded-full border border-thread-line px-2.5 py-1 text-[11px] font-bold text-foreground/60 transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
         >
           <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           {sq.chat.replies(hiddenCount)}
@@ -550,7 +559,7 @@ function ReplyBranch({
         <Link
           to="/tema/$messageId"
           params={{ messageId: node.message.id }}
-          className="mb-2 ml-3 inline-flex items-center gap-1 text-xs font-bold text-primary transition-colors hover:text-primary/80"
+          className="mb-2 ml-3 inline-flex min-h-10 items-center gap-1 text-xs font-bold text-primary transition-colors hover:text-primary/80"
         >
           {sq.chat.continueThread} ({sq.chat.replies(hiddenCount)}) →
         </Link>
