@@ -152,7 +152,7 @@ export function MessageCard({
     <span
       className={cn(
         "flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary font-bold text-foreground/70",
-        compact ? "h-7 w-7 text-[10px]" : "h-9 w-9 text-xs",
+        compact ? "h-6 w-6 text-[10px] sm:h-7 sm:w-7" : "h-9 w-9 text-xs",
       )}
       aria-hidden
     >

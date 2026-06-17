@@ -68,7 +68,8 @@
   --destructive: #e0303c;
   --destructive-foreground: #ffffff;
   --border: rgba(0, 0, 0, 0.1);
-  --thread-line: rgba(0, 0, 0, 0.15);
+  --thread-line: rgba(0, 0, 0, 0.22);
+  --thread-line-hover: rgba(224, 48, 60, 0.5); /* --primary #e0303c @ ~50% */
   --upvote: #e0303c;
   --downvote: #4f6bd6;
   --input: rgba(0, 0, 0, 0.12);
@@ -114,7 +115,8 @@
   --destructive-foreground: #ffffff;
 
   --border: rgba(255, 255, 255, 0.08);
-  --thread-line: rgba(255, 255, 255, 0.14);
+  --thread-line: rgba(255, 255, 255, 0.25);
+  --thread-line-hover: rgba(245, 51, 63, 0.55); /* --primary #f5333f @ ~55% */
   --upvote: #f5333f;
   --downvote: #6e8bff;
   --input: rgba(255, 255, 255, 0.12);
@@ -191,9 +193,11 @@
 @utility animate-reply-in {
   animation: sheshi-reply-in 0.3s var(--ease-out-quint) 0.1s both;
 }
+/* Fold the rail's crisp -0.5px offset into the keyframe so a fresh rail stays a sharp
+   1px line while it draws down (a bare scaleY would clobber the resting translateX). */
 @keyframes sheshi-spine-draw {
-  from { transform: scaleY(0); }
-  to { transform: scaleY(1); }
+  from { transform: translateX(-0.5px) scaleY(0); }
+  to { transform: translateX(-0.5px) scaleY(1); }
 }
 @utility animate-spine-draw {
   transform-origin: top;
@@ -213,4 +217,121 @@
   .animate-elbow-draw {
     animation: none;
   }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Reddit-style comment rail. One continuous 1px stroke descends from under a
+   comment's avatar (the "stem"), runs alongside its content, and brackets its
+   replies; each reply peels off with a quarter-circle elbow that lands at the
+   reply avatar's centre. Geometry is CSS custom properties so the responsive split
+   (mobile 24px avatar / 16px indent / STRAIGHT rail  ↔  ≥640px 28px avatar / 32px
+   indent / 18px CURVED elbow) is pure CSS — identical markup at every width, so SSR
+   and hydration match. One --rail colour var drives stem + rail + every elbow, and
+   the rail-hit hover flips it for the whole branch.
+
+   Vars (set on .thread-branch, overridden ≥640px; inherited by stem + children):
+     --thread-indent  per-level left indent of the children block
+     --rail-x         rail x from the branch's left edge = PARENT avatar centre
+                      = rowLeftPad + avatarRadius   (12+12=24 / 16+14=30)
+     --rail-top       y the stem starts, just below the avatar
+                      = rowTopPad(10) + avatarH + 4  (38 / 42)
+     --rail-elbow-y   child avatar centre from the child row top
+                      = rowTopPad(10) + avatarRadius (22 / 24)
+     --rail-r         elbow corner radius (0 mobile → straight; 18 desktop)
+     --rail-w         elbow horizontal reach rail→child-avatar-left (0 / 18)
+   ────────────────────────────────────────────────────────────────────────── */
+.thread-branch {
+  --thread-indent: 16px;
+  --rail-x: 24px;
+  --rail-top: 38px;
+  --rail-elbow-y: 22px;
+  --rail-r: 0px;
+  --rail-w: 0px;
+  --rail: var(--thread-line);
+}
+@media (min-width: 640px) {
+  .thread-branch {
+    --thread-indent: 32px;
+    --rail-x: 30px;
+    --rail-top: 42px;
+    --rail-elbow-y: 24px;
+    --rail-r: 18px;
+    --rail-w: 18px;
+  }
+}
+/* Hover the rail-hit column → highlight this branch's whole rail (stem + child
+   strokes + elbows) by flipping the inherited --rail. Scoped via the child combinator
+   so hovering a deep rail doesn't light up every ancestor. */
+.thread-branch:has(> .thread-branch-content > .thread-rail-hit:hover) {
+  --rail: var(--thread-line-hover);
+}
+
+.thread-children {
+  position: relative;
+  padding-left: var(--thread-indent);
+}
+/* Past MAX_INDENT_DEPTH we stop indenting AND drop the connector (the lineage is
+   already deep and these rows link out to their own page) — see tema.$messageId.tsx. */
+.thread-children--flat {
+  --thread-indent: 0px;
+}
+
+/* The stem: from just below the avatar to the bottom of this comment's content, so
+   the rail visibly grows out from under the avatar and runs past the vote row before
+   bracketing the replies (Reddit's signature). bottom:0 ends it exactly where the
+   children block begins, meeting the first child's rail seamlessly. */
+.thread-stem {
+  pointer-events: none;
+  position: absolute;
+  left: var(--rail-x);
+  top: var(--rail-top);
+  bottom: 0;
+  width: 1px;
+  background: var(--rail);
+  transform: translateX(-0.5px);
+}
+
+/* Clickable rail column over the stem — collapses this comment's subtree (Reddit
+   behaviour). ~24px wide, centred on the rail; the visible stroke stays 1px. Keyboard
+   users collapse via MessageCard's chevron, so this is a redundant pointer affordance
+   (tabIndex -1 in markup). */
+.thread-rail-hit {
+  position: absolute;
+  top: var(--rail-top);
+  left: calc(var(--rail-x) - 12px);
+  width: 24px;
+  bottom: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+/* Per-child vertical rail. The span lives in the indented child row, so subtract the
+   indent to land at --rail-x (the PARENT avatar centre) from the branch edge. Last
+   child caps at the avatar centre (height set inline, no overshoot); middle child runs
+   full height to join the next sibling. */
+.thread-rail {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: calc(var(--rail-x) - var(--thread-indent));
+  width: 1px;
+  background: var(--rail);
+  transform: translateX(-0.5px);
+  transform-origin: top;
+}
+/* Quarter-circle elbow turning off the rail into the child avatar (≥640px only; below
+   sm: --rail-r/-w are 0 → no curve, the straight rail alone connects, Reddit mobile). */
+.thread-elbow {
+  pointer-events: none;
+  position: absolute;
+  left: calc(var(--rail-x) - var(--thread-indent));
+  top: calc(var(--rail-elbow-y) - var(--rail-r));
+  width: var(--rail-w);
+  height: var(--rail-r);
+  border-left: 1px solid var(--rail);
+  border-bottom: 1px solid var(--rail);
+  border-bottom-left-radius: var(--rail-r);
+  transform: translateX(-0.5px);
 }
