@@ -270,3 +270,112 @@ export type HighlightMode = "hot" | "top" | "replied";
 export function listHighlights(mode: HighlightMode): Promise<MessageRow[]> {
   return apiJson<MessageRow[]>(`/api/highlights?mode=${encodeURIComponent(mode)}`);
 }
+
+// ---- Proposals (Kërkesat) ----
+
+// Closed sets MIRRORING the C# domain enums (Domain/Enums.cs), serialised snake_case by the API. Keep in sync.
+export type ProposalCategory = "ligje" | "shendetesi" | "arsim" | "zhvillim";
+export type ProposalStatus = "pending" | "proposed" | "approved" | "rejected";
+
+export const PROPOSAL_CATEGORIES: ProposalCategory[] = ["ligje", "shendetesi", "arsim", "zhvillim"];
+
+export interface Proposal {
+  id: string;
+  title: string;
+  body: string;
+  category: ProposalCategory;
+  status: ProposalStatus;
+  author_id: string;
+  author?: Profile | null;
+  // Server-guaranteed non-null ints (ProposalDto uses GetValueOrDefault), incl. realtime tallies.
+  score: number;
+  pro: number;
+  kunder: number;
+  my_vote: number; // -1 (kundër), 0, or 1 (pro)
+  created_at: string;
+  published_at: string | null;
+  approved_at: string | null;
+}
+
+// Title/body caps mirror the server (ProposalsController). Over these the API returns *_TOO_LONG.
+const MAX_PROPOSAL_TITLE = 200;
+const MAX_PROPOSAL_BODY = 8000;
+
+export function listProposals(input: {
+  status: "proposed" | "approved";
+  category?: ProposalCategory | null;
+}): Promise<Proposal[]> {
+  const params = new URLSearchParams({ status: input.status });
+  if (input.category) params.set("category", input.category);
+  return apiJson<Proposal[]>(`/api/proposals?${params.toString()}`);
+}
+
+export async function getProposal(id: string): Promise<Proposal | null> {
+  try {
+    return await apiJson<Proposal>(`/api/proposals/${id}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export async function submitProposal(input: {
+  title: string;
+  body: string;
+  category: ProposalCategory;
+}): Promise<Proposal> {
+  const title = input.title.trim();
+  const body = input.body.trim();
+  if (!title || !body) throw new SheshiError("EMPTY");
+  if (title.length > MAX_PROPOSAL_TITLE || body.length > MAX_PROPOSAL_BODY)
+    throw new SheshiError("TOO_LONG");
+  try {
+    return await apiJson<Proposal>("/api/proposals", {
+      method: "POST",
+      body: { title, body, category: input.category },
+    });
+  } catch (error) {
+    const mapped = toProposalMutationError(error);
+    if (mapped) throw mapped;
+    throw error;
+  }
+}
+
+// Directional vote on a proposal: 1 = PRO, -1 = KUNDËR, 0 = clear. Server upserts and echoes the tally.
+export async function voteProposal(proposalId: string, value: -1 | 0 | 1) {
+  try {
+    await apiNoContent(`/api/proposals/${proposalId}/vote`, { method: "PUT", body: { value } });
+  } catch (error) {
+    const mapped = toProposalMutationError(error);
+    if (mapped) throw mapped;
+    throw error;
+  }
+}
+
+export function withdrawProposal(id: string): Promise<void> {
+  return apiNoContent(`/api/proposals/${id}`, { method: "DELETE" });
+}
+
+// Moderator-only: the Pending review queue, and the publish/reject decision.
+export function listProposalQueue(category?: ProposalCategory | null): Promise<Proposal[]> {
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  const qs = params.toString();
+  return apiJson<Proposal[]>(`/api/proposals/queue${qs ? `?${qs}` : ""}`);
+}
+
+export function reviewProposal(id: string, action: "publish" | "reject"): Promise<void> {
+  return apiNoContent(`/api/proposals/${id}/review`, { method: "PUT", body: { action } });
+}
+
+function toProposalMutationError(error: unknown): SheshiError | null {
+  if (!(error instanceof ApiError)) return null;
+  if (error.status === 401) return new SheshiError("UNAUTH", { cause: error, status: 401 });
+  if (error.status === 429) return new SheshiError("RATE_LIMITED", { cause: error, status: 429 });
+  const code = apiErrorCode(error);
+  if (code === "TITLE_TOO_LONG" || code === "BODY_TOO_LONG")
+    return new SheshiError("TOO_LONG", { cause: error, status: error.status });
+  if (code === "TITLE_REQUIRED" || code === "BODY_REQUIRED")
+    return new SheshiError("EMPTY", { cause: error, status: error.status });
+  return null;
+}
