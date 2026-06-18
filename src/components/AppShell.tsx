@@ -133,6 +133,12 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
 
         <div className="flex items-center gap-2 sm:gap-3">
           <ThemeToggle />
+          <Link
+            to="/kerkesat-e-propozuara"
+            className="hidden sm:inline-flex h-9 items-center rounded-full px-3 text-xs font-bold uppercase tracking-widest text-foreground/70 transition-colors hover:bg-card hover:text-foreground"
+          >
+            {sq.nav.proposals}
+          </Link>
           {user ? (
             <Link
               to="/profili"
