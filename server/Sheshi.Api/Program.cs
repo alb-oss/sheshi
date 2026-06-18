@@ -21,6 +21,7 @@ using Sheshi.Api.Domain;
 using Sheshi.Api.Email;
 using Sheshi.Api.Features.Messages;
 using Sheshi.Api.Features.Moderation;
+using Sheshi.Api.Features.Proposals;
 using Sheshi.Api.Features.Rooms;
 using Sheshi.Api.Health;
 using Sheshi.Api.Realtime;
@@ -56,6 +57,7 @@ builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Sto
 builder.Services.PostConfigure<StorageOptions>(o =>
     o.UploadPath = Path.GetFullPath(o.UploadPath, builder.Environment.ContentRootPath));
 builder.Services.Configure<ImageSafetyOptions>(builder.Configuration.GetSection("ImageSafety"));
+builder.Services.Configure<ProposalApprovalOptions>(builder.Configuration.GetSection("ProposalApproval"));
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<MessageService>();
@@ -64,6 +66,7 @@ builder.Services.AddScoped<ModerationActionLogger>();
 builder.Services.AddScoped<ModerationMetricsService>();
 builder.Services.AddScoped<ModerationRuleEngine>();
 builder.Services.AddScoped<RoomService>();
+builder.Services.AddScoped<ProposalService>();
 builder.Services.AddScoped<Sheshi.Api.Features.Users.UserStatsService>();
 builder.Services.AddScoped<IImageStorage, ImageStorage>();
 builder.Services.AddScoped<IVideoStorage, VideoStorage>();
@@ -91,6 +94,7 @@ else
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<HighlightsTicker>();
 builder.Services.AddSingleton<VoteBroadcastCoalescer>();
+builder.Services.AddSingleton<ProposalVoteCoalescer>();
 builder.Services.AddScoped<RealtimeNotifier>();
 builder.Services.AddSingleton<HubInvocationThrottleFilter>();
 builder.Services.AddSignalR(options =>
@@ -126,6 +130,9 @@ builder.Services.AddRateLimiter(options =>
     AddFixedPolicy(options, builder.Configuration, "writes", "Writes", preferUser: true, defaultPermitLimit: 30, defaultWindowSeconds: 60);
     AddFixedPolicy(options, builder.Configuration, "reports", "Reports", preferUser: true, defaultPermitLimit: 10, defaultWindowSeconds: 300);
     AddFixedPolicy(options, builder.Configuration, "moderation", "Moderation", preferUser: true, defaultPermitLimit: 120, defaultWindowSeconds: 60);
+    // Proposal submissions go through a moderator queue, but a light per-user cap keeps the queue itself
+    // from being flooded. Tunable via RateLimits:Proposals:*.
+    AddFixedPolicy(options, builder.Configuration, "proposals", "Proposals", preferUser: true, defaultPermitLimit: 20, defaultWindowSeconds: 3600);
     // Anonymous reads (feed, thread, media, highlights, profiles, rooms) — partitioned by IP. These
     // run uncached correlated-ranking and recursive-tree queries, so an unthrottled scraper could
     // drive heavy DB load. preferUser:false keys on RemoteIpAddress (kept trustworthy by the
