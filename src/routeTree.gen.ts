@@ -14,6 +14,8 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ProfiliRouteImport } from './routes/profili'
 import { Route as ModerimRouteImport } from './routes/moderim'
+import { Route as KerkesatEPropozuaraRouteImport } from './routes/kerkesat-e-propozuara'
+import { Route as KerkesatEMiratuaraRouteImport } from './routes/kerkesat-e-miratuara'
 import { Route as FokusRouteImport } from './routes/fokus'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -44,6 +46,16 @@ const ProfiliRoute = ProfiliRouteImport.update({
 const ModerimRoute = ModerimRouteImport.update({
   id: '/moderim',
   path: '/moderim',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KerkesatEPropozuaraRoute = KerkesatEPropozuaraRouteImport.update({
+  id: '/kerkesat-e-propozuara',
+  path: '/kerkesat-e-propozuara',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KerkesatEMiratuaraRoute = KerkesatEMiratuaraRouteImport.update({
+  id: '/kerkesat-e-miratuara',
+  path: '/kerkesat-e-miratuara',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FokusRoute = FokusRouteImport.update({
@@ -81,6 +93,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/fokus': typeof FokusRoute
+  '/kerkesat-e-miratuara': typeof KerkesatEMiratuaraRoute
+  '/kerkesat-e-propozuara': typeof KerkesatEPropozuaraRoute
   '/moderim': typeof ModerimRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -94,6 +108,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/fokus': typeof FokusRoute
+  '/kerkesat-e-miratuara': typeof KerkesatEMiratuaraRoute
+  '/kerkesat-e-propozuara': typeof KerkesatEPropozuaraRoute
   '/moderim': typeof ModerimRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -108,6 +124,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/fokus': typeof FokusRoute
+  '/kerkesat-e-miratuara': typeof KerkesatEMiratuaraRoute
+  '/kerkesat-e-propozuara': typeof KerkesatEPropozuaraRoute
   '/moderim': typeof ModerimRoute
   '/profili': typeof ProfiliRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -123,6 +141,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/fokus'
+    | '/kerkesat-e-miratuara'
+    | '/kerkesat-e-propozuara'
     | '/moderim'
     | '/profili'
     | '/reset-password'
@@ -136,6 +156,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/fokus'
+    | '/kerkesat-e-miratuara'
+    | '/kerkesat-e-propozuara'
     | '/moderim'
     | '/profili'
     | '/reset-password'
@@ -149,6 +171,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/fokus'
+    | '/kerkesat-e-miratuara'
+    | '/kerkesat-e-propozuara'
     | '/moderim'
     | '/profili'
     | '/reset-password'
@@ -163,6 +187,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   FokusRoute: typeof FokusRoute
+  KerkesatEMiratuaraRoute: typeof KerkesatEMiratuaraRoute
+  KerkesatEPropozuaraRoute: typeof KerkesatEPropozuaraRoute
   ModerimRoute: typeof ModerimRoute
   ProfiliRoute: typeof ProfiliRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -207,6 +233,20 @@ declare module '@tanstack/react-router' {
       path: '/moderim'
       fullPath: '/moderim'
       preLoaderRoute: typeof ModerimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kerkesat-e-propozuara': {
+      id: '/kerkesat-e-propozuara'
+      path: '/kerkesat-e-propozuara'
+      fullPath: '/kerkesat-e-propozuara'
+      preLoaderRoute: typeof KerkesatEPropozuaraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kerkesat-e-miratuara': {
+      id: '/kerkesat-e-miratuara'
+      path: '/kerkesat-e-miratuara'
+      fullPath: '/kerkesat-e-miratuara'
+      preLoaderRoute: typeof KerkesatEMiratuaraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fokus': {
@@ -268,6 +308,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   FokusRoute: FokusRoute,
+  KerkesatEMiratuaraRoute: KerkesatEMiratuaraRoute,
+  KerkesatEPropozuaraRoute: KerkesatEPropozuaraRoute,
   ModerimRoute: ModerimRoute,
   ProfiliRoute: ProfiliRoute,
   ResetPasswordRoute: ResetPasswordRoute,
