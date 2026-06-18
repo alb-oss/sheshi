@@ -37,6 +37,14 @@ public class ChatHub(PresenceTracker presenceTracker) : Hub
     public Task LeaveModeration() =>
         Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.Moderators());
 
+    // The global proposals feed — open to everyone (anonymous included): proposal lists and vote tallies
+    // are public. No presence is tracked here; it's a pure broadcast channel.
+    public Task JoinProposals() =>
+        Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Proposals());
+
+    public Task LeaveProposals() =>
+        Groups.RemoveFromGroupAsync(Context.ConnectionId, GroupNames.Proposals());
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var changed = presenceTracker.Disconnect(Context.ConnectionId);

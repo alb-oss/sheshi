@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Sheshi.Api.Features.Messages;
+using Sheshi.Api.Features.Proposals;
 
 namespace Sheshi.Api.Realtime;
 
@@ -38,6 +39,26 @@ public class RealtimeNotifier(IHubContext<ChatHub> hub, HighlightsTicker highlig
     public async Task RoomCreatedAsync(object room, CancellationToken ct = default)
         => await hub.Clients.All.SendAsync("room_created", room, ct);
 
+    // A moderator published a proposal into the public feed — push the full DTO so it slots into the
+    // Propozuara list with no refetch (byte-identical to the REST shape).
+    public async Task ProposalCreatedAsync(ProposalDto proposal, CancellationToken ct = default)
+        => await hub.Clients.Group(GroupNames.Proposals()).SendAsync("proposal_created", proposal, ct);
+
+    // A proposal crossed the supermajority+quorum threshold — clients move it from Propozuara to Miratuara.
+    public async Task ProposalApprovedAsync(ProposalDto proposal, CancellationToken ct = default)
+        => await hub.Clients.Group(GroupNames.Proposals()).SendAsync("proposal_approved", proposal, ct);
+
+    // A proposal was withdrawn (author) or closed/rejected (moderator) — clients drop it from the feed.
+    public async Task ProposalRemovedAsync(Guid proposalId, CancellationToken ct = default)
+        => await hub.Clients.Group(GroupNames.Proposals()).SendAsync("proposal_removed",
+            new ProposalRemovedEvent(proposalId), ct);
+
+    // The voter's OWN proposal vote, pushed only to that user's connections — same vote-privacy split as
+    // messages: the public proposal_vote_changed carries only aggregate tallies, never who voted.
+    public async Task MyProposalVoteChangedAsync(Guid userId, Guid proposalId, int value, CancellationToken ct = default)
+        => await hub.Clients.User(userId.ToString())
+            .SendAsync("my_proposal_vote_changed", new MyProposalVoteChangedEvent(proposalId, value), ct);
+
     private async Task BroadcastAsync(Guid roomId, Guid? threadRootId, string evt, object payload, CancellationToken ct)
     {
         await hub.Clients.Group(GroupNames.Room(roomId)).SendAsync(evt, payload, ct);
@@ -55,3 +76,8 @@ public record MessageCreatedEvent(MessageDto Message, Guid? RootId);
 public record VoteChangedEvent(Guid MessageId, int Score, Guid RoomId, Guid? RootId);
 public record MyVoteChangedEvent(Guid MessageId, int Value);
 public record MessageDeletedEvent(Guid Id, Guid RoomId, Guid? RootId);
+
+// Aggregate tallies only — deliberately never says who voted (vote privacy). Sent by ProposalVoteCoalescer.
+public record ProposalVoteChangedEvent(Guid ProposalId, int Score, int Pro, int Kunder);
+public record MyProposalVoteChangedEvent(Guid ProposalId, int Value);
+public record ProposalRemovedEvent(Guid ProposalId);
