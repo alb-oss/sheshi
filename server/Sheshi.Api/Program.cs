@@ -14,6 +14,9 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using Sentry.AspNetCore;
+using Serilog;
+using Serilog.Formatting.Compact;
 using Sheshi.Api.Auth;
 using Sheshi.Api.Configuration;
 using Sheshi.Api.Data;
@@ -36,6 +39,33 @@ if (migrateOnly)
 }
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Structured logging (Serilog): machine-parseable JSON to stdout (Docker/journald capture it), one
+// completion line per request, TraceId correlation. Levels are config-driven (app=Information,
+// framework=Warning). Request bodies/headers are NOT logged, so tokens/PII never reach the logs.
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new RenderedCompactJsonFormatter()));
+
+// Error tracking (Sentry): wired ONLY when a DSN is configured (resolved via the secret-file helper, so
+// Sentry__DsnFile works too). With no DSN — dev, tests, unconfigured prod — Sentry is never initialised,
+// so nothing is sent and startup can't depend on it. Captures unhandled exceptions with request context;
+// never sends PII. Release is the deploy SHA when provided.
+var sentryDsn = builder.Configuration.GetSecretValue("Sentry:Dsn");
+if (!string.IsNullOrWhiteSpace(sentryDsn))
+{
+    builder.WebHost.UseSentry(options =>
+    {
+        options.Dsn = sentryDsn;
+        options.Environment = builder.Environment.EnvironmentName;
+        options.Release = builder.Configuration["Sentry:Release"];
+        options.SendDefaultPii = false;
+        options.TracesSampleRate = 0.0;
+        options.MinimumEventLevel = LogLevel.Error;
+    });
+}
 
 // Add services to the container.
 
@@ -342,6 +372,9 @@ if (migrateOnly)
 }
 
 // Configure the HTTP request pipeline.
+// One structured completion line per request (method, path, status, elapsed, TraceId).
+app.UseSerilogRequestLogging();
+
 // Catch-all so an unhandled exception never returns a raw stack trace / server paths to the
 // client in ANY environment — structured 500 instead. (Defense in depth; fail closed.)
 app.UseExceptionHandler(handler => handler.Run(async context =>
