@@ -74,7 +74,7 @@ Two new entities under `/Domain`, mirroring existing conventions (Guid PK defaul
 | `Body`       | `string`             | ≤ 8 000 chars                                                    |
 | `Category`   | `ProposalCategory`   | stored as string via `HasConversion<string>()`, check constraint |
 | `Status`     | `ProposalStatus`     | stored as string, default `Pending`, check constraint           |
-| `AuthorId`   | `Guid`               | FK → `ApplicationUser`, `OnDelete Restrict` (audit actor)       |
+| `AuthorId`   | `Guid`               | FK → `ApplicationUser`, `OnDelete Cascade` (matches `Message` authored content) |
 | `CreatedAt`  | `DateTimeOffset`     | `= UtcNow`                                                       |
 | `PublishedAt`| `DateTimeOffset?`    | set on moderator publish                                         |
 | `ApprovedAt` | `DateTimeOffset?`    | set on vote promotion (one-way)                                  |
