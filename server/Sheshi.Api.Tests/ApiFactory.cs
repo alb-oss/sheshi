@@ -36,6 +36,11 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 // dedicated limiter tests override them low to prove enforcement.
                 ["RateLimits:Reads:PermitLimit"] = "100000",
                 ["RateLimits:Auth:PermitLimit"] = "100000",
+                // Production approval thresholds (60% / 100 votes) are impractical to drive in a test, so
+                // shrink the quorum to 3. Ratio stays at the real 0.60 so the supermajority rule is still
+                // exercised. ProposalApprovalBoundaryTests assert both the cross and the below-quorum/ratio cases.
+                ["ProposalApproval:MinQuorum"] = "3",
+                ["ProposalApproval:MinRatio"] = "0.6",
             });
         });
     }
