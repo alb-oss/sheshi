@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Flame, User, Radio, Shield, Sun, Moon } from "lucide-react";
+import { Home, Flame, User, Radio, Shield, Sun, Moon, Vote } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { getStoredTheme, setTheme, type Theme } from "@/lib/theme";
 import { sq } from "@/i18n/sq";
@@ -84,6 +84,12 @@ export function AppShell({ children, right }: { children: ReactNode; right?: Rea
       icon: <Flame className="h-5 w-5" />,
       label: sq.nav.fokus,
       active: pathname === "/fokus",
+    },
+    {
+      to: "/kerkesat-e-propozuara",
+      icon: <Vote className="h-5 w-5" />,
+      label: sq.nav.proposals,
+      active: pathname.startsWith("/kerkesat"),
     },
     {
       to: "/profili",
