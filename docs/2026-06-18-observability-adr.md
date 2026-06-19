@@ -18,3 +18,6 @@ Alternatives considered: OpenTelemetry/Seq (more infra to run on a single VM) �
 - **No secrets/PII logged**: request logging records method/path/status only (no bodies/headers); the refresh token lives in an HttpOnly cookie / OAuth fragment (never reaches server logs); `SendDefaultPii = false`.
 - New config: `Serilog` section + `Sentry:Dsn` (empty default) in appsettings; `Sentry__Dsn` / `Sentry__Release` placeholders in the prod env + sops templates.
 - Verified: `dotnet build` + the full xUnit/Testcontainers suite (boot path runs through the new pipeline) stay green; a focused test proves boot with and without a DSN and that the structured error response is preserved.
+
+## 2026-06-19 amendment — Sentry removed
+To avoid any third-party dependency for now, **Sentry was removed** (package, wiring, config, env placeholders, and its test). **Serilog JSON structured logging to stdout is retained** — fully self-hosted (Docker/journald capture it; query with `docker logs`/journald). If a crash dashboard is wanted later without a third party, self-host **GlitchTip** (Sentry-API-compatible) and re-add the `Sentry.AspNetCore` SDK pointed at it — a contained change. The global exception handler (`{ error = "INTERNAL_ERROR" }`, no stack traces) remains the client-facing error contract.
